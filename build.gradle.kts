@@ -22,4 +22,5 @@ dependencies {
     implementation("io.ktor:ktor-server-config-yaml")
     implementation("io.ktor:ktor-server-pebble")
     implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("org.xerial:sqlite-jdbc:3.45.1.0")
 }
