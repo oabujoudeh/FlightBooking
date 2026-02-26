@@ -1,7 +1,7 @@
 package com.example.com
 
 import model.Flight
-import java.time.LocalDateTime
+// import java.time.LocalDateTime
 
 import io.ktor.server.application.*
 import io.ktor.server.pebble.*
@@ -15,13 +15,13 @@ fun Application.configureRouting() {
             call.respondTemplate("base.peb", emptyMap<String, Any>())
             }
 
-        get("Flights"){
+        get("/Flights"){
             val fakeFlights = listOf(
                 Flight(
                     flight_id = 1,
                     route_id = 101,
-                    departure_datetime = LocalDateTime.of(2026, 5, 20, 10, 0),
-                    arrival_datetime = LocalDateTime.of(2026, 5, 20, 13, 0),
+                    departure_datetime = "abc",
+                    arrival_datetime = "abc",
                     departure_terminal = "T1",
                     arrival_terminal = "A3",
                     status = "Scheduled",
@@ -31,8 +31,8 @@ fun Application.configureRouting() {
                 Flight(
                     flight_id = 2,
                     route_id = 102,
-                    departure_datetime = LocalDateTime.of(2026, 5, 21, 15, 30),
-                    arrival_datetime = LocalDateTime.of(2026, 5, 21, 18, 45),
+                    departure_datetime = "abc",
+                    arrival_datetime = "acb",
                     departure_terminal = "T2",
                     arrival_terminal = "B1",
                     status = "Delayed",
