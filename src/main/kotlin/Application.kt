@@ -2,6 +2,7 @@ package com.example.com
 
 import io.ktor.server.application.*
 
+
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
 }
@@ -9,4 +10,5 @@ fun main(args: Array<String>) {
 fun Application.module() {
     configureTemplates()
     configureRouting()
+    configureSessions()
 }

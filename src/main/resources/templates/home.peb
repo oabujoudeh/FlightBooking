@@ -1,0 +1,83 @@
+{% extends "base.peb" %}
+
+{% block title %}Search Flights{% endblock %}
+
+{% block content %}
+<h2>Search for flights</h2>
+
+{% if message is not empty %}
+<article>
+    <p><strong>{{ message }}</strong></p>
+</article>
+{% endif %}
+
+<form method="post" action="/search-flights">
+    <div class="grid">
+        <label for="from">From
+            <input type="text" id="from" name="from" placeholder="Departure airport or city" required autofocus>
+        </label>
+        <label for="to">To
+            <input type="text" id="to" name="to" placeholder="Destination airport or city" required>
+        </label>
+    </div>
+    <div class="grid">
+        <label for="departDate">Departure date
+            <input type="date" id="departDate" name="departDate" required>
+        </label>
+        <label for="returnDate">Return date
+            <input type="date" id="returnDate" name="returnDate">
+        </label>
+    </div>
+    <div class="grid">
+        <label for="adults">Adults
+            <input type="number" id="adults" name="adults" min="1" max="9" value="1" required>
+        </label>
+        <label for="children">Children
+            <input type="number" id="children" name="children" min="0" max="9" value="0">
+        </label>
+        <label for="cabinClass">Cabin class
+            <select id="cabinClass" name="cabinClass">
+                <option value="economy">Economy</option>
+                <option value="premium_economy">Premium Economy</option>
+                <option value="business">Business</option>
+                <option value="first">First</option>
+            </select>
+        </label>
+    </div>
+    <button type="submit">Search flights</button>
+</form>
+
+{% if results is not empty %}
+<h3>{{ results | length }} flight(s) found</h3>
+
+{% for flight in results %}
+<article>
+    <div class="grid">
+        <div>
+            <strong>{{ flight.departureTime }}</strong><br>
+            <span>{{ flight.origin }}</span>
+        </div>
+        <div style="text-align:center">
+            <small>{{ flight.duration }}</small><br>
+            &#9992; &#xFE0E;
+            <hr>
+            <small>{{ flight.stops }}</small>
+        </div>
+        <div style="text-align:right">
+            <strong>{{ flight.arrivalTime }}</strong><br>
+            <span>{{ flight.destination }}</span>
+        </div>
+        <div style="text-align:right">
+            <strong>£{{ flight.price }}</strong><br>
+            <small>{{ flight.airline }}</small><br>
+            <a href="/book/{{ flight.id }}" role="button">Select</a>
+        </div>
+    </div>
+</article>
+{% endfor %}
+
+{% else %}
+<p>No flights found for your search.</p>
+{% endif %}
+
+{% endblock %}
