@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.pebble.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
+import io.ktor.server.http.content.*
 import com.password4j.Password
 import io.ktor.server.sessions.*
 import io.ktor.server.response.*
@@ -12,6 +13,10 @@ import io.ktor.server.response.*
 
 fun Application.configureRouting() {
     routing {
+        static("/static") {
+            resources("static")
+        }
+
         get("/") {
             val session = call.sessions.get<UserSession>()
             call.respondTemplate("home.peb", getSessionData(call))
@@ -42,7 +47,7 @@ fun Application.configureRouting() {
                         "loggedIn" to false,
                         "error" to "A credentail was incorrect"
                     ))
-            }  
+            }
         }
 
         get("/logout") {
@@ -60,7 +65,7 @@ fun Application.configureRouting() {
         }
 
         post("/search-flights") {
-            
+
             val session = call.sessions.get<UserSession>()
 
             val params = call.receiveParameters()
@@ -86,7 +91,7 @@ fun Application.configureRouting() {
             val fakeFlights = listOf(
                 Flight("1", "British Airways", "LBA", "LHR", "06:00", "07:05", "1h 05m", "Direct", "89.99"),
                 Flight("2", "EasyJet", "LBA", "LHR", "11:30", "13:10", "1h 40m", "1 stop", "54.99"),
-            Flight("3", "Ryanair", "LBA", "LHR", "17:45", "19:00", "1h 15m", "Direct", "42.99")
+                Flight("3", "Ryanair", "LBA", "LHR", "17:45", "19:00", "1h 15m", "Direct", "42.99")
             )
 
             call.respondTemplate("home.peb", getSessionData(call) + mapOf(

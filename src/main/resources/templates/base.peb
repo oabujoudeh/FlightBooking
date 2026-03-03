@@ -4,28 +4,29 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-    <title>{% block title %}Leeds Library{% endblock %}</title>
+    <title>{% block title %}EAJO Air{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    {% block head %}{% endblock %}
 </head>
 <body>
-<main class="container"> 
-    <header class="container">                                                                                        
-        <nav>                                                                                                         
-            <ul>                                                                                                      
-                <li><a href="/" role="button"><strong>✈ FlightBooking</strong></a></li>                                                             
-            </ul> 
+<main class="container">
+    <header class="container">
+        <nav>
+            <ul>
+                <li><a href="/" role="button"><strong>✈ FlightBooking</strong></a></li>
+            </ul>
 
-            {% if loggedIn %}                                                                                                    
-                <ul>                                                                                                      
-                    <li><a href="/profile" role="button">profile</a></li>                                                     
-                </ul> 
-            {% else %}
-                <ul>                                                                                                      
-                    <li><a href="/login" role="button">Login</a></li>                                                     
+            {% if loggedIn %}
+                <ul>
+                    <li><a href="/profile" role="button">profile</a></li>
                 </ul>
-            {% endif %}                                                                                                
-        </nav>                                                                                                        
-    </header> 
+            {% else %}
+                <ul>
+                    <li><a href="/login" role="button">Login</a></li>
+                </ul>
+            {% endif %}
+        </nav>
+    </header>
     {% block content %}{% endblock %}
 </main>
 </body>
