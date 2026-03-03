@@ -9,24 +9,15 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-<main class="container">
-    <header class="container">
-        <nav>
-            <ul>
-                <li><a href="/" role="button"><strong>✈ FlightBooking</strong></a></li>
-            </ul>
-
-            {% if loggedIn %}
-                <ul>
-                    <li><a href="/profile" role="button">profile</a></li>
-                </ul>
-            {% else %}
-                <ul>
-                    <li><a href="/login" role="button">Login</a></li>
-                </ul>
-            {% endif %}
-        </nav>
-    </header>
+<nav class="navbar">
+    <a href="/" class="logo">✈ EAJO Air</a>
+    {% if loggedIn %}
+        <a href="/profile" class="auth-btn">Profile</a>
+    {% else %}
+        <a href="/login" class="auth-btn">Login</a>
+    {% endif %}
+</nav>
+<main>
     {% block content %}{% endblock %}
 </main>
 </body>

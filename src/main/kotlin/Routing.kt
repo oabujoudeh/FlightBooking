@@ -19,7 +19,7 @@ fun Application.configureRouting() {
 
         get("/") {
             val session = call.sessions.get<UserSession>()
-            call.respondTemplate("home.peb", getSessionData(call))
+            call.respondTemplate("booking.peb", getSessionData(call))
             // Clear message after displaying
             if (session != null && session.message.isNotEmpty()) {
                 call.sessions.set(session.copy(message = ""))
@@ -66,14 +66,16 @@ fun Application.configureRouting() {
 
         post("/search-flights") {
 
-            val session = call.sessions.get<UserSession>()
-
             val params = call.receiveParameters()
-            val departDate = params["departDate"]
+            val departure = params["departure"]
+            val destination = params["destination"]
+            val departureDate = params["departureDate"]
             val returnDate = params["returnDate"]
+            val tripType = params["tripType"]
             val adults = params["adults"]
             val children = params["children"]
-            val cabinClass = params["cabinClass"]
+
+            println(params)
 
             // process info here and search database for possible flights
             data class Flight(
@@ -94,7 +96,7 @@ fun Application.configureRouting() {
                 Flight("3", "Ryanair", "LBA", "LHR", "17:45", "19:00", "1h 15m", "Direct", "42.99")
             )
 
-            call.respondTemplate("home.peb", getSessionData(call) + mapOf(
+            call.respondTemplate("booking.peb", getSessionData(call) + mapOf(
                 "results" to fakeFlights
             ))
 
