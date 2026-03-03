@@ -32,4 +32,8 @@ dependencies {
     //Hashing
     implementation("com.password4j:password4j:1.8.4")
 
+    //Testing
+    testImplementation("io.ktor:ktor-server-test-host")
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+
 }
