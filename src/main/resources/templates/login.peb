@@ -1,0 +1,24 @@
+{% extends "base.peb" %}
+
+{% block title %}Login - JOEAir{% endblock %}
+
+{% block content %}
+<h2>Login</h2>
+
+{% if error is not empty %}
+<article>
+    <p><strong>{{ error }}</strong></p>
+</article>
+{% endif %}
+
+<form method="post" action="/login">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required autofocus>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Login</button>
+</form>
+<a href="/register">Register</a>
+{% endblock %}
