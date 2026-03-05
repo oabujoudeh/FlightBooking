@@ -1,4 +1,4 @@
-package com.flightbooking
+package com.example.com
 
 import io.ktor.server.application.*
 
@@ -9,7 +9,7 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
 
-    //configureTemplates()
+    configureTemplates()
     configureRouting()
     configureSessions()
 }

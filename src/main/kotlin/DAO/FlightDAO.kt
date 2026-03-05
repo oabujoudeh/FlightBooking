@@ -1,3 +1,10 @@
+package com.example.com 
+import java.time.LocalDate
+import java.time.LocalTime
+
+
+
+
 object FlightDAO {
 
     fun searchFlights(
@@ -28,7 +35,7 @@ object FlightDAO {
         """
         
 
-        getConnection().use { conn ->
+        Database.getConnection().use { conn ->
             val stmt = conn.prepareStatement(sql)
             stmt.setString(1, departureCity)
             stmt.setString(2, arrivalCity)
