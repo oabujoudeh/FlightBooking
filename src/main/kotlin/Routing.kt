@@ -1,4 +1,4 @@
-package com.example.com
+package com.flightbooking
 
 import io.ktor.server.application.*
 import io.ktor.server.pebble.*
@@ -61,45 +61,52 @@ fun Application.configureRouting() {
                 call.respondTemplate("profile.peb", getSessionData(call))
             } else {
                 call.respondRedirect("/login")
+               
+
+    route("/api") {
+        get("/flights/search") {
+
+            val departure = call.request.queryParameters["departure"]
+            val arrival = call.request.queryParameters["arrival"]
+            val date = call.request.queryParameters["date"]
+
+            if (departure == null || arrival == null || date == null) {
+                call.respond(
+                    mapOf(
+                        "success" to false,
+                        "error" to "Please provide departure city, arrival city, and date"
+                    )
+                )
+                return@get
             }
-        }
 
-        post("/search-flights") {
-
-            val params = call.receiveParameters()
-            val departure = params["departure"]
-            val destination = params["destination"]
-            val departureDate = params["departureDate"]
-            val returnDate = params["returnDate"]
-            val tripType = params["tripType"]
-            val adults = params["adults"]
-            val children = params["children"]
-
-            println(params)
-
-            // process info here and search database for possible flights
-            data class Flight(
-                val id: String,
-                val airline: String,
-                val origin: String,
-                val destination: String,
-                val departureTime: String,
-                val arrivalTime: String,
-                val duration: String,
-                val stops: String,
-                val price: String
+            val flights = Database.searchFlights(
+                departure,
+                arrival,
+                LocalDate.parse(date)
             )
 
-            val fakeFlights = listOf(
-                Flight("1", "British Airways", "LBA", "LHR", "06:00", "07:05", "1h 05m", "Direct", "89.99"),
-                Flight("2", "EasyJet", "LBA", "LHR", "11:30", "13:10", "1h 40m", "1 stop", "54.99"),
-                Flight("3", "Ryanair", "LBA", "LHR", "17:45", "19:00", "1h 15m", "Direct", "42.99")
+            call.respond(
+                mapOf(
+                    "success" to true,
+                    "count" to flights.size,
+                    "flights" to flights.map { flight ->
+                        mapOf(
+                            "flightId" to flight.flightId,
+                            "flightNumber" to flight.flightNumber,
+                            "departureCity" to flight.departureCity,
+                            "arrivalCity" to flight.arrivalCity,
+                            "departureTerminal" to flight.departureTerminal,
+                            "arrivalTerminal" to flight.arrivalTerminal,
+                            "departureDate" to flight.departureDate.toString(),
+                            "departureTime" to flight.departureTime.toString(),
+                            "arrivalTime" to flight.arrivalTime.toString(),
+                            "price" to flight.price
+                        )
+                    }
+                )
             )
-
-            call.respondTemplate("booking.peb", getSessionData(call) + mapOf(
-                "results" to fakeFlights
-            ))
-
         }
     }
+
 }
