@@ -1,0 +1,152 @@
+{% extends "base.peb" %}
+
+{% block content %}
+
+<header class="hero">
+    <div class="hero-inner">
+        <h1>EAJO Air</h1>
+        <p class="slogan">Fly High</p>
+    </div>
+</header>
+
+<div class="layout">
+
+    <section class="card booking-card">
+        <h2 class="card-title">Book a Flight</h2>
+        <p class="card-subtitle">Choose your route and dates to see available flights.</p>
+        {% if message is not empty %}
+            <article>
+                <p><strong>{{ message }}</strong></p>
+            </article>
+        {% endif %}
+
+        <form action="/search-flights" method="post">
+
+            <div class="segmented">
+                <input type="radio" id="oneway" name="tripType" value="oneway" checked>
+                <label for="oneway">One Way</label>
+
+                <input type="radio" id="return" name="tripType" value="return">
+                <label for="return">Return</label>
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label>Departure</label>
+                    <select name="departure" required>
+                        {% if airports %}
+                            {% for airport in airports %}
+                                <option value="{{ airport.code }}">{{ airport.name }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option disabled selected>Airports loading...</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Destination</label>
+                    <select name="destination" required>
+                        {% if airports %}
+                            {% for airport in airports %}
+                                <option value="{{ airport.code }}">{{ airport.name }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option disabled selected>Airports loading...</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Departure Date</label>
+                    <input type="date" name="departureDate" required>
+                </div>
+
+                <div class="field">
+                    <label>Return Date</label>
+                    <input type="date" name="returnDate">
+                </div>
+
+                <div class="field">
+                    <label>Adults</label>
+                    <input type="number" name="adults" min="1" max="9" value="1" required>
+                </div>
+
+                <div class="field">
+                    <label>Children</label>
+                    <input type="number" name="children" min="0" max="9" value="0">
+                </div>
+            </div>
+
+            <button type="submit" class="primary-btn">Search Flights</button>
+        </form>
+    </section>
+
+    <aside class="card updates-card">
+        <div class="updates-header">
+            <h2 class="card-title">Latest Updates</h2>
+            <p class="card-subtitle">Notices and helpful travel info.</p>
+        </div>
+
+        <ul class="updates-list">
+            <li class="update">
+                <div class="badge">INFO</div>
+                <div>
+                    <div class="update-title">Airport updates will appear here</div>
+                    <div class="update-meta">Shown once connected to the system.</div>
+                </div>
+            </li>
+            <li class="update">
+                <div class="badge">NOTICE</div>
+                <div>
+                    <div class="update-title">Flight notices and service alerts</div>
+                    <div class="update-meta">Delays, cancellations, and changes.</div>
+                </div>
+            </li>
+            <li class="update">
+                <div class="badge">TIP</div>
+                <div>
+                    <div class="update-title">Peak booking windows</div>
+                    <div class="update-meta">Plan ahead for better availability.</div>
+                </div>
+            </li>
+        </ul>
+    </aside>
+
+    
+    {% if results is not empty %}
+        <h3>{{ results | length }} flight(s) found</h3>
+
+        {% for flight in results %}
+            <article>
+                <div class="grid">
+                    <div>
+                        <strong>{{ flight.departureTime }}</strong><br>
+                        <span>{{ flight.origin }}</span>
+                    </div>
+                    <div style="text-align:center">
+                        <small>{{ flight.duration }}</small><br>
+                        &#9992; &#xFE0E;
+                        <hr>
+                        <small>{{ flight.stops }}</small>
+                    </div>
+                    <div style="text-align:right">
+                        <strong>{{ flight.arrivalTime }}</strong><br>
+                        <span>{{ flight.destination }}</span>
+                    </div>
+                    <div style="text-align:right">
+                        <strong>£{{ flight.price }}</strong><br>
+                        <small>{{ flight.airline }}</small><br>
+                        <a href="/book/{{ flight.id }}" role="button">Select</a>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+
+    {% else %}
+    <p>No flights found for your search.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}
