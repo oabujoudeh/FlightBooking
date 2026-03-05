@@ -1,4 +1,4 @@
-package com.flightbooking
+package com.example.com
 
 import io.ktor.server.application.*
 import io.ktor.server.pebble.*

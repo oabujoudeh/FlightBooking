@@ -1,32 +1,23 @@
-package com.flightbooking
+package com.example.com
 
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.*
 import java.time.LocalDate
+import java.time.LocalTime
 
 
 data class Flight(
+    val flightId: Int,
     val flightNumber: String,
-
     val departureCity: String,
     val arrivalCity: String,
-
-    val aircraftType: String,
-
-    val departureDate: LocalDate,
-    val departureTime: String,
-    val duration: String,
-    val arrivalTime: String,     //calculated
-    val departureTimezone: String,
-    val arrivalTimezone: String,
-
     val departureTerminal: String,
     val arrivalTerminal: String,
-
-    val status: String,
+    val departureDate: LocalDate,
+    val departureTime: LocalTime,
+    val arrivalTime: LocalTime,
     val price: Double,
-    val awardAvailable: Boolean
 )
 
 

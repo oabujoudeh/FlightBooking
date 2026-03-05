@@ -1,4 +1,4 @@
-package com.flightbooking
+package com.example.com
 
 import io.ktor.server.application.*
 import io.ktor.server.pebble.*
@@ -8,6 +8,7 @@ import io.ktor.server.http.content.*
 import com.password4j.Password
 import io.ktor.server.sessions.*
 import io.ktor.server.response.*
+import java.time.LocalDate
 
 
 
@@ -61,52 +62,13 @@ fun Application.configureRouting() {
                 call.respondTemplate("profile.peb", getSessionData(call))
             } else {
                 call.respondRedirect("/login")
-               
-
-    route("/api") {
-        get("/flights/search") {
-
-            val departure = call.request.queryParameters["departure"]
-            val arrival = call.request.queryParameters["arrival"]
-            val date = call.request.queryParameters["date"]
-
-            if (departure == null || arrival == null || date == null) {
-                call.respond(
-                    mapOf(
-                        "success" to false,
-                        "error" to "Please provide departure city, arrival city, and date"
-                    )
-                )
-                return@get
             }
+        }
 
-            val flights = Database.searchFlights(
-                departure,
-                arrival,
-                LocalDate.parse(date)
-            )
+    
 
-            call.respond(
-                mapOf(
-                    "success" to true,
-                    "count" to flights.size,
-                    "flights" to flights.map { flight ->
-                        mapOf(
-                            "flightId" to flight.flightId,
-                            "flightNumber" to flight.flightNumber,
-                            "departureCity" to flight.departureCity,
-                            "arrivalCity" to flight.arrivalCity,
-                            "departureTerminal" to flight.departureTerminal,
-                            "arrivalTerminal" to flight.arrivalTerminal,
-                            "departureDate" to flight.departureDate.toString(),
-                            "departureTime" to flight.departureTime.toString(),
-                            "arrivalTime" to flight.arrivalTime.toString(),
-                            "price" to flight.price
-                        )
-                    }
-                )
-            )
+        get("{...}") {
+            call.respondRedirect("/")
         }
     }
-
 }

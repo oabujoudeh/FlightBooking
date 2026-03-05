@@ -1,11 +1,13 @@
                                                                                                                 
 package com.example.com                                                                                                   
                 
+import com.example.com.module
 import io.ktor.client.request.*                                                                                           
 import io.ktor.http.*                                                                                                     
 import io.ktor.server.testing.*                                                                                           
 import kotlin.test.Test                                                                                                   
 import kotlin.test.assertEquals
+
 
 /* This file contains the tests for routing and the pages. */
 
