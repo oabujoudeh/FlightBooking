@@ -19,7 +19,7 @@ arrivalCity     (string)  Required
     The destination city.
 
 date            (string)  Required
-    The departure date in format DD-MM-YYYY.
+    The departure date in format YYYY-MM-DD.
 ----------------------------------------
 Example Request:
 GET /api/search?departureCity=Manchester&arrivalCity=London&date=2026-03-20
