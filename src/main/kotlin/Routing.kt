@@ -16,11 +16,17 @@ fun Application.configureRouting() {
             resources("static")
         }
         get("/") {
+            val airports = listOf(
+                Airport("LBA", "Leeds Bradford"),
+                Airport("LHR", "London Heathrow")
+            )
             val session = call.sessions.get<UserSession>()
-            call.respondTemplate("booking.peb", getSessionData(call))
             if (session != null && session.message.isNotEmpty()) {
                 call.sessions.set(session.copy(message = ""))
             }
+            call.respondTemplate("booking.peb", getSessionData(call) + mapOf(
+                "airports" to airports
+            ))
         }
         get("/login") {
             call.respondTemplate("login.peb", mapOf("error" to ""))
@@ -52,7 +58,6 @@ fun Application.configureRouting() {
                 call.respondRedirect("/login")
             }
         }
-
 
         post("/api/search-flights") {
             val params = call.receiveParameters()
