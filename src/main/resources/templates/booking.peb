@@ -94,7 +94,7 @@
                 <div class="grid">
                     <div>
                         <strong>{{ flight.departureTime }}</strong><br>
-                        <span>{{ flight.departureAirportName }}</span>
+                        <span>{{ flight.departureAirportName }}</span><br>
                         <small>Terminal {{ flight.departureTerminal }}</small>
                     </div>
                     <div style="text-align:center">
@@ -105,7 +105,7 @@
                     </div>
                     <div style="text-align:right">
                         <strong>{{ flight.arrivalTime }}</strong><br>
-                        <span>{{ flight.arrivalAirportName }}</span>
+                        <span>{{ flight.arrivalAirportName }}</span><br>
                         <small>Terminal {{ flight.arrivalTerminal }}</small>
                     </div>
                     <div style="text-align:right">
