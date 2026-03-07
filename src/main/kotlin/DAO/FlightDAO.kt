@@ -1,8 +1,7 @@
-package com.example.com 
+package com.flightbooking
+
 import java.time.LocalDate
 import java.time.LocalTime
-
-
 
 
 object FlightDAO {
@@ -24,7 +23,7 @@ object FlightDAO {
                 r.planned_departure,
                 r.base_duration_minutes,
                 dep.city as departure_city,
-                arr.city as arrival_city,
+                arr.city as arrival_city
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
             JOIN airports dep ON r.departure_airport = dep.airport_id
@@ -65,6 +64,7 @@ object FlightDAO {
                     departureDate = LocalDate.parse(result.getString("flight_date")),
                     departureTime = departureTime,
                     arrivalTime = arrivalTime,
+                    durationMinutes = durationMinutes,
                     price = result.getDouble("price"),
                 ))
             }

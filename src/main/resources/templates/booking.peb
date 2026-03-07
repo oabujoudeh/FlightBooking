@@ -33,48 +33,17 @@
             <div class="form-grid">
                 <div class="field">
                     <label>Departure</label>
-                    <select name="departure" required>
-                        {% if airports %}
-                            {% for airport in airports %}
-                                <option value="{{ airport.code }}">{{ airport.name }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <option disabled selected>Airports loading...</option>
-                        {% endif %}
-                    </select>
+                    <input type="text" name="departure" placeholder="e.g. London" required>
                 </div>
 
                 <div class="field">
                     <label>Destination</label>
-                    <select name="destination" required>
-                        {% if airports %}
-                            {% for airport in airports %}
-                                <option value="{{ airport.code }}">{{ airport.name }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <option disabled selected>Airports loading...</option>
-                        {% endif %}
-                    </select>
+                    <input type="text" name="destination" placeholder="e.g. New York" required>
                 </div>
 
                 <div class="field">
                     <label>Departure Date</label>
                     <input type="date" name="departureDate" required>
-                </div>
-
-                <div class="field">
-                    <label>Return Date</label>
-                    <input type="date" name="returnDate">
-                </div>
-
-                <div class="field">
-                    <label>Adults</label>
-                    <input type="number" name="adults" min="1" max="9" value="1" required>
-                </div>
-
-                <div class="field">
-                    <label>Children</label>
-                    <input type="number" name="children" min="0" max="9" value="0">
                 </div>
             </div>
 
@@ -113,7 +82,6 @@
         </ul>
     </aside>
 
-    
     {% if results is not empty %}
         <h3>{{ results | length }} flight(s) found</h3>
 
@@ -122,29 +90,31 @@
                 <div class="grid">
                     <div>
                         <strong>{{ flight.departureTime }}</strong><br>
-                        <span>{{ flight.origin }}</span>
+                        <span>{{ flight.departureCity }}</span><br>
+                        <small>Terminal {{ flight.departureTerminal }}</small>
                     </div>
                     <div style="text-align:center">
-                        <small>{{ flight.duration }}</small><br>
-                        &#9992; &#xFE0E;
+                        <small>{{ flight.durationMinutes }} mins</small><br>
+                        &#9992;&#xFE0E;
                         <hr>
-                        <small>{{ flight.stops }}</small>
+                        <small>Direct</small>
                     </div>
                     <div style="text-align:right">
                         <strong>{{ flight.arrivalTime }}</strong><br>
-                        <span>{{ flight.destination }}</span>
+                        <span>{{ flight.arrivalCity }}</span><br>
+                        <small>Terminal {{ flight.arrivalTerminal }}</small>
                     </div>
                     <div style="text-align:right">
                         <strong>£{{ flight.price }}</strong><br>
-                        <small>{{ flight.airline }}</small><br>
-                        <a href="/book/{{ flight.id }}" role="button">Select</a>
+                        <small>{{ flight.flightNumber }}</small><br>
+                        <a href="/book/{{ flight.flightId }}" role="button">Select</a>
                     </div>
                 </div>
             </article>
         {% endfor %}
 
     {% else %}
-    <p>No flights found for your search.</p>
+        <p>No flights found for your search.</p>
     {% endif %}
 
 </div>

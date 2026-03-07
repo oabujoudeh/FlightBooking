@@ -1,4 +1,4 @@
-package com.example.com
+package com.flightbooking
 
 import java.sql.Connection
 import java.sql.DriverManager
@@ -17,12 +17,13 @@ data class Flight(
     val departureDate: LocalDate,
     val departureTime: LocalTime,
     val arrivalTime: LocalTime,
+    val durationMinutes: Int,
     val price: Double,
 )
 
 
 object Database {
-    private const val URL = "flightbooking/database/flights.db"
+    private const val URL = "jdbc:sqlite:database/flights.db"
 
     fun getConnection(): Connection = DriverManager.getConnection(URL)
 

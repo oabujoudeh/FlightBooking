@@ -1,4 +1,4 @@
-package com.example.com
+package com.flightbooking
 
 import io.ktor.server.application.*
 
