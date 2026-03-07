@@ -20,7 +20,7 @@
             </article>
         {% endif %}
 
-        <form action="/search-flights" method="post">
+        <form action="/api/search-flights" method="post">
 
             <div class="segmented">
                 <input type="radio" id="oneway" name="tripType" value="oneway" checked>
@@ -31,19 +31,23 @@
             </div>
 
             <div class="form-grid">
-                <div class="field">
+                <div class="field" style="position:relative">
                     <label>Departure</label>
-                    <input type="text" name="departure" placeholder="e.g. London" required>
+                    <input type="text" id="departureInput" placeholder="e.g. London or LHR" autocomplete="off" required value="{{ departureLabel }}">
+                    <input type="hidden" name="departure" id="departureValue" value="{{ departure }}">
+                    <ul id="departureSuggestions" class="suggestions"></ul>
                 </div>
 
-                <div class="field">
+                <div class="field" style="position:relative">
                     <label>Destination</label>
-                    <input type="text" name="destination" placeholder="e.g. New York" required>
+                    <input type="text" id="destinationInput" placeholder="e.g. New York or JFK" autocomplete="off" required value="{{ destinationLabel }}">
+                    <input type="hidden" name="destination" id="destinationValue" value="{{ destination }}">
+                    <ul id="destinationSuggestions" class="suggestions"></ul>
                 </div>
 
                 <div class="field">
                     <label>Departure Date</label>
-                    <input type="date" name="departureDate" required>
+                    <input type="date" name="departureDate" required value="{{ departureDate }}">
                 </div>
             </div>
 
@@ -90,7 +94,7 @@
                 <div class="grid">
                     <div>
                         <strong>{{ flight.departureTime }}</strong><br>
-                        <span>{{ flight.departureCity }}</span><br>
+                        <span>{{ flight.departureAirportName }}</span>
                         <small>Terminal {{ flight.departureTerminal }}</small>
                     </div>
                     <div style="text-align:center">
@@ -101,7 +105,7 @@
                     </div>
                     <div style="text-align:right">
                         <strong>{{ flight.arrivalTime }}</strong><br>
-                        <span>{{ flight.arrivalCity }}</span><br>
+                        <span>{{ flight.arrivalAirportName }}</span>
                         <small>Terminal {{ flight.arrivalTerminal }}</small>
                     </div>
                     <div style="text-align:right">
@@ -118,5 +122,41 @@
     {% endif %}
 
 </div>
+
+<script>
+function setupAutocomplete(inputId, suggestionsId, hiddenId) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(suggestionsId);
+    const hidden = document.getElementById(hiddenId);
+
+    input.addEventListener("input", async () => {
+        const q = input.value.trim();
+        hidden.value = "";
+        if (q.length < 2) { list.innerHTML = ""; return; }
+
+        const res = await fetch(`/api/search-airports?q=${encodeURIComponent(q)}`);
+        const airports = await res.json();
+
+        list.innerHTML = airports.map(a =>
+            `<li data-value="${a.value}" data-label="${a.label}">${a.label}</li>`
+        ).join("");
+
+        list.querySelectorAll("li").forEach(li => {
+            li.addEventListener("click", () => {
+                input.value = li.dataset.label;
+                hidden.value = li.dataset.value;
+                list.innerHTML = "";
+            });
+        });
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!input.contains(e.target)) list.innerHTML = "";
+    });
+}
+
+setupAutocomplete("departureInput", "departureSuggestions", "departureValue");
+setupAutocomplete("destinationInput", "destinationSuggestions", "destinationValue");
+</script>
 
 {% endblock %}
