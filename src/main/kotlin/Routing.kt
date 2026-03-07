@@ -54,13 +54,11 @@ fun Application.configureRouting() {
         }
 
 
-        
         post("/search-flights") {
             val params = call.receiveParameters()
             val departure = params["departure"]
             val destination = params["destination"]
             val departureDate = params["departureDate"]
-            println("收到的日期: $departureDate")
 
             val templateData = getSessionData(call).toMutableMap()
 
