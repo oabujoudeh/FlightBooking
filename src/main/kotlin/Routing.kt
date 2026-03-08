@@ -16,17 +16,11 @@ fun Application.configureRouting() {
             resources("static")
         }
         get("/") {
-            val airports = listOf(
-                Airport("LBA", "Leeds Bradford"),
-                Airport("LHR", "London Heathrow")
-            )
             val session = call.sessions.get<UserSession>()
+            call.respondTemplate("booking.peb", getSessionData(call))
             if (session != null && session.message.isNotEmpty()) {
                 call.sessions.set(session.copy(message = ""))
             }
-            call.respondTemplate("booking.peb", getSessionData(call) + mapOf(
-                "airports" to airports
-            ))
         }
         get("/login") {
             call.respondTemplate("login.peb", mapOf("error" to ""))
@@ -78,7 +72,7 @@ fun Application.configureRouting() {
 
             templateData["results"] = flights
 
-            // data appears after refresh
+            // data re-appears after refresh
             templateData["departure"] = departure
             templateData["departureLabel"] = AirportDAO.getLabel(departure)
             templateData["destination"] = destination
@@ -89,6 +83,7 @@ fun Application.configureRouting() {
 
             call.respondTemplate("booking.peb", templateData)
         }
+        
         get("/api/search-airports") {
             val query = call.request.queryParameters["q"] ?: ""
             if (query.length < 2) {

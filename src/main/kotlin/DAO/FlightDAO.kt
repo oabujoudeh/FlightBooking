@@ -13,7 +13,7 @@ object FlightDAO {
     ): List<Flight> {
 
         val sql = """
-            SELECT
+            SELECT 
                 f.flight_id,
                 f.flight_date,
                 f.price,
