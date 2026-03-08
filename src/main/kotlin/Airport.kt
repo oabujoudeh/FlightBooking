@@ -1,4 +1,4 @@
-package com.example.com
+package com.flightbooking
 
 data class Airport(
     val code: String,

@@ -58,12 +58,13 @@ fun Application.configureRouting() {
                 call.respondRedirect("/login")
             }
         }
-
         post("/api/search-flights") {
             val params = call.receiveParameters()
             val departure = params["departure"]
             val destination = params["destination"]
             val departureDate = params["departureDate"]
+            val adults = params["adults"]?.toIntOrNull() ?: 1
+            val children = params["children"]?.toIntOrNull() ?: 0
 
             val templateData = getSessionData(call).toMutableMap()
 
@@ -73,11 +74,7 @@ fun Application.configureRouting() {
                 return@post
             }
 
-            val flights = FlightDAO.searchFlights(
-                departure,
-                destination,
-                LocalDate.parse(departureDate)
-            )
+            val flights = FlightDAO.searchFlights(departure, destination, LocalDate.parse(departureDate))
 
             templateData["results"] = flights
 
@@ -87,11 +84,11 @@ fun Application.configureRouting() {
             templateData["destination"] = destination
             templateData["destinationLabel"] = AirportDAO.getLabel(destination)
             templateData["departureDate"] = departureDate
+            templateData["adults"] = adults
+            templateData["children"] = children
 
             call.respondTemplate("booking.peb", templateData)
         }
-
-
         get("/api/search-airports") {
             val query = call.request.queryParameters["q"] ?: ""
             if (query.length < 2) {
