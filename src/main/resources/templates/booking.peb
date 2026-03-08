@@ -49,6 +49,16 @@
                     <label>Departure Date</label>
                     <input type="date" name="departureDate" required value="{{ departureDate }}">
                 </div>
+
+                <div class="field">
+                    <label>Adults</label>
+                    <input type="number" name="adults" min="1" max="9" value="1" required>
+                </div>
+
+                <div class="field">
+                    <label>Children</label>
+                    <input type="number" name="children" min="0" max="9" value="0">
+                </div>
             </div>
 
             <button type="submit" class="primary-btn">Search Flights</button>
