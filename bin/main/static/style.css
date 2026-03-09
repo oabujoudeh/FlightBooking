@@ -160,6 +160,12 @@ input, select{
   border: 1px solid var(--border);
   font-size: 15px;
   background: #fff;
+  color: var(--text);
+}
+input[type="date"],
+input[type="number"],
+input[type="text"]{
+  color: var(--text);
 }
 
 input:focus, select:focus{
