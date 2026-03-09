@@ -1,0 +1,61 @@
+{% extends "base.peb" %}
+
+{% block content %}
+
+<nav class="navbar">
+    <div class="logo">EAJO Air</div>
+    <a href="/" class="auth-btn">Back to Search</a>
+</nav>
+
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Available Flights</h1>
+        <p class="slogan">Choose the flight that suits your journey</p>
+    </div>
+</section>
+
+<main class="layout">
+    <section class="card booking-card">
+        <h2 class="card-title">Flight Results</h2>
+        <p class="card-subtitle">
+            {{ departure }} to {{ destination }}
+        </p>
+
+        {% if flights and flights.size > 0 %}
+            {% for flight in flights %}
+                <div class="flight-result-card">
+                    <div class="flight-times">
+                        <div>
+                            <h3>{{ flight.departureTime }}</h3>
+                            <p>{{ flight.departureAirport }}</p>
+                        </div>
+
+                        <div class="flight-middle">
+                            <p>{{ flight.duration }}</p>
+                            <p>✈</p>
+                            <p>{{ flight.stopType }}</p>
+                        </div>
+
+                        <div>
+                            <h3>{{ flight.arrivalTime }}</h3>
+                            <p>{{ flight.destinationAirport }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flight-price-row">
+                        <strong>£{{ flight.price }}</strong>
+                        <a href="/" class="primary-btn select-btn">Select</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No flights found for this route.</p>
+        {% endif %}
+
+        <div style="margin-top: 20px;">
+            <a href="/" class="auth-btn">Back</a>
+        </div>
+    </section>
+</main>
+
+{% endblock %}

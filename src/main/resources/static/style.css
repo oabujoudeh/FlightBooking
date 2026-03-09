@@ -269,3 +269,28 @@ input:focus, select:focus{
   .navbar{ padding: 16px 18px; }
   .hero h1{ font-size: 40px; }
 }
+
+.flight-result-card{
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  margin-top:18px;
+}
+
+.flight-times{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.flight-middle{
+  text-align:center;
+  color:var(--muted);
+}
+
+.flight-price-row{
+  margin-top:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}

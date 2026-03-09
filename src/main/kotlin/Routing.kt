@@ -81,7 +81,7 @@ fun Application.configureRouting() {
             templateData["adults"] = adults
             templateData["children"] = children
 
-            call.respondTemplate("booking.peb", templateData)
+            call.respondTemplate("flights.peb", templateData)
         }
         
         get("/api/search-airports") {
