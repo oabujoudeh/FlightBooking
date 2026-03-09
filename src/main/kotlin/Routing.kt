@@ -52,36 +52,42 @@ fun Application.configureRouting() {
                 call.respondRedirect("/login")
             }
         }
+
         post("/api/search-flights") {
             val params = call.receiveParameters()
             val departure = params["departure"]
             val destination = params["destination"]
             val departureDate = params["departureDate"]
-            val adults = params["adults"]?.toIntOrNull() ?: 1
-            val children = params["children"]?.toIntOrNull() ?: 0
-
-            val templateData = getSessionData(call).toMutableMap()
 
             if (departure == null || destination == null || departureDate == null) {
-                templateData["results"] = emptyList<Any>()
-                call.respondTemplate("booking.peb", templateData)
+                call.respondRedirect("/")
                 return@post
             }
 
-            val flights = FlightDAO.searchFlights(departure, destination, LocalDate.parse(departureDate))
+            val flights = FlightDAO.searchFlights(
+                departure,
+                destination,
+                LocalDate.parse(departureDate)
+            )
 
-            templateData["results"] = flights
-
-            // data re-appears after refresh
-            templateData["departure"] = departure
-            templateData["departureLabel"] = AirportDAO.getLabel(departure)
-            templateData["destination"] = destination
-            templateData["destinationLabel"] = AirportDAO.getLabel(destination)
-            templateData["departureDate"] = departureDate
-            templateData["adults"] = adults
-            templateData["children"] = children
-
-            call.respondTemplate("flights.peb", templateData)
+            call.respondTemplate("flights.peb", mapOf(
+                "departure" to departure,
+                "destination" to destination,
+                "flights" to flights.map { f ->
+                    mapOf(
+                        "departureTime" to f.departureTime.toString(),
+                        "arrivalTime" to f.arrivalTime.toString(),
+                        "departureAirport" to f.departureAirportName,
+                        "destinationAirport" to f.arrivalAirportName,
+                        "departureTerminal" to f.departureTerminal,
+                        "arrivalTerminal" to f.arrivalTerminal,
+                        "duration" to "${f.durationMinutes} mins",
+                        "stopType" to "Direct",
+                        "price" to f.price,
+                        "flightId" to f.flightId
+                    )
+                }
+            ))
         }
         
         get("/api/search-airports") {
