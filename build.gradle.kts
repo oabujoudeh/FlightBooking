@@ -25,6 +25,8 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("org.xerial:sqlite-jdbc:3.45.1.0")
     implementation("io.ktor:ktor-server-core")
+    implementation("org.mindrot:jbcrypt:0.4")
+
     
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
