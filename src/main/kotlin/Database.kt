@@ -4,7 +4,6 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.*
 
-
 object Database {
     private const val URL = "jdbc:sqlite:database/flights.db"
 
