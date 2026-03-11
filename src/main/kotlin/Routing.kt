@@ -20,6 +20,34 @@ fun Application.configureRouting() {
             resources("static")
         }
 
+        get("/register"){
+            val params = call.receiveParameters()
+
+            val firstName = params["firstName"]?: ""
+            val middleName = params["middleName"] ?:""
+            val lastName = params["lastName"] ?:""
+            val email = params["email"]?:""
+            val password = params["password"] ?:""
+
+            val tempUser = User(firstName, lastName, email, "")
+
+            val isSuccess = UserDAO.signUp(
+                tempUser,
+                firstName,
+                middleName,
+                lastName,
+                email,
+                password
+            )
+
+            if(isSuccess){
+                call.respondRedirect("/login")
+            }
+            else{
+                call.respondTemplate("register.peb", mapOf("error" to "Registration failer"))
+            }
+        }
+
         get("/") {
             val session = call.sessions.get<UserSession>()
             // use non‑nullable version of the map
