@@ -61,6 +61,49 @@
             <a href="/" class="auth-btn">Back</a>
         </div>
     </section>
+
+    <section class="card booking-card">
+        <h2 class="card-title">Return Flight Results</h2>
+        <p class="card-subtitle">{{ destination }} to {{ departure }}</p>
+
+        {% if returnFlights is not empty and tripType != "oneway" %}
+            {% for flight in returnFlights %}
+                <div class="flight-result-card">
+                    <div class="flight-row">
+                        <div class="flight-endpoint">
+                            <span class="flight-time">{{ flight.departureTime }}</span>
+                            <span class="flight-airport">{{ flight.departureAirport }}</span>
+                            <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
+                        </div>
+
+                        <div class="flight-line">
+                            <span class="flight-meta">{{ flight.duration }} · {{ flight.stopType }}</span>
+                            <div class="flight-track">
+                                <div class="flight-dot"></div>
+                                <div class="flight-dash"></div>
+                                <span class="flight-icon">✈</span>
+                                <div class="flight-dash"></div>
+                                <div class="flight-dot"></div>
+                            </div>
+                        </div>
+
+                        <div class="flight-endpoint right">
+                            <span class="flight-time">{{ flight.arrivalTime }}</span>
+                            <span class="flight-airport">{{ flight.destinationAirport }}</span>
+                            <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
+                        </div>
+
+                        <div class="flight-price-col">
+                            <span class="flight-price">£{{ flight.price }}</span>
+                            <a href="/book/{{ flight.flightId }}" class="select-btn">Select</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No flights found for this route.</p>
+        {% endif %}
+    </section>
 </main>
 
 {% endblock %}

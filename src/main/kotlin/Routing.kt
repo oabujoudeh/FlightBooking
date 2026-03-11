@@ -89,6 +89,11 @@ fun Application.configureRouting() {
                 return@post
             }
 
+            if (tripType != "oneway") {
+                println("Return date: $returnDate")
+                println("Return location: $departure")
+            }
+
             val flights = FlightDAO.searchFlights(
                 departure,
                 destination,
@@ -110,13 +115,34 @@ fun Application.configureRouting() {
                 )
             }
 
+            var returnFlightsList = emptyList<Map<String, Any>>()
+
+            if (tripType != "oneway") {
+                val returnFlights = FlightDAO.searchFlights(destination, departure, LocalDate.parse(returnDate))
+                returnFlightsList = returnFlights.map { f ->
+                    mapOf(
+                        "departureTime" to f.departureTime.toString(),
+                        "arrivalTime" to f.arrivalTime.toString(),
+                        "departureAirport" to f.departureAirportName,
+                        "destinationAirport" to f.arrivalAirportName,
+                        "departureTerminal" to f.departureTerminal,
+                        "arrivalTerminal" to f.arrivalTerminal,
+                        "duration" to "${f.durationMinutes} mins",
+                        "stopType" to "Direct",
+                        "price" to f.price,
+                        "flightId" to f.flightId
+                    )
+                }
+            }
+
             val templateData = mapOf<String, Any>(
                 "departure" to departure!!,
                 "destination" to destination!!,
                 "departureDate" to departureDate!!,
-                "returnDate" to (returnDate ?:""),
+                "returnDate" to (returnDate ?: ""),
                 "tripType" to tripType,
-                "flights" to flightsList
+                "flights" to flightsList,
+                "returnFlights" to returnFlightsList
             )
 
             call.respondTemplate("flights.peb", templateData)
