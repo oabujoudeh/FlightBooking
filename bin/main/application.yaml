@@ -1,7 +1,7 @@
 ktor:
     application:
         modules:
-            - com.example.com.ApplicationKt.module
+            - com.flightbooking.ApplicationKt.module
     development: true
     deployment:
         port: 8080
