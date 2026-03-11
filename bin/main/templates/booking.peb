@@ -14,13 +14,14 @@
     <section class="card booking-card">
         <h2 class="card-title">Book a Flight</h2>
         <p class="card-subtitle">Choose your route and dates to see available flights.</p>
+
         {% if message is not empty %}
-            <article>
-                <p><strong>{{ message }}</strong></p>
-            </article>
+        <article>
+            <p><strong>{{ message }}</strong></p>
+        </article>
         {% endif %}
 
-        <form action="/search-flights" method="post">
+        <form action="/api/search-flights" method="post">
 
             <div class="segmented">
                 <input type="radio" id="oneway" name="tripType" value="oneway" checked>
@@ -31,40 +32,30 @@
             </div>
 
             <div class="form-grid">
-                <div class="field">
+
+                <div class="field" style="position:relative">
                     <label>Departure</label>
-                    <select name="departure" required>
-                        {% if airports %}
-                            {% for airport in airports %}
-                                <option value="{{ airport.code }}">{{ airport.name }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <option disabled selected>Airports loading...</option>
-                        {% endif %}
-                    </select>
+                    <input type="text" id="departureInput" placeholder="e.g. London or LHR" autocomplete="off" required value="{{ departureLabel }}">
+                    <input type="hidden" name="departure" id="departureValue" value="{{ departure }}">
+                    <ul id="departureSuggestions" class="suggestions"></ul>
                 </div>
 
-                <div class="field">
+                <div class="field" style="position:relative">
                     <label>Destination</label>
-                    <select name="destination" required>
-                        {% if airports %}
-                            {% for airport in airports %}
-                                <option value="{{ airport.code }}">{{ airport.name }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <option disabled selected>Airports loading...</option>
-                        {% endif %}
-                    </select>
+                    <input type="text" id="destinationInput" placeholder="e.g. New York or JFK" autocomplete="off" required value="{{ destinationLabel }}">
+                    <input type="hidden" name="destination" id="destinationValue" value="{{ destination }}">
+                    <ul id="destinationSuggestions" class="suggestions"></ul>
                 </div>
 
                 <div class="field">
                     <label>Departure Date</label>
-                    <input type="date" name="departureDate" required>
+                    <input type="date" id="departureDate" name="departureDate" required value="{{ departureDate }}">
                 </div>
 
-                <div class="field">
+                <!-- RETURN DATE -->
+                <div class="field" id="returnDateField" style="display:none;">
                     <label>Return Date</label>
-                    <input type="date" name="returnDate">
+                    <input type="date" name="returnDate" id="returnDate">
                 </div>
 
                 <div class="field">
@@ -76,9 +67,11 @@
                     <label>Children</label>
                     <input type="number" name="children" min="0" max="9" value="0">
                 </div>
+
             </div>
 
             <button type="submit" class="primary-btn">Search Flights</button>
+
         </form>
     </section>
 
@@ -96,6 +89,7 @@
                     <div class="update-meta">Shown once connected to the system.</div>
                 </div>
             </li>
+
             <li class="update">
                 <div class="badge">NOTICE</div>
                 <div>
@@ -103,6 +97,7 @@
                     <div class="update-meta">Delays, cancellations, and changes.</div>
                 </div>
             </li>
+
             <li class="update">
                 <div class="badge">TIP</div>
                 <div>
@@ -113,40 +108,72 @@
         </ul>
     </aside>
 
-    
-    {% if results is not empty %}
-        <h3>{{ results | length }} flight(s) found</h3>
-
-        {% for flight in results %}
-            <article>
-                <div class="grid">
-                    <div>
-                        <strong>{{ flight.departureTime }}</strong><br>
-                        <span>{{ flight.origin }}</span>
-                    </div>
-                    <div style="text-align:center">
-                        <small>{{ flight.duration }}</small><br>
-                        &#9992; &#xFE0E;
-                        <hr>
-                        <small>{{ flight.stops }}</small>
-                    </div>
-                    <div style="text-align:right">
-                        <strong>{{ flight.arrivalTime }}</strong><br>
-                        <span>{{ flight.destination }}</span>
-                    </div>
-                    <div style="text-align:right">
-                        <strong>£{{ flight.price }}</strong><br>
-                        <small>{{ flight.airline }}</small><br>
-                        <a href="/book/{{ flight.id }}" role="button">Select</a>
-                    </div>
-                </div>
-            </article>
-        {% endfor %}
-
-    {% else %}
-    <p>No flights found for your search.</p>
-    {% endif %}
-
 </div>
+
+<script>
+
+function setupAutocomplete(inputId, suggestionsId, hiddenId) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(suggestionsId);
+    const hidden = document.getElementById(hiddenId);
+
+    input.addEventListener("input", async () => {
+        const q = input.value.trim();
+        hidden.value = "";
+
+        if (q.length < 2) {
+            list.innerHTML = "";
+            return;
+        }
+
+        const res = await fetch(`/api/search-airports?q=${encodeURIComponent(q)}`);
+        const airports = await res.json();
+
+        list.innerHTML = airports.map(a =>
+            `<li data-value="${a.value}" data-label="${a.label}">${a.label}</li>`
+        ).join("");
+
+        list.querySelectorAll("li").forEach(li => {
+            li.addEventListener("click", () => {
+                input.value = li.dataset.label;
+                hidden.value = li.dataset.value;
+                list.innerHTML = "";
+            });
+        });
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!input.contains(e.target)) list.innerHTML = "";
+    });
+}
+
+setupAutocomplete("departureInput","departureSuggestions","departureValue");
+setupAutocomplete("destinationInput","destinationSuggestions","destinationValue");
+
+const oneWay = document.getElementById("oneway");
+const returnTrip = document.getElementById("return");
+const returnField = document.getElementById("returnDateField");
+
+function toggleReturnDate(){
+    if(returnTrip.checked){
+        returnField.style.display = "block";
+    } else {
+        returnField.style.display = "none";
+    }
+}
+
+oneWay.addEventListener("change", toggleReturnDate);
+returnTrip.addEventListener("change", toggleReturnDate);
+
+toggleReturnDate();
+
+const departureDate = document.getElementById("departureDate");
+const returnDate = document.getElementById("returnDate");
+
+departureDate.addEventListener("change", () => {
+    returnDate.min = departureDate.value;
+});
+
+</script>
 
 {% endblock %}
