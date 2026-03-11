@@ -34,6 +34,7 @@ object FlightDAO {
               AND (arr.city = ? OR arr.airport_id = ?)
               AND f.flight_date = ?
               AND f.status != 'Cancelled'
+            ORDER BY r.planned_departure ASC;
         """
 
         Database.getConnection().use { conn ->
