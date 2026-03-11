@@ -21,6 +21,10 @@ fun Application.configureRouting() {
         }
 
         get("/register"){
+            call.respondTemplate("register.peb", mapOf("error" to ""))
+        }
+
+        post("/register"){
             val params = call.receiveParameters()
 
             val firstName = params["firstName"]?: ""
@@ -29,7 +33,7 @@ fun Application.configureRouting() {
             val email = params["email"]?:""
             val password = params["password"] ?:""
 
-            val tempUser = User(firstName, lastName, email, "")
+            val tempUser = User(firstName = firstName, lastName = lastName, email = email, middleName = middleName, passwordHash =  "")
 
             val isSuccess = UserDAO.signUp(
                 tempUser,

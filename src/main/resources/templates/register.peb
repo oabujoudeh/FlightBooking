@@ -5,17 +5,17 @@
 {% block content %}
 {% if error is not empty %}
     <p style="color: red;">{{error}}</p>
-{% endif %>
+{% endif %}
 
 <form method = "post" action = "/register">
     <div class = "form-group">
         <label for = "firstName"> First Name </label>
-        <input type="text" id = "firstname" name "firstName" required>
+        <input type="text" id = "firstname" name = "firstName" required>
     </div>
 
     <div class = "form-group">
         <label for= "middleName">Middle Name</label>
-        <input type = "text" id = "middleName" name = middleName">
+        <input type = "text" id = "middleName" name = "middleName">
     </div>
 
     <div class="form-group">
@@ -36,5 +36,3 @@
     <button type="submit">Creat Account</button>
 </form>
 {% endblock %}
-
-
