@@ -275,5 +275,11 @@ fun Application.configureRouting() {
 
             call.respondTemplate("confirmBooking.peb", templateData)
         }
+
+        get("/my-bookings") {
+            call.respondTemplate("my-bookings.peb", mapOf("loggedIn" to true))
+    
+        }
+
     }
 }
