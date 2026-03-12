@@ -58,41 +58,26 @@ object UserDAO{
     fun loginUser(inputEmail: String, inputPassword: String):Boolean{
         val sql = "SELECT * FROM users WHERE email = ?"
 
-        try{
-            val stmt = Database.getConnection().prepareStatement(sql)
-            stmt.setString(1, inputEmail)
-            val result = stmt.executeQuery()
-
-            if(result.next()){
-                // if email is found, extract the hashedPassword from database
-                val hashedPasswordFromDb = result.getString("password_hash")
-                return SecurityDAO.verifyPassword(inputPassword, hashedPasswordFromDb)
+        return try{
+            Database.getConnection().use{ conn ->
+                conn.prepareStatement(sql).use{ stmt ->
+                    stmt.setString(1, inputEmail)
+                    stmt.executeQuery().use{ result->
+                        if(result.next()){
+                            val hashedPasswordFromDb = result.getString("password_hash")
+                            SecurityDAO.verifyPassword(inputPassword, hashedPasswordFromDb)
+                        }else{
+                            println("Email not found")
+                            false
+                        }
+                    }
+                }
             }
-            else{
-                println("Email not found")
-                return false
-            }
-        }
-        catch(e:Exception){
+        }catch(e:Exception){
             println("Login Error: ${e.message}")
-            return false
+            e.printStackTrace()
+            false
         }
-    }
-
-    fun resetPassword(inputEmail: String):Boolean{
-        if(!emailExists(inputEmail)){
-            println("Error: Email not found")
-            return false
-        }
-
-        // email found, generate OTC and send email
-        // val generatedCode = OtcService.generateAndSave(inputEmail)
-        // EmailService.sendEmail(
-            // to = inputEmail,
-            // subject = "Your One-Time Code for Password Reset",
-            // body = "Your one-time code is: $generatedCode. It will expire in 5 minutes."
-        //)
-        return true
     }
 
     fun confirmResetPassword(inputEmail: String, inputOTC: String, newPassword: String):Boolean{

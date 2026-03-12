@@ -38,6 +38,9 @@ dependencies {
     //Hashing
     implementation("com.password4j:password4j:1.8.4")
 
+    //email
+    implementation("com.sun.mail:jakarta.mail:2.0.1")
+
     //Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test")

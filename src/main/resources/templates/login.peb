@@ -12,6 +12,8 @@
 {% endif %}
 
 <form method="post" action="/login">
+    <input type = "hidden" name = "redirect_url" value = "{{redirect_url}}">
+
     <label for="username">Username:</label>
     <input type="text" id="username" name="username" required autofocus>
 

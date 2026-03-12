@@ -63,29 +63,39 @@ fun Application.configureRouting() {
         }
 
         get("/login") {
-            call.respondTemplate("login.peb", mapOf("error" to ""))
+            // get Referer, if empty then go to home page
+            val referer = call.request.headers["Referer"] ?:"/"
+
+            call.respondTemplate("login.peb", mapOf("error" to "", "redirect_url" to referer))
         }
 
         post("/login") {
             val params = call.receiveParameters()
-            val username = params["username"]
-            val password = params["password"]
+            val email = params["username"]?:""
+            val password = params["password"]?:""
 
-            // TODO: replace with real authentication
-            if (password == password && username == username) {
+            // if not get redirect_url, goto /profile
+            val redirectUrl = params["redirect_url"]?:"/profile"
+
+            // check 
+            val isSuccess = UserDAO.loginUser(email, password)
+
+            if (isSuccess) {
                 call.sessions.set(
                     UserSession(
-                        username = username.orEmpty(),
+                        username = email,
                         loggedIn = true
                     )
                 )
-                call.respondRedirect("/profile")
+                // should decide whether redirect to profile or booking page
+                call.respondRedirect(redirectUrl)
             } else {
                 call.respondTemplate(
                     "login.peb",
                     mapOf(
                         "loggedIn" to false,
-                        "error" to "A credential was incorrect"
+                        "error" to "Invalid email or password",
+                        "redirect_url" to redirectUrl
                     )
                 )
             }
