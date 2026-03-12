@@ -1,0 +1,11 @@
+<h1> Forgot Password</h1>
+<p>Enter your email to receive a 6-digit verification code.</p>
+
+<form action="/forgot-password" method = "POST">
+    <input type = "email" name = "email" placeholder = "Your Email" required>
+    <button type="submit">Send Code</button>
+</form>
+
+{%if error %}
+    <p style="color:red;">{{error}}</p>
+{%endif%}
