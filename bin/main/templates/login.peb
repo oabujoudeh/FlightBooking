@@ -1,24 +1,68 @@
 {% extends "base.peb" %}
 
-{% block title %}Login - JOEAir{% endblock %}
+{% block title %}Login - EAJO Air{% endblock %}
 
 {% block content %}
-<h2>Login</h2>
 
-{% if error is not empty %}
-<article>
-    <p><strong>{{ error }}</strong></p>
-</article>
-{% endif %}
+<div class="login-background">
 
-<form method="post" action="/login">
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" required autofocus>
+    <div class="auth-card">
 
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required>
+        <h2 class="auth-title">Login</h2>
 
-    <button type="submit">Login</button>
-</form>
-<a href="/register">Register</a>
+        {% if error is not empty %}
+        <div class="error-box">
+            <strong>{{ error }}</strong>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/login">
+
+            <input type="hidden" name="redirect_url" value="{{redirect_url}}">
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text"
+                    id="username"
+                    name="username"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="primary-btn">
+                Login
+            </button>
+
+        </form>
+
+        <div class="auth-links">
+
+            <p>
+                Forgot your password?
+                <a href="/reset">Click here to reset</a>
+            </p>
+
+            <p>
+                Don't have an account?
+                <a href="/register">Register now</a>
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
 {% endblock %}

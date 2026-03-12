@@ -10,7 +10,7 @@ object Otc{
 
     fun generateAndSave(email:String):String{
         // generate a random code of 6 digits
-        val code = String.format("%06d", Random().nextInt(10000000))
+        val code = String.format("%06d", Random().nextInt(1000000))
         // valide for 5 mins
         val expiryTime = LocalDateTime.now().plusMinutes(5)
         // save to storage

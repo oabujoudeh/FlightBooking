@@ -15,9 +15,12 @@
 </section>
 
 <main class="flights-layout">
+<form method="post" action="/book-flights">
+    <input type="hidden" name="adults" value="{{ adults }}">
+    <input type="hidden" name="children" value="{{ children }}">
     <section class="card booking-card">
         <h2 class="card-title">Flight Results</h2>
-        <p class="card-subtitle">{{ departure }} to {{ destination }}</p>
+        <p class="card-subtitle">{{ departure }} to {{ destination }} · {{ departureDate }}</p>
 
         {% if flights is not empty %}
             {% for flight in flights %}
@@ -42,13 +45,109 @@
 
                         <div class="flight-endpoint right">
                             <span class="flight-time">{{ flight.arrivalTime }}</span>
-                            <span class="flight-airport">{{ flight.destinationAirport }}</span>
+                            <span class="flight-airport">{{ flight.arrivalAirport }}</span>
                             <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
                         </div>
 
                         <div class="flight-price-col">
                             <span class="flight-price">£{{ flight.price }}</span>
-                            <a href="/book/{{ flight.flightId }}" class="select-btn">Select</a>
+                            <label class="select-btn">
+                                <input type="radio" name="outboundFlight" value="{{ flight.flightId }}" required style="display:none;">
+                                Select
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No direct flights found for this route.</p>
+        {% endif %}
+
+        {% if connectingFlights is not empty %}
+            {% for cf in connectingFlights %}
+                <div class="flight-result-card">
+                    <div class="flight-row">
+                        <div class="flight-endpoint">
+                            <span class="flight-time">{{ cf.leg1DepartureTime }}</span>
+                            <span class="flight-airport">{{ cf.leg1DepartureAirport }}</span>
+                        </div>
+
+                        <div class="flight-line">
+                            <span class="flight-meta">{{ cf.totalDuration }} · 1 Stop</span>
+                            <div class="flight-track">
+                                <div class="flight-dot"></div>
+                                <div class="flight-dash"></div>
+                                <span class="flight-icon">✈</span>
+                                <div class="flight-dash"></div>
+                                <div class="flight-stop-dot"></div>
+                                <div class="flight-dash"></div>
+                                <span class="flight-icon">✈</span>
+                                <div class="flight-dash"></div>
+                                <div class="flight-dot"></div>
+                            </div>
+                            <span class="layover-info">{{ cf.layoverMinutes }}min layover at {{ cf.leg1ArrivalAirport }}</span>
+                        </div>
+
+                        <div class="flight-endpoint right">
+                            <span class="flight-time">{{ cf.leg2ArrivalTime }}</span>
+                            <span class="flight-airport">{{ cf.leg2ArrivalAirport }}</span>
+                        </div>
+
+                        <div class="flight-price-col">
+                            <span class="flight-price">£{{ cf.price }}</span>
+                            <label class="select-btn">
+                                <input type="radio" name="outboundFlight" value="{{ cf.leg1FlightId }}_{{ cf.leg2FlightId }}" required style="display:none;">
+                                Select
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div style="margin-top: 20px;">
+            <a href="/" class="auth-btn">Back</a>
+        </div>
+    </section>
+
+    {% if tripType != "oneway" %}
+    <section class="card booking-card">
+        <h2 class="card-title">Return Flight Results</h2>
+        <p class="card-subtitle">{{ destination }} to {{ departure }} · {{ returnDate }}</p>
+
+        {% if returnFlights is not empty %}
+            {% for flight in returnFlights %}
+                <div class="flight-result-card">
+                    <div class="flight-row">
+                        <div class="flight-endpoint">
+                            <span class="flight-time">{{ flight.departureTime }}</span>
+                            <span class="flight-airport">{{ flight.departureAirport }}</span>
+                            <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
+                        </div>
+
+                        <div class="flight-line">
+                            <span class="flight-meta">{{ flight.duration }} · {{ flight.stopType }}</span>
+                            <div class="flight-track">
+                                <div class="flight-dot"></div>
+                                <div class="flight-dash"></div>
+                                <span class="flight-icon">✈</span>
+                                <div class="flight-dash"></div>
+                                <div class="flight-dot"></div>
+                            </div>
+                        </div>
+
+                        <div class="flight-endpoint right">
+                            <span class="flight-time">{{ flight.arrivalTime }}</span>
+                            <span class="flight-airport">{{ flight.arrivalAirport }}</span>
+                            <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
+                        </div>
+
+                        <div class="flight-price-col">
+                            <span class="flight-price">£{{ flight.price }}</span>
+                            <label class="select-btn">
+                                <input type="radio" name="returnFlight" value="{{ flight.flightId }}" required style="display:none;">
+                                Select
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -56,11 +155,14 @@
         {% else %}
             <p>No flights found for this route.</p>
         {% endif %}
-
-        <div style="margin-top: 20px;">
-            <a href="/" class="auth-btn">Back</a>
-        </div>
     </section>
+    {% endif %}
+
+    <div style="margin-top: 20px; text-align: center;">
+        <button type="submit" class="select-btn">Continue</button>
+    </div>
+
+</form>
 </main>
 
 {% endblock %}

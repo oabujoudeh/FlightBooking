@@ -18,3 +18,11 @@ data class Flight(
     val durationMinutes: Int,
     val price: Double,
 )
+
+data class ConnectingFlight(
+    val leg1: Flight,
+    val leg2: Flight,
+    val totalDurationMinutes: Int,
+    val layoverMinutes: Int,
+    val totalPrice: Double
+)

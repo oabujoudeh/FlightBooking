@@ -1,6 +1,6 @@
 {% extends "base.peb" %}
 
-{% block title %}Profile - JOEAir{% endblock %}
+{% block title %}Profile - EAJO Air{% endblock %}
 
 {% block content %}
 <h2>Your Profile</h2>
