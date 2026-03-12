@@ -31,12 +31,12 @@ object UserDAO{
         }
     }
 
-    fun signUp(user: User, inputFirstName: String, inputMiddleName: String, inputLastName: String, inputEmail: String, inputPassword: String): Boolean {
+    fun register(user: User, inputFirstName: String, inputMiddleName: String, inputLastName: String, inputEmail: String, inputPassword: String): Boolean {
         if (!SecurityDAO.isPasswordValid(inputPassword)) return false
         if (emailExists(inputEmail)) return false
 
-        val hashedPassword, salt = SecurityDAO.hashPassword(inputPassword)
-        val sql = "INSERT INTO users(first_name, middle_name, last_name, email, password_hash, salt) VALUES(?,?,?,?,?,?)"
+        val hashedPassword = SecurityDAO.hashPassword(inputPassword)
+        val sql = "INSERT INTO users(first_name, middle_name, last_name, email, password_hash) VALUES(?,?,?,?,?)"
 
         return try {
             Database.getConnection().use { conn ->
@@ -46,10 +46,7 @@ object UserDAO{
                     stmt.setString(3, inputLastName)
                     stmt.setString(4, inputEmail)
                     stmt.setString(5, hashedPassword)
-                    stmt.setString(6, salt)
-
-                    val rowsAffected = stmt.executeUpdate()
-                    rowsAffected > 0
+                    stmt.executeUpdate() > 0
                 }
             }
         } catch (e: Exception) {
@@ -69,15 +66,7 @@ object UserDAO{
             if(result.next()){
                 // if email is found, extract the hashedPassword from database
                 val hashedPasswordFromDb = result.getString("password_hash")
-                val hashedPasswordFromUser = SecurityDAO.hashPassword(inputPassword)
-                val isPasswordCorrect = SecurityDAO.verifyPassword(hashedPasswordFromDb, hashedPasswordFromUser)
-
-                if (isPasswordCorrect){
-                    return true
-                }
-                else{
-                    return false
-                }
+                return SecurityDAO.verifyPassword(inputPassword, hashedPasswordFromDb)
             }
             else{
                 println("Email not found")

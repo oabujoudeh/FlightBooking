@@ -4,10 +4,9 @@ import java.sql.PreparedStatement
 import java.sql.SQLException
 
 object SecurityDAO{
-    fun hashPassword(plainTextPassword: String):String{
-        val salt = org.mindrot.jbcrypt.BCrypt.gensalt()
-        val hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw(plainTextPassword, salt)
-        return hashedPassword, salt
+    fun hashPassword(plainTextPassword: String): String {
+        val salt = BCrypt.gensalt()
+        return BCrypt.hashpw(plainTextPassword, salt)
     }
 
     fun isPasswordValid(plainTextPassword: String):Boolean{
@@ -19,7 +18,7 @@ object SecurityDAO{
         return hasUppercase && hasLowercase && hasDigit
     }
 
-    fun verifyPassword(plainTextPassword: String, hashedPasswordFromDb: String):Boolean{
+    fun verifyPassword(plainTextPassword: String, hashedPasswordFromDb: String): Boolean {
         return BCrypt.checkpw(plainTextPassword, hashedPasswordFromDb)
     }
 }

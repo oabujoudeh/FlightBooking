@@ -1,6 +1,6 @@
 {% extends "base.peb" %}
 
-{% block title %}Register - JOEAir{% endblock %}
+{% block title %}Register - EAJO Air{% endblock %}
 
 {% block content %}
 {% if error is not empty %}
@@ -10,7 +10,7 @@
 <form method = "post" action = "/register">
     <div class = "form-group">
         <label for = "firstName"> First Name </label>
-        <input type="text" id = "firstname" name = "firstName" required>
+        <input type="text" id = "firstName" name = "firstName" required>
     </div>
 
     <div class = "form-group">
@@ -33,6 +33,6 @@
         <input type="password" id="password" name="password" required>
     </div>
 
-    <button type="submit">Creat Account</button>
+    <button type="submit">Create Account</button>
 </form>
 {% endblock %}
