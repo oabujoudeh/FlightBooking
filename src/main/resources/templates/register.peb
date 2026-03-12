@@ -3,13 +3,27 @@
 {% block title %}Register - EAJO Air{% endblock %}
 
 {% block content %}
+
+<style>
+    .required-star{
+        color: red;
+        margin-left: 3px;
+    }
+    .password-hint {
+        font-size:0.85em;
+        color: #666;
+        display: block;
+        margin-top: 5px;
+    }
+</style>
+
 {% if error is not empty %}
     <p style="color: red;">{{error}}</p>
 {% endif %}
 
 <form method = "post" action = "/register">
     <div class = "form-group">
-        <label for = "firstName"> First Name </label>
+        <label for = "firstName"> First Name <soan class = "required-star">*</span></label>
         <input type="text" id = "firstName" name = "firstName" required>
     </div>
 
@@ -19,19 +33,22 @@
     </div>
 
     <div class="form-group">
-        <label for="lastName">Last Name</label>
+        <label for="lastName">Last Name<span class = "required-star">*</span></label>
         <input type="text" id="lastName" name="lastName" required>
     </div>
 
     <div class="form-group">
-        <label for="email">Email Address</label>
+        <label for="email">Email Address<span class = "required-star">*</span></label>
         <input type="email" id="email" name="email" required>
     </div>
 
     <div class="form-group">
-        <label for="password">Password</label>
+        <label for="password">Password<span class = "required-star">*</span></label>
         <input type="password" id="password" name="password" required>
-    </div>
+        <small class = "password-hint">
+            Must contain at least one uppercase letter, one lowercase letter, one number, and be over 8 characters long.
+        </small>
+        </div>
 
     <button type="submit">Create Account</button>
 </form>

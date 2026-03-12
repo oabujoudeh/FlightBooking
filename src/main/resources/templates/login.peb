@@ -20,5 +20,11 @@
 
     <button type="submit">Login</button>
 </form>
-<a href="/register">Register</a>
+<p style = "margin-top:15px;">
+    Forgot your password? <a href = "/reset">Click here to reset</a>
+</p>
+<p style = "margin-top:15px;">
+    Don't have an account? <a href="/register">Register now</a>
+</p>
+
 {% endblock %}
