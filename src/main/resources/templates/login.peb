@@ -51,7 +51,7 @@
 
             <p>
                 Forgot your password?
-                <a href="/reset">Click here to reset</a>
+                <a href="/forgot-password">Click here to reset</a>
             </p>
 
             <p>
