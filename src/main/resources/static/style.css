@@ -263,6 +263,10 @@ input:focus, select:focus{
   color: var(--navy);
 }
 
+.suggestions:empty {
+    display: none;
+}
+
 /* Responsive */
 @media (max-width: 1000px){
   .layout{ grid-template-columns: 1fr; }
@@ -389,4 +393,92 @@ input:focus, select:focus{
 
 .select-btn:hover{
   background: var(--gold2);
+}
+
+.segmented-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.pax-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.pax-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pax-field label {
+    font-size: 0.85rem;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.pax-field input {
+    width: 60px;
+    text-align: center;
+    padding: 0.4rem;
+}
+
+.route-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.route-field {
+    flex: 1;
+}
+
+.route-input {
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 0.9rem 0.2rem;
+    border: none;
+    border-bottom: 2px solid #d1d5db;
+    border-radius: 0;
+    width: 100%;
+    background: transparent;
+}
+
+.route-input:focus {
+    outline: none;
+    border-bottom-color: #c9a84c;
+}
+
+/* Switch button */
+.route-arrow button {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #c9a84c;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    padding: 0.3rem;
+}
+
+.route-arrow button:hover {
+    color: #a07c2e;
+    transform: rotate(180deg);
+}
+
+.layover-info {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.flight-stop-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #c9a84c;
+    display: inline-block;
+    flex-shrink: 0;
 }

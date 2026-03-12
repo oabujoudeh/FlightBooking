@@ -1,0 +1,10 @@
+[33m267c540[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/joe-return-flights[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mjoe-return-flights[m[33m)[m Merge branch 'main' into joe-return-flights
+[33mb85a07a[m Fix password hashing
+[33md6d1ffb[m update DAO
+[33m21a0d94[m resolve merge conflict
+[33me5ae93e[m[33m ([m[1;31morigin/connection-login[m[33m)[m connect sigh up page and APIs, all works
+[33md25769b[m sign up page success
+[33m27e81c5[m a
+[33m23d6836[m Added flights for the Winter 25/26 season and updated the search results to appear in ascending order by departure time
+[33m7ca789c[m Added flights for the Winter25/26 season and updated the search results to appear in ascending order by departure time
+[33mde101d5[m Merge pull request #75 from oabujoudeh/flight-records
