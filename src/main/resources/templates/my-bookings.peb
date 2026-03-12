@@ -1,0 +1,16 @@
+{% extends "base.peb" %}
+
+{% block title %}My Bookings - EAJO Air{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-inner">
+        <h1>My Bookings</h1>
+        <p class="slogan">Your upcoming flights</p>
+    </div>
+</section>
+
+<main class="layout">
+    <p>No bookings yet.</p>
+</main>
+{% endblock %}Initialize my booking page
