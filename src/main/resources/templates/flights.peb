@@ -16,6 +16,8 @@
 
 <main class="flights-layout">
 <form method="post" action="/book-flights">
+    <input type="hidden" name="adults" value="{{ adults }}">
+    <input type="hidden" name="children" value="{{ children }}">
     <section class="card booking-card">
         <h2 class="card-title">Flight Results</h2>
         <p class="card-subtitle">{{ departure }} to {{ destination }} · {{ departureDate }}</p>

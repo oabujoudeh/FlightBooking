@@ -115,6 +115,8 @@ fun Application.configureRouting() {
             val departureDate = params["departureDate"]
             val returnDate = params["returnDate"]
             val tripType = params["tripType"] ?: "oneway"
+            val adults = params["adults"] ?: "1"
+            val children = params["children"] ?: "0"
 
             if (departure == null || destination == null || departureDate == null) {
                 call.respondRedirect("/")
@@ -168,6 +170,8 @@ fun Application.configureRouting() {
                 "departureDate" to departureDate!!,
                 "returnDate" to (returnDate ?: ""),
                 "tripType" to tripType,
+                "adults" to adults,
+                "children" to children,
                 "flights" to flightsList,
                 "returnFlights" to returnFlightsList,
                 "connectingFlights" to connectingFlightsList
@@ -194,6 +198,8 @@ fun Application.configureRouting() {
             val params = call.receiveParameters()
             val outboundFlightId = params["outboundFlight"]?.toIntOrNull()
             val returnFlightId = params["returnFlight"]?.toIntOrNull()
+            val adults = params["adults"]?.toIntOrNull() ?: 1
+            val children = params["children"]?.toIntOrNull() ?: 0
 
             if (outboundFlightId == null) {
                 call.respondRedirect("/")
@@ -213,7 +219,9 @@ fun Application.configureRouting() {
             }
 
             val templateData = mutableMapOf<String, Any>(
-                "outboundFlight" to Utils.flightToMap(outboundFlight)
+                "outboundFlight" to Utils.flightToMap(outboundFlight),
+                "adults" to adults,
+                "children" to children
             )
 
             if (returnFlight != null) {

@@ -14,15 +14,29 @@
     <p>{{ returnFlight.departureTime }} – {{ returnFlight.arrivalTime }} · {{ returnFlight.duration }} · £{{ returnFlight.price }}</p>
 {% endif %}
 
+<p>Adults: {{ adults }}</p>
+<p>Children: {{ children }}</p>
 <p>Seats Available: 42</p>
 <p>Booking ID: #EAJO-000000</p>
 
 <form method="post" action="/confirm-booking">
-    <p><input type="text" name="firstName" placeholder="First Name" required></p>
-    <p><input type="text" name="lastName" placeholder="Last Name" required></p>
-    <p><input type="text" name="passportNumber" placeholder="Passport Number" required></p>
-    <p><input type="tel" name="phone" placeholder="Phone Number" required></p>
-    <p><input type="email" name="email" placeholder="Email" required></p>
+
+    {% for i in range(0, adults - 1) %}
+        <p><strong>Adult {{ i + 1 }}</strong></p>
+        <p><input type="text" name="adult_{{ i }}_firstName" placeholder="First Name" required></p>
+        <p><input type="text" name="adult_{{ i }}_lastName" placeholder="Last Name" required></p>
+        <p><input type="text" name="adult_{{ i }}_passport" placeholder="Passport Number" required></p>
+        <p><input type="tel" name="adult_{{ i }}_phone" placeholder="Phone Number" required></p>
+        <p><input type="email" name="adult_{{ i }}_email" placeholder="Email" required></p>
+    {% endfor %}
+
+    {% for i in range(0, children - 1) %}
+        <p><strong>Child {{ i + 1 }}</strong></p>
+        <p><input type="text" name="child_{{ i }}_firstName" placeholder="First Name" required></p>
+        <p><input type="text" name="child_{{ i }}_lastName" placeholder="Last Name" required></p>
+        <p><input type="text" name="child_{{ i }}_passport" placeholder="Passport Number" required></p>
+    {% endfor %}
+
     <button type="submit">Confirm Booking</button>
 </form>
 
