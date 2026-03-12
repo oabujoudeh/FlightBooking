@@ -1,0 +1,13 @@
+{% extends "base.peb" %}
+
+{% block content %}
+
+{% if outboundFlight %}
+    <p>Outbound Flight ID: {{ outboundFlight }}</p>
+{% endif %}
+
+{% if returnFlight %}
+    <p>Return Flight ID: {{ returnFlight }}</p>
+{% endif %}
+
+{% endblock %}

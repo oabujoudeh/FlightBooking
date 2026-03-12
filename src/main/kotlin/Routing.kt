@@ -121,11 +121,6 @@ fun Application.configureRouting() {
                 return@post
             }
 
-            if (tripType != "oneway") {
-                println("Return date: $returnDate")
-                println("Return location: $departure")
-            }
-
             val flights = FlightDAO.searchFlights(
                 departure,
                 destination,
@@ -181,7 +176,7 @@ fun Application.configureRouting() {
                         "destinationAirport" to f.arrivalAirportName,
                         "departureTerminal" to f.departureTerminal,
                         "arrivalTerminal" to f.arrivalTerminal,
-                        "duration" to "${f.durationMinutes} mins",
+                        "duration" to Utils.formatDuration(f.durationMinutes),
                         "stopType" to "Direct",
                         "price" to f.price,
                         "flightId" to f.flightId
@@ -214,6 +209,23 @@ fun Application.configureRouting() {
 
             val airports = AirportDAO.searchAirport(query)
             call.respond(airports)
+        }
+
+
+        post("/book-flights") {
+            val params = call.receiveParameters()
+            val outboundFlight = params["outboundFlight"]
+            val returnFlight = params["returnFlight"]
+
+            if (outboundFlight == null) {
+                call.respondRedirect("/")
+                return@post
+            }
+
+            call.respondTemplate("confirmBooking.peb", mapOf(
+                "outboundFlight" to outboundFlight,
+                "returnFlight" to (returnFlight ?: "")
+            ))
         }
     }
 }
