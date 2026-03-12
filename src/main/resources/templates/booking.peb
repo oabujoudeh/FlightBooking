@@ -23,51 +23,55 @@
 
         <form action="/api/search-flights" method="post">
 
-            <div class="segmented">
-                <input type="radio" id="oneway" name="tripType" value="oneway" checked>
-                <label for="oneway">One Way</label>
+            <div class="segmented-row">
+                <div class="segmented">
+                    <input type="radio" id="oneway" name="tripType" value="oneway" checked>
+                    <label for="oneway">One Way</label>
 
-                <input type="radio" id="return" name="tripType" value="return">
-                <label for="return">Return</label>
+                    <input type="radio" id="return" name="tripType" value="return">
+                    <label for="return">Return</label>
+                </div>
+
+                <div class="pax-controls">
+                    <div class="pax-field">
+                        <label>Adults</label>
+                        <input type="number" name="adults" min="1" max="9" value="1" required>
+                    </div>
+                    <div class="pax-field">
+                        <label>Children</label>
+                        <input type="number" name="children" min="0" max="9" value="0">
+                    </div>
+                </div>
             </div>
 
-            <div class="form-grid">
-
-                <div class="field" style="position:relative">
-                    <label>Departure</label>
-                    <input type="text" id="departureInput" placeholder="e.g. London or LHR" autocomplete="off" required value="{{ departureLabel }}">
+            <div class="route-row">
+                <div class="route-field" style="position:relative">
+                    <input type="text" id="departureInput" class="route-input" placeholder="From" autocomplete="off" required value="{{ departureLabel }}">
                     <input type="hidden" name="departure" id="departureValue" value="{{ departure }}">
                     <ul id="departureSuggestions" class="suggestions"></ul>
                 </div>
 
-                <div class="field" style="position:relative">
-                    <label>Destination</label>
-                    <input type="text" id="destinationInput" placeholder="e.g. New York or JFK" autocomplete="off" required value="{{ destinationLabel }}">
+                <div class="route-arrow">
+                    <button type="button" id="swapBtn" title="Swap">⇄</button>
+                </div>
+
+                <div class="route-field" style="position:relative">
+                    <input type="text" id="destinationInput" class="route-input" placeholder="To" autocomplete="off" required value="{{ destinationLabel }}">
                     <input type="hidden" name="destination" id="destinationValue" value="{{ destination }}">
                     <ul id="destinationSuggestions" class="suggestions"></ul>
                 </div>
+            </div>
 
+            <div class="form-grid">
                 <div class="field">
                     <label>Departure Date</label>
                     <input type="date" id="departureDate" name="departureDate" required value="{{ departureDate }}">
                 </div>
 
-                <!-- RETURN DATE -->
                 <div class="field" id="returnDateField" style="display:none;">
                     <label>Return Date</label>
                     <input type="date" name="returnDate" id="returnDate">
                 </div>
-
-                <div class="field">
-                    <label>Adults</label>
-                    <input type="number" name="adults" min="1" max="9" value="1" required>
-                </div>
-
-                <div class="field">
-                    <label>Children</label>
-                    <input type="number" name="children" min="0" max="9" value="0">
-                </div>
-
             </div>
 
             <button type="submit" class="primary-btn">Search Flights</button>
@@ -172,6 +176,19 @@ const returnDate = document.getElementById("returnDate");
 
 departureDate.addEventListener("change", () => {
     returnDate.min = departureDate.value;
+});
+
+// switch button
+document.getElementById("swapBtn").addEventListener("click", () => {
+    const depLabel = document.getElementById("departureInput").value;
+    const depValue = document.getElementById("departureValue").value;
+    const destLabel = document.getElementById("destinationInput").value;
+    const destValue = document.getElementById("destinationValue").value;
+
+    document.getElementById("departureInput").value = destLabel;
+    document.getElementById("departureValue").value = destValue;
+    document.getElementById("destinationInput").value = depLabel;
+    document.getElementById("destinationValue").value = depValue;
 });
 
 </script>

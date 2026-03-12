@@ -132,6 +132,11 @@ fun Application.configureRouting() {
                 LocalDate.parse(departureDate)
             )
 
+            // if no direct flights, search for connecting flights
+            val connectingFlights = if (flights.isEmpty()) {
+                FlightDAO.searchConnectingFlights(departure, destination, LocalDate.parse(departureDate))
+            } else emptyList()
+
             val flightsList = flights.map { f ->
                 mapOf(
                     "departureTime" to f.departureTime.toString(),
@@ -140,10 +145,27 @@ fun Application.configureRouting() {
                     "destinationAirport" to f.arrivalAirportName,
                     "departureTerminal" to f.departureTerminal,
                     "arrivalTerminal" to f.arrivalTerminal,
-                    "duration" to "${f.durationMinutes} mins",
+                    "duration" to Utils.formatDuration(f.durationMinutes),
                     "stopType" to "Direct",
                     "price" to f.price,
                     "flightId" to f.flightId
+                )
+            }
+
+            val connectingFlightsList = connectingFlights.map { cf ->
+                mapOf(
+                    "leg1DepartureTime" to cf.leg1.departureTime.toString(),
+                    "leg1ArrivalTime" to cf.leg1.arrivalTime.toString(),
+                    "leg1DepartureAirport" to cf.leg1.departureAirportName,
+                    "leg1ArrivalAirport" to cf.leg1.arrivalAirportName,
+                    "leg2DepartureTime" to cf.leg2.departureTime.toString(),
+                    "leg2ArrivalTime" to cf.leg2.arrivalTime.toString(),
+                    "leg2ArrivalAirport" to cf.leg2.arrivalAirportName,
+                    "layoverMinutes" to cf.layoverMinutes,
+                    "totalDuration" to Utils.formatDuration(cf.totalDurationMinutes),
+                    "price" to cf.totalPrice,
+                    "leg1FlightId" to cf.leg1.flightId,
+                    "leg2FlightId" to cf.leg2.flightId
                 )
             }
 
@@ -174,7 +196,8 @@ fun Application.configureRouting() {
                 "returnDate" to (returnDate ?: ""),
                 "tripType" to tripType,
                 "flights" to flightsList,
-                "returnFlights" to returnFlightsList
+                "returnFlights" to returnFlightsList,
+                "connectingFlights" to connectingFlightsList
             )
 
             call.respondTemplate("flights.peb", templateData)

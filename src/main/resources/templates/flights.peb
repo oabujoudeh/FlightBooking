@@ -17,7 +17,7 @@
 <main class="flights-layout">
     <section class="card booking-card">
         <h2 class="card-title">Flight Results</h2>
-        <p class="card-subtitle">{{ departure }} to {{ destination }}</p>
+        <p class="card-subtitle">{{ departure }} to {{ destination }} · {{ departureDate }}</p>
 
         {% if flights is not empty %}
             {% for flight in flights %}
@@ -54,7 +54,46 @@
                 </div>
             {% endfor %}
         {% else %}
-            <p>No flights found for this route.</p>
+            <p>No direct flights found for this route.</p>
+        {% endif %}
+
+        {% if connectingFlights is not empty %}
+            {% for cf in connectingFlights %}
+                <div class="flight-result-card">
+                    <div class="flight-row">
+                        <div class="flight-endpoint">
+                            <span class="flight-time">{{ cf.leg1DepartureTime }}</span>
+                            <span class="flight-airport">{{ cf.leg1DepartureAirport }}</span>
+                        </div>
+
+                        <div class="flight-line">
+                            <span class="flight-meta">{{ cf.totalDuration }} · 1 Stop</span>
+                            <div class="flight-track">
+                                <div class="flight-dot"></div>
+                                <div class="flight-dash"></div>
+                                <span class="flight-icon">✈</span>
+                                <div class="flight-dash"></div>
+                                <div class="flight-stop-dot"></div>
+                                <div class="flight-dash"></div>
+                                <span class="flight-icon">✈</span>
+                                <div class="flight-dash"></div>
+                                <div class="flight-dot"></div>
+                            </div>
+                            <span class="layover-info">{{ cf.layoverMinutes }}min layover at {{ cf.leg1ArrivalAirport }}</span>
+                        </div>
+
+                        <div class="flight-endpoint right">
+                            <span class="flight-time">{{ cf.leg2ArrivalTime }}</span>
+                            <span class="flight-airport">{{ cf.leg2ArrivalAirport }}</span>
+                        </div>
+
+                        <div class="flight-price-col">
+                            <span class="flight-price">£{{ cf.price }}</span>
+                            <a href="/book/{{ cf.leg1FlightId }}?leg2={{ cf.leg2FlightId }}" class="select-btn">Select</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         {% endif %}
 
         <div style="margin-top: 20px;">
@@ -64,7 +103,7 @@
 
     <section class="card booking-card">
         <h2 class="card-title">Return Flight Results</h2>
-        <p class="card-subtitle">{{ destination }} to {{ departure }}</p>
+        <p class="card-subtitle">{{ destination }} to {{ departure }} · {{ returnDate }}</p>
 
         {% if returnFlights is not empty and tripType != "oneway" %}
             {% for flight in returnFlights %}
