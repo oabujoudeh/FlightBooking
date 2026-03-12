@@ -7,7 +7,7 @@ object SecurityDAO{
     fun hashPassword(plainTextPassword: String):String{
         val salt = org.mindrot.jbcrypt.BCrypt.gensalt()
         val hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw(plainTextPassword, salt)
-        return hashedPassword
+        return hashedPassword, salt
     }
 
     fun isPasswordValid(plainTextPassword: String):Boolean{

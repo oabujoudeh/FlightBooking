@@ -35,8 +35,8 @@ object UserDAO{
         if (!SecurityDAO.isPasswordValid(inputPassword)) return false
         if (emailExists(inputEmail)) return false
 
-        val hashedPassword = SecurityDAO.hashPassword(inputPassword)
-        val sql = "INSERT INTO users(first_name, middle_name, last_name, email, password_hash) VALUES(?,?,?,?,?)"
+        val hashedPassword, salt = SecurityDAO.hashPassword(inputPassword)
+        val sql = "INSERT INTO users(first_name, middle_name, last_name, email, password_hash, salt) VALUES(?,?,?,?,?,?)"
 
         return try {
             Database.getConnection().use { conn ->
@@ -46,6 +46,7 @@ object UserDAO{
                     stmt.setString(3, inputLastName)
                     stmt.setString(4, inputEmail)
                     stmt.setString(5, hashedPassword)
+                    stmt.setString(6, salt)
 
                     val rowsAffected = stmt.executeUpdate()
                     rowsAffected > 0
