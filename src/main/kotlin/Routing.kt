@@ -115,15 +115,12 @@ fun Application.configureRouting() {
             val departureDate = params["departureDate"]
             val returnDate = params["returnDate"]
             val tripType = params["tripType"] ?: "oneway"
+            val adults = params["adults"] ?: "1"
+            val children = params["children"] ?: "0"
 
             if (departure == null || destination == null || departureDate == null) {
                 call.respondRedirect("/")
                 return@post
-            }
-
-            if (tripType != "oneway") {
-                println("Return date: $returnDate")
-                println("Return location: $departure")
             }
 
             val flights = FlightDAO.searchFlights(
@@ -138,18 +135,7 @@ fun Application.configureRouting() {
             } else emptyList()
 
             val flightsList = flights.map { f ->
-                mapOf(
-                    "departureTime" to f.departureTime.toString(),
-                    "arrivalTime" to f.arrivalTime.toString(),
-                    "departureAirport" to f.departureAirportName,
-                    "destinationAirport" to f.arrivalAirportName,
-                    "departureTerminal" to f.departureTerminal,
-                    "arrivalTerminal" to f.arrivalTerminal,
-                    "duration" to Utils.formatDuration(f.durationMinutes),
-                    "stopType" to "Direct",
-                    "price" to f.price,
-                    "flightId" to f.flightId
-                )
+                Utils.flightToMap(f) + mapOf("stopType" to "Direct")
             }
 
             val connectingFlightsList = connectingFlights.map { cf ->
@@ -174,18 +160,7 @@ fun Application.configureRouting() {
             if (tripType != "oneway") {
                 val returnFlights = FlightDAO.searchFlights(destination, departure, LocalDate.parse(returnDate))
                 returnFlightsList = returnFlights.map { f ->
-                    mapOf(
-                        "departureTime" to f.departureTime.toString(),
-                        "arrivalTime" to f.arrivalTime.toString(),
-                        "departureAirport" to f.departureAirportName,
-                        "destinationAirport" to f.arrivalAirportName,
-                        "departureTerminal" to f.departureTerminal,
-                        "arrivalTerminal" to f.arrivalTerminal,
-                        "duration" to "${f.durationMinutes} mins",
-                        "stopType" to "Direct",
-                        "price" to f.price,
-                        "flightId" to f.flightId
-                    )
+                    Utils.flightToMap(f) + mapOf("stopType" to "Direct")
                 }
             }
 
@@ -195,6 +170,8 @@ fun Application.configureRouting() {
                 "departureDate" to departureDate!!,
                 "returnDate" to (returnDate ?: ""),
                 "tripType" to tripType,
+                "adults" to adults,
+                "children" to children,
                 "flights" to flightsList,
                 "returnFlights" to returnFlightsList,
                 "connectingFlights" to connectingFlightsList
@@ -214,6 +191,44 @@ fun Application.configureRouting() {
 
             val airports = AirportDAO.searchAirport(query)
             call.respond(airports)
+        }
+
+
+        post("/book-flights") {
+            val params = call.receiveParameters()
+            val outboundFlightId = params["outboundFlight"]?.toIntOrNull()
+            val returnFlightId = params["returnFlight"]?.toIntOrNull()
+            val adults = params["adults"]?.toIntOrNull() ?: 1
+            val children = params["children"]?.toIntOrNull() ?: 0
+
+            if (outboundFlightId == null) {
+                call.respondRedirect("/")
+                return@post
+            }
+
+            val outboundFlight = FlightDAO.getFlightOverview(outboundFlightId)
+
+            if (outboundFlight == null) {
+                call.respondRedirect("/")
+                return@post
+            }
+
+            var returnFlight: Flight? = null
+            if (returnFlightId != null) {
+                returnFlight = FlightDAO.getFlightOverview(returnFlightId)
+            }
+
+            val templateData = mutableMapOf<String, Any>(
+                "outboundFlight" to Utils.flightToMap(outboundFlight),
+                "adults" to adults,
+                "children" to children
+            )
+
+            if (returnFlight != null) {
+                templateData["returnFlight"] = Utils.flightToMap(returnFlight)
+            }
+
+            call.respondTemplate("confirmBooking.peb", templateData)
         }
     }
 }

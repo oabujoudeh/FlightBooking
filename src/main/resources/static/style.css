@@ -395,6 +395,11 @@ input:focus, select:focus{
   background: var(--gold2);
 }
 
+label.select-btn:has(input:checked) {
+  background: var(--navy);
+  color: var(--gold);
+}
+
 .segmented-row {
     display: flex;
     align-items: center;
