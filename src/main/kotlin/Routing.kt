@@ -75,7 +75,11 @@ fun Application.configureRouting() {
             val password = params["password"]?:""
 
             // if not get redirect_url, goto /profile
-            val redirectUrl = params["redirect_url"]?:"/profile"
+            var redirectUrl = params["redirect_url"]?:"/profile"
+
+            if(redirectUrl.contains("forgot-password") || redirectUrl.contains("reset-password")){
+                redirectUrl = "/profile"
+            }
 
             // check 
             val isSuccess = UserDAO.loginUser(email, password)
@@ -98,6 +102,37 @@ fun Application.configureRouting() {
                         "redirect_url" to redirectUrl
                     )
                 )
+            }
+        }
+
+        get("/forgot-password"){
+            call.respondTemplate("forgotPwd.peb", mapOf<String, Any>())
+        }
+
+        post("/forgot-password"){
+            val params = call.receiveParameters()
+            val email = params["email"] ?:""
+
+            if(UserDAO.resetPassword(email)){
+                call.respondTemplate("reset-password.peb", mapOf("email" to email))
+            }else{
+                call.respondTemplate("forgotPwd.peb", mapOf("error" to "Email not found"))
+            }
+        }
+
+        post("/reset-password"){
+            val params = call.receiveParameters()
+            val email = params["email"]?:""
+            val otc = params["otc"]?:""
+            val newPassword = params["newPassword"]?:""
+
+            if(UserDAO.confirmResetPassword(email, otc, newPassword)){
+                call.respondRedirect("/login")
+            }else{
+                call.respondTemplate("reset-password.peb", mapOf(
+                    "email" to email,
+                    "error" to "Invalid code or password"
+                ))
             }
         }
 

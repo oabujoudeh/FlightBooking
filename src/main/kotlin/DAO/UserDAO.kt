@@ -80,35 +80,91 @@ object UserDAO{
         }
     }
 
+    fun resetPassword(inputEmail: String):Boolean{
+        if(!emailExists(inputEmail)){
+            println("Error: Email not found")
+            return false
+        }
+        return try{
+            // email found, generate OTC and send email
+            val generatedCode = OTC.generateAndSave(inputEmail)
+
+            EmailService.sendEmail(
+                to = inputEmail,
+                subject = "Your One-Time Code for Password Reset",
+                body = "Your one-time code is: $generatedCode. It will expire in 5 minutes."
+            )
+            true
+        }
+        catch(e:Exception){
+            println("Reset Password Error: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+
     fun confirmResetPassword(inputEmail: String, inputOTC: String, newPassword: String):Boolean{
         // check if OTC is valid and expired
-        // if(!OtcService.verify(inputEmail, inputOTC)){
-        //     println("Error: Invalid or expired OTC")
-        //     return false
-        // }
+        if(!OTC.verify(inputEmail, inputOTC)){
+            println("Error: Invalid or expired OTC")
+            return false
+        }
+
         // if OTC is valid, check new password validation
         if(!SecurityDAO.isPasswordValid(newPassword)){
             println("Error: Invalid new password")
             return false 
         }
+
         // if valid, hash the new password and update to database
         val hashedNewPassword = SecurityDAO.hashPassword(newPassword)
         val sql = "UPDATE users SET password_hash = ? WHERE email = ?"
-        try{
-            val stmt = Database.getConnection().prepareStatement(sql)
-            stmt.setString(1, hashedNewPassword)
-            stmt.setString(2, inputEmail)
-            val rowsAffected = stmt.executeUpdate()
-            if(rowsAffected > 0){
-                return true // password reset successful
-            }else{
-                println("Error: Failed to update password")
-                return false
+        return try{
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, hashedNewPassword)
+                    stmt.setString(2, inputEmail)
+                
+                    val rowsAffected = stmt.executeUpdate()
+                
+                    if (rowsAffected > 0) {
+                        true
+                    } else {
+                        println("Error: Failed to update password (user not found)")
+                        false
+                    }
+                }
             }
-        }
-        catch(e: Exception){
+        }catch(e: Exception){
             println("Error: ${e.message}")
-            return false
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun main(){
+        // test reset page only in backend
+        val testEmail = "wangbeiduo_ashely@outlook.com"
+        println("start to reset")
+        val isRequested = UserDAO.resetPassword(testEmail)
+        println("request is $isRequested")
+
+        if(isRequested){
+            println("请获取六位数验证码")
+
+            println("please enter your code:")
+            val codeFromUser = readLine() ?:""
+
+            println("confirmResetPassword")
+            val isConfirmed = UserDAO.confirmResetPassword(testEmail, codeFromUser, "Test123456")
+
+            if(isConfirmed){
+                println("resect password successful")
+            }
+            else{
+                println("failed to reset password")
+            }
         }
     }
 }
