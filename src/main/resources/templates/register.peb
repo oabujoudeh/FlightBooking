@@ -1,0 +1,38 @@
+{% extends "base.peb" %}
+
+{% block title %}Register - EAJO Air{% endblock %}
+
+{% block content %}
+{% if error is not empty %}
+    <p style="color: red;">{{error}}</p>
+{% endif %}
+
+<form method = "post" action = "/register">
+    <div class = "form-group">
+        <label for = "firstName"> First Name </label>
+        <input type="text" id = "firstName" name = "firstName" required>
+    </div>
+
+    <div class = "form-group">
+        <label for= "middleName">Middle Name</label>
+        <input type = "text" id = "middleName" name = "middleName">
+    </div>
+
+    <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input type="text" id="lastName" name="lastName" required>
+    </div>
+
+    <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" required>
+    </div>
+
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+
+    <button type="submit">Create Account</button>
+</form>
+{% endblock %}
