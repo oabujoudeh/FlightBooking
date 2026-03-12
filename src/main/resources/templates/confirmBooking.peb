@@ -2,12 +2,28 @@
 
 {% block content %}
 
-{% if outboundFlight %}
-    <p>Outbound Flight ID: {{ outboundFlight }}</p>
+{% if outboundFlight is not null %}
+    <p>Outbound: {{ outboundFlight.flightNumber }} · {{ outboundFlight.date }}</p>
+    <p>{{ outboundFlight.departureAirport }} (T{{ outboundFlight.departureTerminal }}) → {{ outboundFlight.arrivalAirport }} (T{{ outboundFlight.arrivalTerminal }})</p>
+    <p>{{ outboundFlight.departureTime }} – {{ outboundFlight.arrivalTime }} · {{ outboundFlight.duration }} · £{{ outboundFlight.price }}</p>
 {% endif %}
 
-{% if returnFlight %}
-    <p>Return Flight ID: {{ returnFlight }}</p>
+{% if returnFlight is not null %}
+    <p>Return: {{ returnFlight.flightNumber }} · {{ returnFlight.date }}</p>
+    <p>{{ returnFlight.departureAirport }} (T{{ returnFlight.departureTerminal }}) → {{ returnFlight.arrivalAirport }} (T{{ returnFlight.arrivalTerminal }})</p>
+    <p>{{ returnFlight.departureTime }} – {{ returnFlight.arrivalTime }} · {{ returnFlight.duration }} · £{{ returnFlight.price }}</p>
 {% endif %}
+
+<p>Seats Available: 42</p>
+<p>Booking ID: #EAJO-000000</p>
+
+<form method="post" action="/confirm-booking">
+    <p><input type="text" name="firstName" placeholder="First Name" required></p>
+    <p><input type="text" name="lastName" placeholder="Last Name" required></p>
+    <p><input type="text" name="passportNumber" placeholder="Passport Number" required></p>
+    <p><input type="tel" name="phone" placeholder="Phone Number" required></p>
+    <p><input type="email" name="email" placeholder="Email" required></p>
+    <button type="submit">Confirm Booking</button>
+</form>
 
 {% endblock %}
