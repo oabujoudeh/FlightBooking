@@ -3,14 +3,27 @@ package com.flightbooking
 import java.sql.ResultSet
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 
 object FlightDAO {
 
     private fun mapResultToFlight(result: ResultSet): Flight {
         val durationMinutes = result.getInt("base_duration_minutes")
+
+        val depZone = ZoneId.of(result.getString("departure_timezone") ?: "UTC")
+        val arrZone = ZoneId.of(result.getString("arrival_timezone") ?: "UTC")
+
         val departureTime = LocalTime.parse(result.getString("planned_departure"))
-        val arrivalTime = departureTime.plusMinutes(durationMinutes.toLong())
+        val departureDate = LocalDate.parse(result.getString("flight_date"))
+        // timezone change
+        val departureZdt = ZonedDateTime.of(departureDate, departureTime, depZone)
+        val arrivalZdt = departureZdt.plusMinutes(durationMinutes.toLong()).withZoneSameInstant(arrZone)
+        val arrivalTime = arrivalZdt.toLocalTime()
+
+        val arrivalDate = arrivalZdt.toLocalDate()
+        val arrivalDayOffset = (arrivalDate.toEpochDay() - departureDate.toEpochDay()).toInt()
 
         return Flight(
             flightId             = result.getInt("flight_id"),
@@ -25,6 +38,7 @@ object FlightDAO {
             departureDate        = LocalDate.parse(result.getString("flight_date")),
             departureTime        = departureTime,
             arrivalTime          = arrivalTime,
+            arrivalDayOffset     = arrivalDayOffset,
             durationMinutes      = durationMinutes,
             price                = result.getDouble("price")
         )
@@ -43,7 +57,9 @@ object FlightDAO {
                 r.departure_terminal, r.arrival_terminal,
                 r.planned_departure, r.base_duration_minutes,
                 dep.city as departure_city, arr.city as arrival_city,
-                dep.name as departure_airport_name, arr.name as arrival_airport_name
+                dep.name as departure_airport_name, arr.name as arrival_airport_name,
+                dep.timezone as departure_timezone,
+                arr.timezone as arrival_timezone
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
             JOIN airports dep ON r.departure_airport = dep.airport_id
@@ -86,6 +102,8 @@ object FlightDAO {
                 r.planned_departure, r.base_duration_minutes,
                 dep.city as departure_city, arr.city as arrival_city,
                 dep.name as departure_airport_name, arr.name as arrival_airport_name,
+                dep.timezone as departure_timezone,
+                arr.timezone as arrival_timezone,
                 arr.airport_id as arrival_airport_id
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
@@ -104,6 +122,8 @@ object FlightDAO {
                 r.planned_departure, r.base_duration_minutes,
                 dep.city as departure_city, arr.city as arrival_city,
                 dep.name as departure_airport_name, arr.name as arrival_airport_name,
+                dep.timezone as departure_timezone,
+                arr.timezone as arrival_timezone,
                 dep.airport_id as departure_airport_id
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
@@ -168,7 +188,9 @@ object FlightDAO {
                 r.departure_terminal, r.arrival_terminal,
                 r.planned_departure, r.base_duration_minutes,
                 dep.city as departure_city, arr.city as arrival_city,
-                dep.name as departure_airport_name, arr.name as arrival_airport_name
+                dep.name as departure_airport_name, arr.name as arrival_airport_name,
+                dep.timezone as departure_timezone,
+                arr.timezone as arrival_timezone
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
             JOIN airports dep ON r.departure_airport = dep.airport_id

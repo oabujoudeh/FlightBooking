@@ -44,7 +44,7 @@
                         </div>
 
                         <div class="flight-endpoint right">
-                            <span class="flight-time">{{ flight.arrivalTime }}</span>
+                            <span class="flight-time">{{ flight.arrivalTime }}{% if flight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ flight.arrivalDayOffset }}</sup>{% endif %}</span>
                             <span class="flight-airport">{{ flight.arrivalAirport }}</span>
                             <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
                         </div>
@@ -62,6 +62,7 @@
         {% else %}
             <p>No direct flights found for this route.</p>
         {% endif %}
+
 
         {% if connectingFlights is not empty %}
             {% for cf in connectingFlights %}
@@ -89,7 +90,7 @@
                         </div>
 
                         <div class="flight-endpoint right">
-                            <span class="flight-time">{{ cf.leg2ArrivalTime }}</span>
+                            <span class="flight-time">{{ cf.leg2ArrivalTime }}{% if cf.leg2ArrivalDayOffset > 0 %}<sup class="day-offset">+{{ cf.leg2ArrivalDayOffset }}</sup>{% endif %}</span>
                             <span class="flight-airport">{{ cf.leg2ArrivalAirport }}</span>
                         </div>
 
@@ -109,6 +110,7 @@
             <a href="/" class="auth-btn">Back</a>
         </div>
     </section>
+
 
     {% if tripType != "oneway" %}
     <section class="card booking-card">
@@ -137,7 +139,7 @@
                         </div>
 
                         <div class="flight-endpoint right">
-                            <span class="flight-time">{{ flight.arrivalTime }}</span>
+                            <span class="flight-time">{{ flight.arrivalTime }}{% if flight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ flight.arrivalDayOffset }}</sup>{% endif %}</span>
                             <span class="flight-airport">{{ flight.arrivalAirport }}</span>
                             <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
                         </div>

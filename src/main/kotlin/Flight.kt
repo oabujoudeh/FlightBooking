@@ -16,6 +16,7 @@ data class Flight(
     val departureDate: LocalDate,
     val departureTime: LocalTime,
     val arrivalTime: LocalTime,
+    val arrivalDayOffset: Int = 0,  // 0 = same day, 1 = next day, 2 = next next day
     val durationMinutes: Int,
     val price: Double,
 )

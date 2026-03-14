@@ -183,22 +183,7 @@ fun Application.configureRouting() {
                 Utils.flightToMap(f) + mapOf("stopType" to "Direct")
             }
 
-            val connectingFlightsList = connectingFlights.map { cf ->
-                mapOf(
-                    "leg1DepartureTime" to cf.leg1.departureTime.toString(),
-                    "leg1ArrivalTime" to cf.leg1.arrivalTime.toString(),
-                    "leg1DepartureAirport" to cf.leg1.departureAirportName,
-                    "leg1ArrivalAirport" to cf.leg1.arrivalAirportName,
-                    "leg2DepartureTime" to cf.leg2.departureTime.toString(),
-                    "leg2ArrivalTime" to cf.leg2.arrivalTime.toString(),
-                    "leg2ArrivalAirport" to cf.leg2.arrivalAirportName,
-                    "layoverMinutes" to cf.layoverMinutes,
-                    "totalDuration" to Utils.formatDuration(cf.totalDurationMinutes),
-                    "price" to cf.totalPrice,
-                    "leg1FlightId" to cf.leg1.flightId,
-                    "leg2FlightId" to cf.leg2.flightId
-                )
-            }
+            val connectingFlightsList = connectingFlights.map { Utils.connectingFlightToMap(it) }
 
             var returnFlightsList = emptyList<Map<String, Any>>()
 

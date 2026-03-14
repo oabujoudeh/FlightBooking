@@ -323,6 +323,13 @@ input:focus, select:focus{
   color: var(--muted);
 }
 
+.day-offset {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--muted);
+    margin-left: 2px;
+}
+
 /* Middle line */
 .flight-line{
   flex: 1;
@@ -614,7 +621,7 @@ label.select-btn:has(input:checked) {
     box-shadow: var(--shadow);
 }
 
-/* 当前选座提示 */
+/* current seat choice highlight */
 .seatmap-prompt {
     font-size: 13px;
     color: var(--muted);
@@ -625,7 +632,7 @@ label.select-btn:has(input:checked) {
     border-left: 3px solid var(--gold);
 }
 
-/* 乘客 fieldset */
+/* passenger fieldset */
 .passenger-fieldset {
     margin-bottom: 12px;
     border: 1.5px solid var(--border);
@@ -664,7 +671,7 @@ label.select-btn:has(input:checked) {
     margin: 6px 0;
 }
 
-/* Select Seat 按钮 */
+/* Select Seat button */
 .select-seat-btn {
     background: var(--navy);
     color: white;
@@ -697,7 +704,7 @@ label.select-btn:has(input:checked) {
     font-weight: 600;
 }
 
-/* Confirm 按钮 */
+/* Confirm button */
 button[type=submit] {
     width: 100%;
     background: var(--gold);
