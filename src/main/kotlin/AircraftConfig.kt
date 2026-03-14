@@ -30,7 +30,7 @@ object AircraftConfigs {
             exitRows = setOf(12, 13),
             bassinetRows = setOf(1),
             cabins = listOf(
-                CabinConfig("business", 1..4,   layout = listOf(listOf("A","B","C"), listOf("D","E","F"))), // 3-3
+                CabinConfig("business", 1..4,   layout = listOf(listOf("A","C"), listOf("D","F"))), // 2-2
                 CabinConfig("economy",  5..30,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),

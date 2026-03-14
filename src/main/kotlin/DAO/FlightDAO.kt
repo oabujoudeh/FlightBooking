@@ -18,6 +18,7 @@ object FlightDAO {
                 f.flight_date,
                 f.price,
                 r.flight_number,
+                r.aircraft_type,
                 r.departure_terminal,
                 r.arrival_terminal,
                 r.planned_departure,
@@ -57,6 +58,7 @@ object FlightDAO {
                 flights.add(Flight(
                     flightId = result.getInt("flight_id"),
                     flightNumber = result.getString("flight_number"),
+                    aircraftType = result.getString("aircraft_type") ?: "",
                     departureCity = result.getString("departure_city"),
                     arrivalCity = result.getString("arrival_city"),
                     departureAirportName = result.getString("departure_airport_name") ?: "",
@@ -85,7 +87,7 @@ object FlightDAO {
         // find flights with departure place
         val outboundSql = """
             SELECT 
-                f.flight_id, f.flight_date, f.price, r.flight_number,
+                f.flight_id, f.flight_date, f.price, r.flight_number, r.aircraft_type,
                 r.departure_terminal, r.arrival_terminal, r.planned_departure,
                 r.base_duration_minutes,
                 dep.city as departure_city, arr.city as arrival_city,
@@ -103,7 +105,7 @@ object FlightDAO {
         // find flights to arriving place
         val inboundSql = """
             SELECT 
-                f.flight_id, f.flight_date, f.price, r.flight_number,
+                f.flight_id, f.flight_date, f.price, r.flight_number, r.aircraft_type,
                 r.departure_terminal, r.arrival_terminal, r.planned_departure,
                 r.base_duration_minutes,
                 dep.city as departure_city, arr.city as arrival_city,
@@ -134,6 +136,7 @@ object FlightDAO {
                     val flight = Flight(
                         flightId = result.getInt("flight_id"),
                         flightNumber = result.getString("flight_number"),
+                        aircraftType = result.getString("aircraft_type") ?: "",
                         departureCity = result.getString("departure_city"),
                         arrivalCity = result.getString("arrival_city"),
                         departureAirportName = result.getString("departure_airport_name") ?: "",
@@ -164,6 +167,7 @@ object FlightDAO {
                     val flight = Flight(
                         flightId = result.getInt("flight_id"),
                         flightNumber = result.getString("flight_number"),
+                        aircraftType = result.getString("aircraft_type") ?: "",
                         departureCity = result.getString("departure_city"),
                         arrivalCity = result.getString("arrival_city"),
                         departureAirportName = result.getString("departure_airport_name") ?: "",
@@ -211,6 +215,7 @@ object FlightDAO {
                 f.flight_date,
                 f.price,
                 r.flight_number,
+                r.aircraft_type,
                 r.departure_terminal,
                 r.arrival_terminal,
                 r.planned_departure,
@@ -239,6 +244,7 @@ object FlightDAO {
                 Flight(
                     flightId = result.getInt("flight_id"),
                     flightNumber = result.getString("flight_number"),
+                    aircraftType = result.getString("aircraft_type") ?: "",
                     departureCity = result.getString("departure_city"),
                     arrivalCity = result.getString("arrival_city"),
                     departureAirportName = result.getString("departure_airport_name") ?: "",

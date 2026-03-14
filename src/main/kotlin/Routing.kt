@@ -263,8 +263,47 @@ fun Application.configureRouting() {
                 returnFlight = FlightDAO.getFlightOverview(returnFlightId)
             }
 
+            // seat selection!!
+            val config = AircraftConfigs.getConfig(outboundFlight.aircraftType)
+            val seats = SeatDAO.getOrGenerateSeats(outboundFlightId, outboundFlight.aircraftType)
+            val seatMap = seats.associateBy { it.seatNumber }
+
+            val deckData = config.decks.map { deck ->
+                val prefix = if (config.decks.size > 1)
+                    mapOf("Main Deck" to "M", "Upper Deck" to "U")[deck.deckName] ?: "" else ""
+
+                mapOf(
+                    "deckName" to deck.deckName,
+                    "cabins" to deck.cabins.map { cabin ->
+                        mapOf(
+                            "seatClass" to cabin.seatClass,
+                            "rows" to cabin.rows.map { row ->
+                                mapOf(
+                                    "rowNumber" to row,
+                                    "isExit" to (row in deck.exitRows),
+                                    "isBassinet" to (row in deck.bassinetRows),
+                                    "groups" to cabin.layout.map { group ->
+                                        group.map { col ->
+                                            val seatNumber = "$prefix$row$col"
+                                            val seat = seatMap[seatNumber]
+                                            mapOf(
+                                                "seatNumber" to seatNumber,
+                                                "col" to col,
+                                                "isOccupied" to (seat?.isOccupied ?: false),
+                                                "seatClass" to cabin.seatClass
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+
             val templateData = mutableMapOf<String, Any>(
                 "outboundFlight" to Utils.flightToMap(outboundFlight),
+                "deckData" to deckData,
                 "adults" to adults,
                 "children" to children
             )
@@ -279,42 +318,6 @@ fun Application.configureRouting() {
         get("/my-bookings") {
             call.respondTemplate("my-bookings.peb", mapOf("loggedIn" to true))
     
-        }
-
-        get("/book/{flightId}/seats") {
-            val flightId = call.parameters["flightId"]?.toIntOrNull()
-            if (flightId == null) { call.respondRedirect("/"); return@get }
-
-            val flight = FlightDAO.getFlightById(flightId)
-            if (flight == null) { call.respondRedirect("/"); return@get }
-
-            val seats = SeatDAO.getOrGenerateSeats(flightId, flight.aircraftType)
-            val config = AircraftConfigs.getConfig(flight.aircraftType)
-
-            val seatData = seats.map { s ->
-                val row = s.seatNumber.filter { it.isDigit() }.toInt()
-                mapOf(
-                    "seatNumber" to s.seatNumber,
-                    "class" to s.seatClass,
-                    "isOccupied" to s.isOccupied,
-                    "isExit" to config.decks.any { deck -> row in deck.exitRows },
-                    "isBassinet" to config.decks.any { deck -> row in deck.bassinetRows }
-                )
-            }
-
-            call.respondTemplate("seats.peb", mapOf(
-                "flight" to mapOf(
-                    "flightId" to flight.flightId,
-                    "flightNumber" to flight.flightNumber,
-                    "departureAirport" to flight.departureAirportName,
-                    "arrivalAirport" to flight.arrivalAirportName,
-                    "departureTime" to flight.departureTime.toString(),
-                    "arrivalTime" to flight.arrivalTime.toString(),
-                    "aircraftType" to flight.aircraftType
-                ),
-                "seats" to seatData,
-                "loggedIn" to true
-            ))
         }
 
     }

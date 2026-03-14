@@ -6,6 +6,7 @@ import java.time.LocalTime
 data class Flight(
     val flightId: Int,
     val flightNumber: String,
+    val aircraftType: String,
     val departureCity: String,
     val arrivalCity: String,
     val departureAirportName: String,
