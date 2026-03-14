@@ -151,7 +151,7 @@ fun Application.configureRouting() {
             }
         }
 
-        post("/api/search-flights") {
+        post("/search-flights") {
 
             val params = call.receiveParameters()
 
@@ -225,7 +225,7 @@ fun Application.configureRouting() {
             call.respondTemplate("flights.peb", templateData)
         }
 
-        get("/api/search-airports") {
+        get("/search-airports") {
 
             val query = call.request.queryParameters["q"] ?: ""
 
@@ -279,6 +279,42 @@ fun Application.configureRouting() {
         get("/my-bookings") {
             call.respondTemplate("my-bookings.peb", mapOf("loggedIn" to true))
     
+        }
+
+        get("/book/{flightId}/seats") {
+            val flightId = call.parameters["flightId"]?.toIntOrNull()
+            if (flightId == null) { call.respondRedirect("/"); return@get }
+
+            val flight = FlightDAO.getFlightById(flightId)
+            if (flight == null) { call.respondRedirect("/"); return@get }
+
+            val seats = SeatDAO.getOrGenerateSeats(flightId, flight.aircraftType)
+            val config = AircraftConfigs.getConfig(flight.aircraftType)
+
+            val seatData = seats.map { s ->
+                val row = s.seatNumber.filter { it.isDigit() }.toInt()
+                mapOf(
+                    "seatNumber" to s.seatNumber,
+                    "class" to s.seatClass,
+                    "isOccupied" to s.isOccupied,
+                    "isExit" to config.decks.any { deck -> row in deck.exitRows },
+                    "isBassinet" to config.decks.any { deck -> row in deck.bassinetRows }
+                )
+            }
+
+            call.respondTemplate("seats.peb", mapOf(
+                "flight" to mapOf(
+                    "flightId" to flight.flightId,
+                    "flightNumber" to flight.flightNumber,
+                    "departureAirport" to flight.departureAirportName,
+                    "arrivalAirport" to flight.arrivalAirportName,
+                    "departureTime" to flight.departureTime.toString(),
+                    "arrivalTime" to flight.arrivalTime.toString(),
+                    "aircraftType" to flight.aircraftType
+                ),
+                "seats" to seatData,
+                "loggedIn" to true
+            ))
         }
 
     }
