@@ -21,7 +21,7 @@
         </article>
         {% endif %}
 
-        <form action="/api/search-flights" method="post">
+        <form action="/search-flights" method="post">
 
             <div class="segmented-row">
                 <div class="segmented">
@@ -130,7 +130,7 @@ function setupAutocomplete(inputId, suggestionsId, hiddenId) {
             return;
         }
 
-        const res = await fetch(`/api/search-airports?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/search-airports?q=${encodeURIComponent(q)}`);
         const airports = await res.json();
 
         list.innerHTML = airports.map(a =>

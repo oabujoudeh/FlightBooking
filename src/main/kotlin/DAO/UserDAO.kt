@@ -7,6 +7,7 @@ import java.time.Duration
 import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
 
+
 object UserDAO{
     // private val connection get() = Database.connection
     fun emailExists(email: String): Boolean {
