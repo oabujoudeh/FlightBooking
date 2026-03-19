@@ -145,7 +145,13 @@ fun Application.configureRouting() {
             val session = call.sessions.get<UserSession>()
 
             if (session != null && session.loggedIn) {
-                call.respondTemplate("profile.peb", call.nonNullSessionData())
+                val username = session.username
+                
+                val userID = UserDAO.getUserID(username)
+
+                val bookings = UserDAO.getBookings(userID)
+
+                call.respondTemplate("profile.peb", call.nonNullSessionData() + mapOf("bookings" to bookings))
             } else {
                 call.respondRedirect("/login")
             }
@@ -298,11 +304,6 @@ fun Application.configureRouting() {
             }
 
             call.respondTemplate("confirmBooking.peb", templateData)
-        }
-
-        get("/my-bookings") {
-            call.respondTemplate("my-bookings.peb", mapOf("loggedIn" to true))
-    
         }
 
     }

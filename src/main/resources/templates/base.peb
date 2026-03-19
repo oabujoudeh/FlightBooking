@@ -12,7 +12,6 @@
 <nav class="navbar">
     <a href="/" class="logo">✈ EAJO Air</a>
     {% if loggedIn %}
-        <a href="/my-bookings" class="auth-btn">My Bookings</a>
         <a href="/profile" class="auth-btn">Profile</a>
     {% else %}
         <a href="/login" class="auth-btn">Login</a>

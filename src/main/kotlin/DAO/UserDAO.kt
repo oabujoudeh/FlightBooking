@@ -2,8 +2,12 @@ package com.flightbooking
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.Duration
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
 
@@ -141,6 +145,116 @@ object UserDAO{
             println("Error: ${e.message}")
             e.printStackTrace()
             false
+        }
+    }
+
+    fun getUserID(username: String): Int {
+        val sql = "SELECT user_id FROM users WHERE email = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, username)
+                    stmt.executeQuery().use { result ->
+                        if (result.next()) result.getInt("user_id") else -1
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error getting user ID: ${e.message}")
+            -1
+        }
+    }
+
+    // pulls the flight info out of a single row and converts it into a map
+    // we need to do some timezone fixes ton get correct arrival time i think 
+    private fun getFlightInfoFromRow(result: java.sql.ResultSet): Map<String, Any> {
+        val durationMinutes = result.getInt("base_duration_minutes")
+
+        val departureDate = LocalDate.parse(result.getString("flight_date"))
+        val departureTime = LocalTime.parse(result.getString("planned_departure"))
+
+        val departureTimezone = ZoneId.of(result.getString("departure_timezone") ?: "UTC")
+        val arrivalTimezone = ZoneId.of(result.getString("arrival_timezone") ?: "UTC")
+
+        // work out the arrival time by adding the duration and converting to the arrival timezone
+        val departureDateTime = ZonedDateTime.of(departureDate, departureTime, departureTimezone)
+        val arrivalDateTime = departureDateTime.plusMinutes(durationMinutes.toLong())
+        val arrivalTime = arrivalDateTime.withZoneSameInstant(arrivalTimezone).toLocalTime()
+
+        val flightInfo = mutableMapOf<String, Any>()
+        flightInfo["flightNumber"] = result.getString("flight_number")
+        flightInfo["departureCity"] = result.getString("departure_city")
+        flightInfo["arrivalCity"] = result.getString("arrival_city")
+        flightInfo["departureAirport"] = result.getString("departure_airport_name")
+        flightInfo["arrivalAirport"] = result.getString("arrival_airport_name")
+        flightInfo["departureTerminal"] = result.getString("departure_terminal") ?: ""
+        flightInfo["arrivalTerminal"] = result.getString("arrival_terminal") ?: ""
+        flightInfo["departureDate"] = departureDate.toString()
+        flightInfo["departureTime"] = departureTime.toString()
+        flightInfo["arrivalTime"] = arrivalTime.toString()
+        flightInfo["duration"] = Utils.formatDuration(durationMinutes)
+        return flightInfo
+    }
+
+    fun getBookings(userID: Int): List<Map<String, Any>> {
+        // get all bookings for the user, joining to get the flight and route info
+        // a booking can have multiple flights so we group by booking_id at the end
+        val sql = """
+            SELECT
+                b.booking_id, b.booking_date, b.total_price, b.status,
+                f.flight_date,
+                r.flight_number, r.departure_terminal, r.arrival_terminal,
+                r.planned_departure, r.base_duration_minutes,
+                dep.city as departure_city, arr.city as arrival_city,
+                dep.name as departure_airport_name, arr.name as arrival_airport_name,
+                dep.timezone as departure_timezone, arr.timezone as arrival_timezone,
+                bf.flight_sequence
+            FROM bookings b
+            JOIN booking_flights bf ON b.booking_id = bf.booking_id
+            JOIN flights f ON bf.flight_id = f.flight_id
+            JOIN routes r ON f.route_id = r.route_id
+            JOIN airports dep ON r.departure_airport = dep.airport_id
+            JOIN airports arr ON r.arrival_airport = arr.airport_id
+            WHERE b.user_id = ?
+            ORDER BY b.booking_id, bf.flight_sequence
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userID)
+                    stmt.executeQuery().use { result ->
+                        // use a map so we can group flights under the same booking
+                        val bookings = mutableListOf<MutableMap<String, Any>>()
+                        val seenBookingIds = mutableMapOf<Int, MutableMap<String, Any>>()
+
+                        while (result.next()) {
+                            val bookingId = result.getInt("booking_id")
+
+                            // if we haven't seen this booking before, create a new entry for it
+                            if (!seenBookingIds.containsKey(bookingId)) {
+                                val newBooking = mutableMapOf<String, Any>()
+                                newBooking["bookingId"] = bookingId
+                                newBooking["bookingDate"] = result.getString("booking_date") ?: ""
+                                newBooking["totalPrice"] = result.getDouble("total_price")
+                                newBooking["status"] = result.getString("status")
+                                newBooking["flights"] = mutableListOf<Map<String, Any>>()
+                                bookings.add(newBooking)
+                                seenBookingIds[bookingId] = newBooking
+                            }
+
+                            // add this flight to the booking's flight list
+                            val booking = seenBookingIds[bookingId]!!
+                            @Suppress("UNCHECKED_CAST")
+                            val flightList = booking["flights"] as MutableList<Map<String, Any>>
+                            flightList.add(getFlightInfoFromRow(result))
+                        }
+                        bookings
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error getting bookings: ${e.message}")
+            emptyList()
         }
     }
 

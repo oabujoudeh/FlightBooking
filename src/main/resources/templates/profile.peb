@@ -3,16 +3,37 @@
 {% block title %}Profile - EAJO Air{% endblock %}
 
 {% block content %}
-<h2>Your Profile</h2>
 
 {% if loggedIn %}
 
-    <article>
-        <p><strong>Username:</strong> {{ username }}</p>
-    </article>
+<h2>Your Profile</h2>
 
-    <a href="/" role="button" class="secondary">Remove account</a>
-    <a href="/logout" role="button" class="outline">Logout</a>
+<article>
+    <p><strong>Username:</strong> {{ username }}</p>
+</article>
+
+<h3>Your Bookings</h3>
+
+{% if bookings is empty %}
+    <p>You have no bookings yet.</p>
+{% else %}
+    {% for booking in bookings %}
+    <article>
+        <p><strong>Booking #{{ booking.bookingId }}</strong></p>
+        <p>Date: {{ booking.bookingDate }}</p>
+        <p>Status: {{ booking.status }}</p>
+        <p>Total Price: £{{ booking.totalPrice }}</p>
+
+        {% for flight in booking.flights %}
+        <p>{{ flight.flightNumber }}: {{ flight.departureCity }} → {{ flight.arrivalCity }}</p>
+        <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }} | {{ flight.duration }}</p>
+        {% endfor %}
+    </article>
+    {% endfor %}
+{% endif %}
+
+<a href="/" role="button" class="secondary">Remove account</a>
+<a href="/logout" role="button" class="outline">Logout</a>
 
 {% endif %}
 
