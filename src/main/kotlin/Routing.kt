@@ -77,7 +77,7 @@ fun Application.configureRouting() {
             // if not get redirect_url, goto /profile
             var redirectUrl = params["redirect_url"]?:"/profile"
 
-            if(redirectUrl.contains("forgot-password") || redirectUrl.contains("reset-password")){
+            if(redirectUrl.contains("forgot-password") || redirectUrl.contains("reset-password") || redirectUrl.contains("register")){
                 redirectUrl = "/profile"
             }
 
