@@ -2,11 +2,6 @@
 
 {% block content %}
 
-<nav class="navbar">
-    <div class="logo">EAJO Air</div>
-    <a href="/" class="auth-btn">Back to Search</a>
-</nav>
-
 <section class="hero">
     <div class="hero-inner">
         <h1>Available Flights</h1>

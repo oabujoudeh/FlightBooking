@@ -68,14 +68,20 @@
     {% endif %}
 
     <div class="pax-summary">
-        <span>👤 {{ adults }} Adult{% if adults > 1 %}s{% endif %}</span>
+        <span>{{ adults }} Adult{% if adults > 1 %}s{% endif %}</span>
         {% if children > 0 %}
-        <span>🧒 {{ children }} Child{% if children > 1 %}ren{% endif %}</span>
+        <span>{{ children }} Child{% if children > 1 %}ren{% endif %}</span>
         {% endif %}
     </div>
 </div>
 
 <form method="post" action="/confirm-booking">
+<input type="hidden" name="outboundFlightId" value="{{ outboundFlight.flightId }}">
+{% if returnFlight is not null %}
+<input type="hidden" name="returnFlightId" value="{{ returnFlight.flightId }}">
+{% endif %}
+<input type="hidden" name="adults" value="{{ adults }}">
+<input type="hidden" name="children" value="{{ children }}">
 <div class="booking-layout">
 
     {# ── left column: passengers ── #}

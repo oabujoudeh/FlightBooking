@@ -28,6 +28,8 @@
         <p>{{ flight.flightNumber }}: {{ flight.departureCity }} → {{ flight.arrivalCity }}</p>
         <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }} | {{ flight.duration }}</p>
         {% endfor %}
+
+        <a href="/edit-booking?id={{ booking.bookingId }}" role="button" class="outline">Edit Booking</a>
     </article>
     {% endfor %}
 {% endif %}

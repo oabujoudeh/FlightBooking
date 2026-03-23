@@ -157,6 +157,83 @@ fun Application.configureRouting() {
             }
         }
 
+        post("/cancel-booking"){
+            val session = call.sessions.get<UserSession>()
+            if(session == null || !session.loggedIn){
+                call.respondRedirect("/login")
+                return@post
+            }
+
+            val params = call.receiveParameters()
+            val bookingId = params["bookingId"]?.toIntOrNull()
+
+            if(bookingId == null){
+                call.respondRedirect("/profile")
+                return@post
+            }
+
+            val userID = UserDAO.getUserID(session.username)
+            UserDAO.cancelBooking(bookingId, userID)
+
+            call.respondRedirect("/profile")
+        }
+
+        post("/update-booking"){
+            val session = call.sessions.get<UserSession>()
+            if(session == null || !session.loggedIn){
+                call.respondRedirect("/login")
+                return@post
+            }
+
+            val params = call.receiveParameters()
+            val bookingId = params["bookingId"]?.toIntOrNull()
+            val passengerCount = params["passengerCount"]?.toIntOrNull() ?: 0
+
+            if(bookingId == null){
+                call.respondRedirect("/profile")
+                return@post
+            }
+
+            val passengers = mutableListOf<Map<String, String>>()
+            for(i in 0 until passengerCount){
+                passengers.add(mapOf(
+                    "fullName" to (params["passenger_${i}_fullName"] ?: ""),
+                    "idNumber" to (params["passenger_${i}_ID"] ?: ""),
+                    "type" to (params["passenger_${i}_type"] ?: "adult"),
+                    "seat" to (params["passenger_${i}_seat"] ?: "")
+                ))
+            }
+
+            val userID = UserDAO.getUserID(session.username)
+            UserDAO.updateBookingPassengers(bookingId, userID, passengers)
+
+            call.respondRedirect("/profile")
+        }
+
+        get("/edit-booking"){
+            val session = call.sessions.get<UserSession>()
+            if(session == null || !session.loggedIn){
+                call.respondRedirect("/login")
+                return@get
+            }
+
+            val bookingId = call.request.queryParameters["id"]?.toIntOrNull()
+            if(bookingId == null){
+                call.respondRedirect("/profile")
+                return@get
+            }
+
+            val userID = UserDAO.getUserID(session.username)
+            val booking = UserDAO.getBookingById(bookingId, userID)
+
+            if(booking == null){
+                call.respondRedirect("/profile")
+                return@get
+            }
+
+            call.respondTemplate("editBooking.peb", call.nonNullSessionData() + mapOf("booking" to booking))
+        }
+
         post("/search-flights") {
 
             val params = call.receiveParameters()
@@ -228,7 +305,6 @@ fun Application.configureRouting() {
             val airports = AirportDAO.searchAirport(query)
             call.respond(airports)
         }
-
 
         post("/book-flights") {
             val params = call.receiveParameters()
@@ -304,6 +380,73 @@ fun Application.configureRouting() {
             }
 
             call.respondTemplate("confirmBooking.peb", templateData)
+        }
+
+        post("/confirm-booking"){
+            val session = call.sessions.get<UserSession>()
+            if(session == null || !session.loggedIn){
+                call.respondRedirect("/login")
+                return@post
+            }
+
+            val params = call.receiveParameters()
+            val outboundFlightId = params["outboundFlightId"]?.toIntOrNull()
+            val returnFlightId = params["returnFlightId"]?.toIntOrNull()
+            val adults = params["adults"]?.toIntOrNull() ?: 1
+            val children = params["children"]?.toIntOrNull() ?: 0
+
+            if(outboundFlightId == null){
+                call.respondRedirect("/")
+                return@post
+            }
+
+            // get the flight prices to calculate total
+            val outboundFlight = FlightDAO.getFlightOverview(outboundFlightId)
+            if(outboundFlight == null){
+                call.respondRedirect("/")
+                return@post
+            }
+
+            var totalPrice = outboundFlight.price * (adults + children)
+            val flightIds = mutableListOf(outboundFlightId)
+
+            if(returnFlightId != null){
+                val returnFlight = FlightDAO.getFlightOverview(returnFlightId)
+                if(returnFlight != null){
+                    totalPrice += returnFlight.price * (adults + children)
+                    flightIds.add(returnFlightId)
+                }
+            }
+
+            // collect passenger info from form
+            val passengers = mutableListOf<Map<String, String>>()
+
+            for(i in 0 until adults){
+                passengers.add(mapOf(
+                    "fullName" to (params["adult_${i}_fullName"] ?: ""),
+                    "idNumber" to (params["adult_${i}_ID"] ?: ""),
+                    "type" to "adult",
+                    "seat" to (params["adult_${i}_seat"] ?: "")
+                ))
+            }
+
+            for(i in 0 until children){
+                passengers.add(mapOf(
+                    "fullName" to (params["child_${i}_fullName"] ?: ""),
+                    "idNumber" to (params["child_${i}_ID"] ?: ""),
+                    "type" to "child",
+                    "seat" to (params["child_${i}_seat"] ?: "")
+                ))
+            }
+
+            val userID = UserDAO.getUserID(session.username)
+            val isSuccess = UserDAO.createBooking(userID, session.username, flightIds, totalPrice, passengers)
+
+            if(isSuccess){
+                call.respondRedirect("/profile")
+            } else {
+                call.respondRedirect("/")
+            }
         }
 
     }
