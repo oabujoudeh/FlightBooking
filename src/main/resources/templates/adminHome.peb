@@ -3,8 +3,110 @@
 {% block title %}Admin - EAJO Air{% endblock %}
 
 {% block content %}
-<h1>Welcome to the Admin Page</h1>
+<div class="admin-container">
+    <h1>Admin Dashboard</h1>
 
-<h2>Bookings Over Time</h2>
-<img src="/admin/chart/bookings-over-time" alt="Bookings Over Time Chart">
+    <div class="stats-row">
+        <div class="stat-card">
+            <h3>Total Registered Users</h3>
+            <div class="stat-value">{{ totalUsers }}</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card chart-full">
+            <img src="/admin/chart/bookings-over-time" alt="Bookings Over Time">
+        </div>
+        <div class="chart-card">
+            <img src="/admin/chart/booking-status" alt="Booking Status Breakdown">
+        </div>
+        <div class="chart-card">
+            <img src="/admin/chart/busiest-routes" alt="Busiest Routes">
+        </div>
+    </div>
+
+    <h2>Recent Bookings</h2>
+    <input type="text" id="bookingSearch" placeholder="Search by email, ID, or status..." oninput="filterBookings()">
+    <table id="bookingsTable">
+        <thead>
+            <tr>
+                <th>Booking ID</th>
+                <th>Email</th>
+                <th>Date</th>
+                <th>Price</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for booking in recentBookings %}
+            <tr>
+                <td>{{ booking.bookingId }}</td>
+                <td>{{ booking.contactEmail }}</td>
+                <td>{{ booking.bookingDate }}</td>
+                <td>${{ booking.totalPrice }}</td>
+                <td>{{ booking.status }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Recent Cancellations</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Booking ID</th>
+                <th>Email</th>
+                <th>Date</th>
+                <th>Price Lost</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for booking in recentCancellations %}
+            <tr>
+                <td>{{ booking.bookingId }}</td>
+                <td>{{ booking.contactEmail }}</td>
+                <td>{{ booking.bookingDate }}</td>
+                <td>${{ booking.totalPrice }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Upcoming Flights</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Flight #</th>
+                <th>Date</th>
+                <th>Departure</th>
+                <th>Route</th>
+                <th>Price</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for flight in upcomingFlights %}
+            <tr>
+                <td>{{ flight.flightNumber }}</td>
+                <td>{{ flight.flightDate }}</td>
+                <td>{{ flight.departureTime }}</td>
+                <td>{{ flight.departureCity }} → {{ flight.arrivalCity }}</td>
+                <td>${{ flight.price }}</td>
+                <td>{{ flight.status }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function filterBookings() {
+    var query = document.getElementById('bookingSearch').value.toLowerCase();
+    var rows = document.querySelectorAll('#bookingsTable tbody tr');
+    rows.forEach(function(row) {
+        var text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
 {% endblock %}

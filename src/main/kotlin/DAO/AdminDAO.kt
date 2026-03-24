@@ -2,6 +2,22 @@ package com.flightbooking
 
 object AdminDAO {
 
+    fun getTotalUsers(): Int {
+        val sql = "SELECT COUNT(*) FROM users"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) rs.getInt(1) else 0
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error getting total users: ${e.message}")
+            0
+        }
+    }
+
     fun getAllBookingsGroupedByDate(): List<Map<String, Any>> {
         val sql = """
             SELECT DATE(booking_date) as date, COUNT(*) as count, SUM(total_price) as revenue
@@ -54,6 +70,111 @@ object AdminDAO {
             }
         } catch (e: Exception) {
             println("Error getting booking status counts: ${e.message}")
+            emptyList()
+        }
+    }
+
+    fun getRecentBookings(limit: Int = 20): List<Map<String, Any>> {
+        val sql = """
+            SELECT b.booking_id, b.booking_date, b.total_price, b.status, b.contact_email
+            FROM bookings b
+            ORDER BY b.booking_date DESC
+            LIMIT ?
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, limit)
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            results.add(mapOf(
+                                "bookingId" to rs.getInt("booking_id"),
+                                "bookingDate" to (rs.getString("booking_date") ?: ""),
+                                "totalPrice" to rs.getDouble("total_price"),
+                                "status" to rs.getString("status"),
+                                "contactEmail" to (rs.getString("contact_email") ?: "")
+                            ))
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error getting recent bookings: ${e.message}")
+            emptyList()
+        }
+    }
+
+    fun getRecentCancellations(limit: Int = 20): List<Map<String, Any>> {
+        val sql = """
+            SELECT b.booking_id, b.booking_date, b.total_price, b.contact_email
+            FROM bookings b
+            WHERE b.status = 'cancelled'
+            ORDER BY b.booking_date DESC
+            LIMIT ?
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, limit)
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            results.add(mapOf(
+                                "bookingId" to rs.getInt("booking_id"),
+                                "bookingDate" to (rs.getString("booking_date") ?: ""),
+                                "totalPrice" to rs.getDouble("total_price"),
+                                "contactEmail" to (rs.getString("contact_email") ?: "")
+                            ))
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error getting recent cancellations: ${e.message}")
+            emptyList()
+        }
+    }
+
+    fun getUpcomingFlights(limit: Int = 20): List<Map<String, Any>> {
+        val sql = """
+            SELECT f.flight_id, f.flight_date, f.status, f.price,
+                   r.flight_number, r.planned_departure,
+                   dep.city as departure_city, arr.city as arrival_city
+            FROM flights f
+            JOIN routes r ON f.route_id = r.route_id
+            JOIN airports dep ON r.departure_airport = dep.airport_id
+            JOIN airports arr ON r.arrival_airport = arr.airport_id
+            WHERE f.flight_date >= DATE('now')
+            ORDER BY f.flight_date ASC, r.planned_departure ASC
+            LIMIT ?
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, limit)
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            results.add(mapOf(
+                                "flightId" to rs.getInt("flight_id"),
+                                "flightDate" to (rs.getString("flight_date") ?: ""),
+                                "status" to rs.getString("status"),
+                                "flightNumber" to rs.getString("flight_number"),
+                                "departureTime" to (rs.getString("planned_departure") ?: ""),
+                                "departureCity" to rs.getString("departure_city"),
+                                "arrivalCity" to rs.getString("arrival_city"),
+                                "price" to rs.getDouble("price")
+                            ))
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error getting upcoming flights: ${e.message}")
             emptyList()
         }
     }

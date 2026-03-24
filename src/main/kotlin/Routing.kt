@@ -57,7 +57,16 @@ fun Application.configureRouting() {
             val session = call.sessions.get<UserSession>()
 
             if (session != null && session.isAdmin) {
-                call.respondTemplate("adminHome.peb", call.nonNullSessionData())
+                val recentBookings = AdminDAO.getRecentBookings()
+                val recentCancellations = AdminDAO.getRecentCancellations()
+                val upcomingFlights = AdminDAO.getUpcomingFlights()
+                val totalUsers = AdminDAO.getTotalUsers()
+                call.respondTemplate("adminHome.peb", call.nonNullSessionData() + mapOf(
+                    "recentBookings" to recentBookings,
+                    "recentCancellations" to recentCancellations,
+                    "upcomingFlights" to upcomingFlights,
+                    "totalUsers" to totalUsers
+                ))
             } else {
                 // use non‑nullable version of the map
                 call.respondTemplate("booking.peb", call.nonNullSessionData())
@@ -387,6 +396,30 @@ fun Application.configureRouting() {
             }
 
             call.respondTemplate("confirmBooking.peb", templateData)
+        }
+
+        get("/admin/chart/booking-status") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val data = AdminDAO.getBookingStatusCounts()
+            val imageBytes = ChartService.generateBookingStatusChart(data)
+            call.respondBytes(imageBytes, ContentType.Image.PNG)
+        }
+
+        get("/admin/chart/busiest-routes") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val data = AdminDAO.getBusiestRoutes()
+            val imageBytes = ChartService.generateBusiestRoutesChart(data)
+            call.respondBytes(imageBytes, ContentType.Image.PNG)
         }
 
         get("/admin/chart/bookings-over-time") {
