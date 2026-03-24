@@ -1,0 +1,57 @@
+{% extends "base.peb" %}
+
+{% block title %}Edit Booking - EAJO Air{% endblock %}
+
+{% block content %}
+
+<h2>Booking #{{ booking.bookingId }}</h2>
+
+<article>
+    <p><strong>Booking Date:</strong> {{ booking.bookingDate }}</p>
+    <p><strong>Status:</strong> {{ booking.status }}</p>
+    <p><strong>Contact Email:</strong> {{ booking.contactEmail }}</p>
+    <p><strong>Total Price:</strong> £{{ booking.totalPrice }}</p>
+</article>
+
+<h3>Flights</h3>
+
+{% for flight in booking.flights %}
+<article>
+    <p><strong>{{ flight.flightNumber }}</strong></p>
+    <p>{{ flight.departureCity }} ({{ flight.departureAirport }}) → {{ flight.arrivalCity }} ({{ flight.arrivalAirport }})</p>
+    <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }}</p>
+    <p>Duration: {{ flight.duration }}</p>
+    <p>Terminal {{ flight.departureTerminal }} → Terminal {{ flight.arrivalTerminal }}</p>
+</article>
+{% endfor %}
+
+<h3>Passengers</h3>
+
+<form method="post" action="/update-booking">
+<input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
+
+{% for passenger in booking.passengers %}
+<article>
+    <label>Full Name</label>
+    <input type="text" name="passenger_{{ loop.index }}_fullName" value="{{ passenger.fullName }}" required>
+    <label>ID Number</label>
+    <input type="text" name="passenger_{{ loop.index }}_ID" value="{{ passenger.idNumber }}" required>
+    <p><strong>Type:</strong> {{ passenger.type }}</p>
+    <p><strong>Seat:</strong> {{ passenger.seat }}</p>
+    <input type="hidden" name="passenger_{{ loop.index }}_type" value="{{ passenger.type }}">
+    <input type="hidden" name="passenger_{{ loop.index }}_seat" value="{{ passenger.seat }}">
+</article>
+{% endfor %}
+
+<input type="hidden" name="passengerCount" value="{{ booking.passengers | length }}">
+<button type="submit">Save Changes</button>
+</form>
+
+<form method="post" action="/cancel-booking">
+    <input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
+    <button type="submit" class="secondary">Cancel Booking</button>
+</form>
+
+<a href="/profile" role="button" class="outline">Back to Profile</a>
+
+{% endblock %}
