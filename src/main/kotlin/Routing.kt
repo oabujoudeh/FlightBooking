@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
 import io.ktor.server.sessions.*
 import io.ktor.server.response.*
+import io.ktor.http.*
 import java.time.LocalDate
 
 // helper that wraps getSessionData and guarantees non‑nullable values
@@ -54,8 +55,22 @@ fun Application.configureRouting() {
 
         get("/") {
             val session = call.sessions.get<UserSession>()
-            // use non‑nullable version of the map
-            call.respondTemplate("booking.peb", call.nonNullSessionData())
+
+            if (session != null && session.isAdmin) {
+                val recentBookings = AdminDAO.getRecentBookings()
+                val recentCancellations = AdminDAO.getRecentCancellations()
+                val upcomingFlights = AdminDAO.getUpcomingFlights()
+                val totalUsers = AdminDAO.getTotalUsers()
+                call.respondTemplate("adminHome.peb", call.nonNullSessionData() + mapOf(
+                    "recentBookings" to recentBookings,
+                    "recentCancellations" to recentCancellations,
+                    "upcomingFlights" to upcomingFlights,
+                    "totalUsers" to totalUsers
+                ))
+            } else {
+                // use non‑nullable version of the map
+                call.respondTemplate("booking.peb", call.nonNullSessionData())
+            }
 
             if (session != null && session.message.isNotEmpty()) {
                 call.sessions.set(session.copy(message = ""))
@@ -81,14 +96,15 @@ fun Application.configureRouting() {
                 redirectUrl = "/profile"
             }
 
-            // check 
-            val isSuccess = UserDAO.loginUser(email, password)
+            // check
+            val loginResult = UserDAO.loginUser(email, password)
 
-            if (isSuccess) {
+            if (loginResult.success) {
                 call.sessions.set(
                     UserSession(
                         username = email,
-                        loggedIn = true
+                        loggedIn = true,
+                        isAdmin = loginResult.isAdmin
                     )
                 )
                 // should decide whether redirect to profile or booking page
@@ -380,6 +396,42 @@ fun Application.configureRouting() {
             }
 
             call.respondTemplate("confirmBooking.peb", templateData)
+        }
+
+        get("/admin/chart/booking-status") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val data = AdminDAO.getBookingStatusCounts()
+            val imageBytes = ChartService.generateBookingStatusChart(data)
+            call.respondBytes(imageBytes, ContentType.Image.PNG)
+        }
+
+        get("/admin/chart/busiest-routes") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val data = AdminDAO.getBusiestRoutes()
+            val imageBytes = ChartService.generateBusiestRoutesChart(data)
+            call.respondBytes(imageBytes, ContentType.Image.PNG)
+        }
+
+        get("/admin/chart/bookings-over-time") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val data = AdminDAO.getAllBookingsGroupedByDate()
+            val imageBytes = ChartService.generateBookingsOverTimeChart(data)
+            call.respondBytes(imageBytes, ContentType.Image.PNG)
         }
 
         post("/confirm-booking"){
