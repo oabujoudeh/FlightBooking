@@ -1,0 +1,7 @@
+{% extends "base.peb" %}
+
+{% block title %}Admin - EAJO Air{% endblock %}
+
+{% block content %}
+<h1>Welcome to the Admin Page</h1>
+{% endblock %}

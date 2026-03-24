@@ -8,7 +8,8 @@ import kotlinx.serialization.Serializable
 data class UserSession(
     val username: String = "",
     val loggedIn: Boolean = false,
-    val message: String = ""
+    val message: String = "",
+    val isAdmin: Boolean = false
 )
 
 fun Application.configureSessions() {
@@ -26,6 +27,7 @@ fun getSessionData(call: ApplicationCall): Map<String, Any> {
     return mapOf(
         "loggedIn" to (session?.loggedIn ?: false),
         "username" to (session?.username ?: ""),
-        "message" to (session?.message ?: "")
+        "message" to (session?.message ?: ""),
+        "isAdmin" to (session?.isAdmin ?: false)
     )
 }

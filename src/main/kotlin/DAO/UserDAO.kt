@@ -60,8 +60,10 @@ object UserDAO{
         }
     }
 
-    fun loginUser(inputEmail: String, inputPassword: String):Boolean{
-        val sql = "SELECT * FROM users WHERE email = ?"
+    data class LoginResult(val success: Boolean, val isAdmin: Boolean = false)
+
+    fun loginUser(inputEmail: String, inputPassword: String): LoginResult {
+        val sql = "SELECT password_hash, is_admin FROM users WHERE email = ?"
 
         return try{
             Database.getConnection().use{ conn ->
@@ -70,10 +72,15 @@ object UserDAO{
                     stmt.executeQuery().use{ result->
                         if(result.next()){
                             val hashedPasswordFromDb = result.getString("password_hash")
-                            SecurityDAO.verifyPassword(inputPassword, hashedPasswordFromDb)
+                            val isAdmin = result.getInt("is_admin") == 1
+                            if(SecurityDAO.verifyPassword(inputPassword, hashedPasswordFromDb)){
+                                LoginResult(success = true, isAdmin = isAdmin)
+                            } else {
+                                LoginResult(success = false)
+                            }
                         }else{
                             println("Email not found")
-                            false
+                            LoginResult(success = false)
                         }
                     }
                 }
@@ -81,7 +88,7 @@ object UserDAO{
         }catch(e:Exception){
             println("Login Error: ${e.message}")
             e.printStackTrace()
-            false
+            LoginResult(success = false)
         }
     }
 

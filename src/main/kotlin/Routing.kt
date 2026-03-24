@@ -54,8 +54,13 @@ fun Application.configureRouting() {
 
         get("/") {
             val session = call.sessions.get<UserSession>()
-            // use non‑nullable version of the map
-            call.respondTemplate("booking.peb", call.nonNullSessionData())
+
+            if (session != null && session.isAdmin) {
+                call.respondTemplate("adminHome.peb", call.nonNullSessionData())
+            } else {
+                // use non‑nullable version of the map
+                call.respondTemplate("booking.peb", call.nonNullSessionData())
+            }
 
             if (session != null && session.message.isNotEmpty()) {
                 call.sessions.set(session.copy(message = ""))
@@ -81,14 +86,15 @@ fun Application.configureRouting() {
                 redirectUrl = "/profile"
             }
 
-            // check 
-            val isSuccess = UserDAO.loginUser(email, password)
+            // check
+            val loginResult = UserDAO.loginUser(email, password)
 
-            if (isSuccess) {
+            if (loginResult.success) {
                 call.sessions.set(
                     UserSession(
                         username = email,
-                        loggedIn = true
+                        loggedIn = true,
+                        isAdmin = loginResult.isAdmin
                     )
                 )
                 // should decide whether redirect to profile or booking page
