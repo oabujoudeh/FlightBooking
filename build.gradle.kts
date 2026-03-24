@@ -41,6 +41,9 @@ dependencies {
     //email
     implementation("com.sun.mail:jakarta.mail:2.0.1")
 
+    //charts
+    implementation("org.knowm.xchart:xchart:3.8.8")
+
     //Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test")

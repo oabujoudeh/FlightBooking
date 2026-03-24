@@ -4,4 +4,7 @@
 
 {% block content %}
 <h1>Welcome to the Admin Page</h1>
+
+<h2>Bookings Over Time</h2>
+<img src="/admin/chart/bookings-over-time" alt="Bookings Over Time Chart">
 {% endblock %}

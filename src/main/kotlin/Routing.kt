@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.http.content.*
 import io.ktor.server.sessions.*
 import io.ktor.server.response.*
+import io.ktor.http.*
 import java.time.LocalDate
 
 // helper that wraps getSessionData and guarantees non‑nullable values
@@ -386,6 +387,18 @@ fun Application.configureRouting() {
             }
 
             call.respondTemplate("confirmBooking.peb", templateData)
+        }
+
+        get("/admin/chart/bookings-over-time") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val data = AdminDAO.getAllBookingsGroupedByDate()
+            val imageBytes = ChartService.generateBookingsOverTimeChart(data)
+            call.respondBytes(imageBytes, ContentType.Image.PNG)
         }
 
         post("/confirm-booking"){
