@@ -20,7 +20,7 @@
                 <div class="flight-track">
                     <div class="flight-dot"></div>
                     <div class="flight-dash"></div>
-                    <span class="flight-icon">✈</span>
+                    <span class="flight-icon" aria-hidden="true">✈</span>
                     <div class="flight-dash"></div>
                     <div class="flight-dot"></div>
                 </div>
@@ -52,7 +52,7 @@
                 <div class="flight-track">
                     <div class="flight-dot"></div>
                     <div class="flight-dash"></div>
-                    <span class="flight-icon">✈</span>
+                    <span class="flight-icon" aria-hidden="true">✈</span>
                     <div class="flight-dash"></div>
                     <div class="flight-dot"></div>
                 </div>
@@ -118,7 +118,7 @@
 
     {# ── right column：Seat Map ── #}
     <div class="seatmap-panel">
-        <p class="seatmap-prompt">Click "Select Seat" for a passenger first</p>
+        <p class="seatmap-prompt" aria-live="polite">Click "Select Seat" for a passenger first</p>
 
         <div class="seat-legend">
             <span class="legend-item first">First</span>
@@ -144,9 +144,10 @@
                                         {% for seat in group %}
                                             <button type="button"
                                                 class="seat {{ seat.seatClass }}{% if seat.isOccupied %} occupied{% endif %}"
-                                                {% if seat.isOccupied %}disabled{% endif %}
+                                                {% if seat.isOccupied %}disabled aria-disabled="true"{% endif %}
                                                 data-seat="{{ seat.seatNumber }}"
-                                                onclick="selectSeat(this)">
+                                                onclick="selectSeat(this)"
+                                                aria-label="Seat {{ seat.seatNumber }}, {{ seat.seatClass }}{% if seat.isOccupied %}, occupied{% endif %}">
                                                 {{ seat.col }}
                                             </button>
                                         {% endfor %}

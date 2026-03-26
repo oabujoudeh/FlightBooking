@@ -32,7 +32,7 @@
                             <div class="flight-track">
                                 <div class="flight-dot"></div>
                                 <div class="flight-dash"></div>
-                                <span class="flight-icon">✈</span>
+                                <span class="flight-icon" aria-hidden="true">✈</span>
                                 <div class="flight-dash"></div>
                                 <div class="flight-dot"></div>
                             </div>
@@ -47,7 +47,7 @@
                         <div class="flight-price-col">
                             <span class="flight-price">£{{ flight.price }}</span>
                             <label class="select-btn">
-                                <input type="radio" name="outboundFlight" value="{{ flight.flightId }}" required style="display:none;">
+                                <input type="radio" name="outboundFlight" value="{{ flight.flightId }}" required style="display:none;" aria-label="Select flight {{ flight.flightNumber }} from {{ flight.departureAirport }} to {{ flight.arrivalAirport }} at £{{ flight.price }}">
                                 Select
                             </label>
                         </div>
@@ -73,11 +73,11 @@
                             <div class="flight-track">
                                 <div class="flight-dot"></div>
                                 <div class="flight-dash"></div>
-                                <span class="flight-icon">✈</span>
+                                <span class="flight-icon" aria-hidden="true">✈</span>
                                 <div class="flight-dash"></div>
                                 <div class="flight-stop-dot"></div>
                                 <div class="flight-dash"></div>
-                                <span class="flight-icon">✈</span>
+                                <span class="flight-icon" aria-hidden="true">✈</span>
                                 <div class="flight-dash"></div>
                                 <div class="flight-dot"></div>
                             </div>
@@ -92,7 +92,7 @@
                         <div class="flight-price-col">
                             <span class="flight-price">£{{ cf.price }}</span>
                             <label class="select-btn">
-                                <input type="radio" name="outboundFlight" value="{{ cf.leg1FlightId }}_{{ cf.leg2FlightId }}" required style="display:none;">
+                                <input type="radio" name="outboundFlight" value="{{ cf.leg1FlightId }}_{{ cf.leg2FlightId }}" required style="display:none;" aria-label="Select connecting flight via {{ cf.leg1ArrivalAirport }} at £{{ cf.price }}">
                                 Select
                             </label>
                         </div>
@@ -127,7 +127,7 @@
                             <div class="flight-track">
                                 <div class="flight-dot"></div>
                                 <div class="flight-dash"></div>
-                                <span class="flight-icon">✈</span>
+                                <span class="flight-icon" aria-hidden="true">✈</span>
                                 <div class="flight-dash"></div>
                                 <div class="flight-dot"></div>
                             </div>
@@ -142,7 +142,7 @@
                         <div class="flight-price-col">
                             <span class="flight-price">£{{ flight.price }}</span>
                             <label class="select-btn">
-                                <input type="radio" name="returnFlight" value="{{ flight.flightId }}" required style="display:none;">
+                                <input type="radio" name="returnFlight" value="{{ flight.flightId }}" required style="display:none;" aria-label="Select return flight {{ flight.flightNumber }} from {{ flight.departureAirport }} to {{ flight.arrivalAirport }} at £{{ flight.price }}">
                                 Select
                             </label>
                         </div>

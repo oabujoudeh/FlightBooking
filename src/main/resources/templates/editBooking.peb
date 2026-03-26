@@ -32,10 +32,10 @@
 
 {% for passenger in booking.passengers %}
 <article>
-    <label>Full Name</label>
-    <input type="text" name="passenger_{{ loop.index }}_fullName" value="{{ passenger.fullName }}" required>
-    <label>ID Number</label>
-    <input type="text" name="passenger_{{ loop.index }}_ID" value="{{ passenger.idNumber }}" required>
+    <label for="fullName_{{ loop.index }}">Full Name</label>
+    <input type="text" id="fullName_{{ loop.index }}" name="passenger_{{ loop.index }}_fullName" value="{{ passenger.fullName }}" required>
+    <label for="idNumber_{{ loop.index }}">ID Number</label>
+    <input type="text" id="idNumber_{{ loop.index }}" name="passenger_{{ loop.index }}_ID" value="{{ passenger.idNumber }}" required>
     <p><strong>Type:</strong> {{ passenger.type }}</p>
     <p><strong>Seat:</strong> {{ passenger.seat }}</p>
     <input type="hidden" name="passenger_{{ loop.index }}_type" value="{{ passenger.type }}">
@@ -49,7 +49,7 @@
 
 <form method="post" action="/cancel-booking">
     <input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
-    <button type="submit" class="secondary">Cancel Booking</button>
+    <button type="submit" class="secondary" aria-label="Cancel this booking">Cancel Booking</button>
 </form>
 
 <a href="/profile" role="button" class="outline">Back to Profile</a>
