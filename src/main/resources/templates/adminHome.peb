@@ -15,26 +15,28 @@
 
     <div class="charts-grid">
         <div class="chart-card chart-full">
-            <img src="/admin/chart/bookings-over-time" alt="Bookings Over Time">
+            <img src="/admin/chart/bookings-over-time" alt="Line chart showing bookings and revenue over time">
         </div>
         <div class="chart-card">
-            <img src="/admin/chart/booking-status" alt="Booking Status Breakdown">
+            <img src="/admin/chart/booking-status" alt="Pie chart showing booking status breakdown by confirmed, cancelled, and pending">
         </div>
         <div class="chart-card">
-            <img src="/admin/chart/busiest-routes" alt="Busiest Routes">
+            <img src="/admin/chart/busiest-routes" alt="Bar chart showing the busiest flight routes by booking count">
         </div>
     </div>
 
     <h2>Recent Bookings</h2>
-    <input type="text" id="bookingSearch" placeholder="Search by email, ID, or status..." oninput="filterBookings()">
+    <label for="bookingSearch" class="sr-only">Search bookings</label>
+    <input type="text" id="bookingSearch" placeholder="Search by email, ID, or status..." oninput="filterBookings()" aria-label="Search bookings table">
     <table id="bookingsTable">
+        <caption class="sr-only">Recent bookings</caption>
         <thead>
             <tr>
-                <th>Booking ID</th>
-                <th>Email</th>
-                <th>Date</th>
-                <th>Price</th>
-                <th>Status</th>
+                <th scope="col">Booking ID</th>
+                <th scope="col">Email</th>
+                <th scope="col">Date</th>
+                <th scope="col">Price</th>
+                <th scope="col">Status</th>
             </tr>
         </thead>
         <tbody>
@@ -52,12 +54,13 @@
 
     <h2>Recent Cancellations</h2>
     <table>
+        <caption class="sr-only">Recent cancellations</caption>
         <thead>
             <tr>
-                <th>Booking ID</th>
-                <th>Email</th>
-                <th>Date</th>
-                <th>Price Lost</th>
+                <th scope="col">Booking ID</th>
+                <th scope="col">Email</th>
+                <th scope="col">Date</th>
+                <th scope="col">Price Lost</th>
             </tr>
         </thead>
         <tbody>
@@ -74,14 +77,15 @@
 
     <h2>Upcoming Flights</h2>
     <table>
+        <caption class="sr-only">Upcoming flights</caption>
         <thead>
             <tr>
-                <th>Flight #</th>
-                <th>Date</th>
-                <th>Departure</th>
-                <th>Route</th>
-                <th>Price</th>
-                <th>Status</th>
+                <th scope="col">Flight #</th>
+                <th scope="col">Date</th>
+                <th scope="col">Departure</th>
+                <th scope="col">Route</th>
+                <th scope="col">Price</th>
+                <th scope="col">Status</th>
             </tr>
         </thead>
         <tbody>

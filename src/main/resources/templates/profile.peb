@@ -34,8 +34,8 @@
     {% endfor %}
 {% endif %}
 
-<a href="/" role="button" class="secondary">Remove account</a>
-<a href="/logout" role="button" class="outline">Logout</a>
+<a href="/" role="button" class="secondary" aria-label="Remove your account">Remove account</a>
+<a href="/logout" role="button" class="outline" aria-label="Log out of your account">Logout</a>
 
 {% endif %}
 
