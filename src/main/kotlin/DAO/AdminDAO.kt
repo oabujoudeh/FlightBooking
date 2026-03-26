@@ -13,7 +13,6 @@ object AdminDAO {
                 }
             }
         } catch (e: Exception) {
-            println("Error getting total users: ${e.message}")
             0
         }
     }
@@ -42,7 +41,6 @@ object AdminDAO {
                 }
             }
         } catch (e: Exception) {
-            println("Error getting bookings by date: ${e.message}")
             emptyList()
         }
     }
@@ -69,7 +67,6 @@ object AdminDAO {
                 }
             }
         } catch (e: Exception) {
-            println("Error getting booking status counts: ${e.message}")
             emptyList()
         }
     }
@@ -101,7 +98,6 @@ object AdminDAO {
                 }
             }
         } catch (e: Exception) {
-            println("Error getting recent bookings: ${e.message}")
             emptyList()
         }
     }
@@ -133,7 +129,6 @@ object AdminDAO {
                 }
             }
         } catch (e: Exception) {
-            println("Error getting recent cancellations: ${e.message}")
             emptyList()
         }
     }
@@ -174,7 +169,6 @@ object AdminDAO {
                 }
             }
         } catch (e: Exception) {
-            println("Error getting upcoming flights: ${e.message}")
             emptyList()
         }
     }
@@ -211,7 +205,6 @@ object AdminDAO {
                 }
             }
         } catch (e: Exception) {
-            println("Error getting busiest routes: ${e.message}")
             emptyList()
         }
     }

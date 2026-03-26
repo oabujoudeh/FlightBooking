@@ -1,7 +1,5 @@
 package com.flightbooking
 import org.mindrot.jbcrypt.BCrypt
-import java.sql.PreparedStatement
-import java.sql.SQLException
 
 object SecurityDAO{
     fun hashPassword(plainTextPassword: String): String {

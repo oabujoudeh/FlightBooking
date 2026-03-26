@@ -35,6 +35,5 @@ object OTC{
         else{
             return false
         }
-        return false
    }
 }
