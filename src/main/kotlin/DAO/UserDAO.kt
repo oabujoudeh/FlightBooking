@@ -1,19 +1,11 @@
 package com.flightbooking
-import java.sql.Connection
-import java.sql.PreparedStatement
-import java.sql.SQLException
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.Duration
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.Random
-import java.util.concurrent.ConcurrentHashMap
 
 
 object UserDAO{
-    // private val connection get() = Database.connection
     fun emailExists(email: String): Boolean {
         val sql = "SELECT count(*) FROM users WHERE email = ?"
         return try {
@@ -30,8 +22,6 @@ object UserDAO{
                 }
             }
         } catch (e: Exception) {
-            println("Error checking email: ${e.message}")
-            e.printStackTrace()
             false
         }
     }
@@ -79,22 +69,18 @@ object UserDAO{
                                 LoginResult(success = false)
                             }
                         }else{
-                            println("Email not found")
                             LoginResult(success = false)
                         }
                     }
                 }
             }
         }catch(e:Exception){
-            println("Login Error: ${e.message}")
-            e.printStackTrace()
             LoginResult(success = false)
         }
     }
 
     fun resetPassword(inputEmail: String):Boolean{
         if(!emailExists(inputEmail)){
-            println("Error: Email not found")
             return false
         }
         return try{
@@ -109,8 +95,6 @@ object UserDAO{
             true
         }
         catch(e:Exception){
-            println("Reset Password Error: ${e.message}")
-            e.printStackTrace()
             false
         }
     }
@@ -119,14 +103,12 @@ object UserDAO{
     fun confirmResetPassword(inputEmail: String, inputOTC: String, newPassword: String):Boolean{
         // check if OTC is valid and expired
         if(!OTC.verify(inputEmail, inputOTC)){
-            println("Error: Invalid or expired OTC")
             return false
         }
 
         // if OTC is valid, check new password validation
         if(!SecurityDAO.isPasswordValid(newPassword)){
-            println("Error: Invalid new password")
-            return false 
+            return false
         }
 
         // if valid, hash the new password and update to database
@@ -140,17 +122,10 @@ object UserDAO{
                 
                     val rowsAffected = stmt.executeUpdate()
                 
-                    if (rowsAffected > 0) {
-                        true
-                    } else {
-                        println("Error: Failed to update password (user not found)")
-                        false
-                    }
+                    rowsAffected > 0
                 }
             }
         }catch(e: Exception){
-            println("Error: ${e.message}")
-            e.printStackTrace()
             false
         }
     }
@@ -167,7 +142,6 @@ object UserDAO{
                 }
             }
         } catch (e: Exception) {
-            println("Error getting user ID: ${e.message}")
             -1
         }
     }
@@ -260,7 +234,6 @@ object UserDAO{
                 }
             }
         } catch (e: Exception) {
-            println("Error getting bookings: ${e.message}")
             emptyList()
         }
     }
@@ -337,7 +310,6 @@ object UserDAO{
                 booking
             }
         } catch(e: Exception){
-            println("Error getting booking by id: ${e.message}")
             null
         }
     }
@@ -353,7 +325,6 @@ object UserDAO{
                 }
             }
         } catch(e: Exception){
-            println("Error cancelling booking: ${e.message}")
             false
         }
     }
@@ -396,8 +367,6 @@ object UserDAO{
                 true
             }
         } catch(e: Exception){
-            println("Error updating booking passengers: ${e.message}")
-            e.printStackTrace()
             false
         }
     }
@@ -462,34 +431,7 @@ object UserDAO{
                 true
             }
         } catch(e: Exception){
-            println("Error creating booking: ${e.message}")
-            e.printStackTrace()
             false
-        }
-    }
-
-    fun main(){
-        // test reset page only in backend
-        val testEmail = "wangbeiduo_ashely@outlook.com"
-        println("start to reset")
-        val isRequested = UserDAO.resetPassword(testEmail)
-        println("request is $isRequested")
-
-        if(isRequested){
-            println("请获取六位数验证码")
-
-            println("please enter your code:")
-            val codeFromUser = readLine() ?:""
-
-            println("confirmResetPassword")
-            val isConfirmed = UserDAO.confirmResetPassword(testEmail, codeFromUser, "Test123456")
-
-            if(isConfirmed){
-                println("resect password successful")
-            }
-            else{
-                println("failed to reset password")
-            }
         }
     }
 }

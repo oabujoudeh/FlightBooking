@@ -33,10 +33,7 @@ object EmailService {
             }
 
             Transport.send(message)
-            println("Email sent successfully to $to")
-
         } catch (e: MessagingException) {
-            println("Failed to send email: ${e.message}")
             e.printStackTrace()
         }
     }

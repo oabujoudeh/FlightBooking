@@ -35,9 +35,6 @@ dependencies {
     implementation("io.ktor:ktor-server-sessions")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
-    //Hashing
-    implementation("com.password4j:password4j:1.8.4")
-
     //email
     implementation("com.sun.mail:jakarta.mail:2.0.1")
 
