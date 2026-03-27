@@ -466,7 +466,21 @@ fun Application.configureRouting() {
                 return@post
             }
 
-            // Get flight details
+            call.respondRedirect("/payment")
+
+        get("/payment"){
+            call.respond(PebbleContent("payment.peb", mapOf()))
+        }
+
+        post("/payment"){
+            call.respondRedirect("/payment-success")
+        }
+
+        get("/payment-success") {
+            call.respond(PebbleContent("payment-success.peb", mapOf()))
+        }    
+
+            // get the flight prices to calculate total
             val outboundFlight = FlightDAO.getFlightOverview(outboundFlightId)
             if (outboundFlight == null) {
                 call.respondRedirect("/")

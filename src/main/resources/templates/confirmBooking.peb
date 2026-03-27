@@ -95,9 +95,8 @@
                 </section>
             </div>
 
-            <div class="seatmap-panel" data-selected-cabin="{{ outboundCabin }}">
-                <h2 class="card-title">Select Seats</h2>
-                <div class="seatmap-prompt">Please select a passenger first</div>
+        <button type="submit">Proceed to Payment</button>
+    </div>
 
                 <div class="seat-legend">
                     <div class="legend-item first">First</div>

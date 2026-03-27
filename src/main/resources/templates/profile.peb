@@ -6,36 +6,61 @@
 
 {% if loggedIn %}
 
-<h2>Your Profile</h2>
+<div class="profile-page">
 
-<article>
-    <p><strong>Username:</strong> {{ username }}</p>
-</article>
+    <div class="auth-container">
+        <div class="auth-card">
 
-<h3>Your Bookings</h3>
+            <h2>Your Profile</h2>
+            <p><strong>Username:</strong> {{ username }}</p>
 
-{% if bookings is empty %}
-    <p>You have no bookings yet.</p>
-{% else %}
-    {% for booking in bookings %}
-    <article>
-        <p><strong>Booking #{{ booking.bookingId }}</strong></p>
-        <p>Date: {{ booking.bookingDate }}</p>
-        <p>Status: {{ booking.status }}</p>
-        <p>Total Price: £{{ booking.totalPrice }}</p>
+            <div class="profile-sections">
 
-        {% for flight in booking.flights %}
-        <p>{{ flight.flightNumber }}: {{ flight.departureCity }} → {{ flight.arrivalCity }}</p>
-        <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }} | {{ flight.duration }}</p>
-        {% endfor %}
+                <div class="profile-box">
+                    <h3>Your Bookings</h3>
 
-        <a href="/edit-booking?id={{ booking.bookingId }}" role="button" class="outline">Edit Booking</a>
-    </article>
-    {% endfor %}
-{% endif %}
+                    {% if bookings is empty %}
+                        <p>You have no bookings yet.</p>
+                    {% else %}
+                        {% for booking in bookings %}
+                        <div class="booking-card">
 
-<a href="/" role="button" class="secondary" aria-label="Remove your account">Remove account</a>
-<a href="/logout" role="button" class="outline" aria-label="Log out of your account">Logout</a>
+                            <p><strong>Booking #{{ booking.bookingId }}</strong></p>
+                            <p>Date: {{ booking.bookingDate }}</p>
+                            <p>Status: {{ booking.status }}</p>
+                            <p>Total Price: £{{ booking.totalPrice }}</p>
+
+                            {% for flight in booking.flights %}
+                                <p>{{ flight.flightNumber }}: {{ flight.departureCity }} → {{ flight.arrivalCity }}</p>
+                                <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }} | {{ flight.duration }}</p>
+                            {% endfor %}
+
+                            <a href="/edit-booking?id={{ booking.bookingId }}" class="primary-btn">Edit Booking</a>
+
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="profile-box loyalty-box">
+                    <h3>Loyalty Points</h3>
+                    <p><strong>Air Miles:</strong> 0</p>
+                    <p>Your loyalty points section will appear here.</p>
+                </div>
+
+            </div>
+
+            <hr>
+
+            <div class="profile-actions">
+                <a href="/" class="secondary-btn">Return to Home Page</a>
+                <a href="/logout" class="primary-btn">Logout</a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
 
 {% endif %}
 

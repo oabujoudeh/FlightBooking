@@ -1,0 +1,7 @@
+ktor:
+    application:
+        modules:
+            - com.flightbooking.ApplicationKt.module
+    development: true
+    deployment:
+        port: 8080

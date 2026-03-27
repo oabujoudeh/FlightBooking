@@ -11,7 +11,7 @@
         <h2 class="auth-title">Login</h2>
 
         {% if error is not empty %}
-        <div class="error-box">
+        <div class="error-box" role="alert">
             <strong>{{ error }}</strong>
         </div>
         {% endif %}
@@ -51,7 +51,7 @@
 
             <p>
                 Forgot your password?
-                <a href="/reset">Click here to reset</a>
+                <a href="/forgot-password">Click here to reset</a>
             </p>
 
             <p>

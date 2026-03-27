@@ -4,7 +4,7 @@ import java.time.Duration
 import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
 
-object Otc{
+object OTC{
     private val otcStorage = ConcurrentHashMap<String, OtcEntry>()
     data class OtcEntry(val code:String, val expiryTime: LocalDateTime)
 
@@ -35,6 +35,5 @@ object Otc{
         else{
             return false
         }
-        return false
    }
 }

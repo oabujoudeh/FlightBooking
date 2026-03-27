@@ -1,12 +1,6 @@
 {% extends "base.peb" %}
 
 {% block content %}
-
-<nav class="navbar">
-    <div class="logo">EAJO Air</div>
-    <a href="/" class="auth-btn">Back to Search</a>
-</nav>
-
 <section class="hero">
     <div class="hero-inner">
         <h1>Available Flights</h1>
@@ -18,101 +12,109 @@
 <form method="post" action="/book-flights">
     <input type="hidden" name="adults" value="{{ adults }}">
     <input type="hidden" name="children" value="{{ children }}">
-    <section class="card booking-card">
-        <h2 class="card-title">Flight Results</h2>
+    <input type="hidden" name="tripType" value="{{ tripType }}">
+
+    {# --- Outbound flight area --- #}
+    <section id="outbound-section" class="card booking-card">
+        <h2 class="card-title">Outbound Flights</h2>
         <p class="card-subtitle">{{ departure }} to {{ destination }} · {{ departureDate }}</p>
 
-        {% if flights is not empty %}
-            {% for flight in flights %}
+        {% if combinedFlights is not empty %}
+            {% for flight in combinedFlights %}
                 <div class="flight-result-card">
                     <div class="flight-row">
                         <div class="flight-endpoint">
                             <span class="flight-time">{{ flight.departureTime }}</span>
                             <span class="flight-airport">{{ flight.departureAirport }}</span>
-                            <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
+                            {% if not flight.isConnecting %}
+                                <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
+                            {% endif %}
                         </div>
 
                         <div class="flight-line">
-                            <span class="flight-meta">{{ flight.duration }} · {{ flight.stopType }}</span>
+                            <span class="flight-meta">{{ flight.totalDurationDisplay }} · {{ flight.isConnecting ? '1 Stop' : 'Direct' }}</span>
                             <div class="flight-track">
                                 <div class="flight-dot"></div>
                                 <div class="flight-dash"></div>
                                 <span class="flight-icon">✈</span>
+                                {% if flight.isConnecting %}
+                                    <div class="flight-dash"></div>
+                                    <div class="flight-stop-dot"></div>
+                                    <div class="flight-dash"></div>
+                                    <span class="flight-icon">✈</span>
+                                {% endif %}
                                 <div class="flight-dash"></div>
                                 <div class="flight-dot"></div>
                             </div>
+                            {% if flight.isConnecting %}
+                                <span class="layover-info">{{ flight.layoverMinutes }}min layover at {{ flight.stopCity }}</span>
+                            {% endif %}
                         </div>
 
                         <div class="flight-endpoint right">
-                            <span class="flight-time">{{ flight.arrivalTime }}</span>
+                            <span class="flight-time">
+                                {{ flight.arrivalTime }}
+                                {% if flight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ flight.arrivalDayOffset }}</sup>{% endif %}
+                            </span>
                             <span class="flight-airport">{{ flight.arrivalAirport }}</span>
-                            <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
                         </div>
 
-                        <div class="flight-price-col">
-                            <span class="flight-price">£{{ flight.price }}</span>
-                            <label class="select-btn">
-                                <input type="radio" name="outboundFlight" value="{{ flight.flightId }}" required style="display:none;">
-                                Select
-                            </label>
+                        <div class="flight-fare-options">
+                            {% if flight.priceEconomy is not null %}
+                            <div class="fare-option">
+                                <span class="fare-class">Economy</span>
+                                <span class="flight-price">£{{ flight.priceEconomy }}</span>
+                                <label class="select-btn">
+                                    <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_economy" required style="display:none;">
+                                    Select
+                                </label>
+                            </div>
+                            {% endif %}
+
+                            {% if flight.priceBusiness is not null %}
+                            <div class="fare-option">
+                                <span class="fare-class">Business</span>
+                                <span class="flight-price">£{{ flight.priceBusiness }}</span>
+                                <label class="select-btn">
+                                    <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_business" style="display:none;">
+                                    Select
+                                </label>
+                            </div>
+                            {% else %}
+                            <div class="fare-option unavailable">
+                                <span class="fare-class">Business</span>
+                                <span class="flight-meta">N/A</span>
+                            </div>
+                            {% endif %}
+
+                            {% if flight.priceFirst is not null %}
+                            <div class="fare-option">
+                                <span class="fare-class">First</span>
+                                <span class="flight-price">£{{ flight.priceFirst }}</span>
+                                <label class="select-btn">
+                                    <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_first" style="display:none;">
+                                    Select
+                                </label>
+                            </div>
+                            {% else %}
+                            <div class="fare-option unavailable">
+                                <span class="fare-class">First</span>
+                                <span class="flight-meta">N/A</span>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
-            <p>No direct flights found for this route.</p>
+            <p>No outbound flights found.</p>
         {% endif %}
-
-        {% if connectingFlights is not empty %}
-            {% for cf in connectingFlights %}
-                <div class="flight-result-card">
-                    <div class="flight-row">
-                        <div class="flight-endpoint">
-                            <span class="flight-time">{{ cf.leg1DepartureTime }}</span>
-                            <span class="flight-airport">{{ cf.leg1DepartureAirport }}</span>
-                        </div>
-
-                        <div class="flight-line">
-                            <span class="flight-meta">{{ cf.totalDuration }} · 1 Stop</span>
-                            <div class="flight-track">
-                                <div class="flight-dot"></div>
-                                <div class="flight-dash"></div>
-                                <span class="flight-icon">✈</span>
-                                <div class="flight-dash"></div>
-                                <div class="flight-stop-dot"></div>
-                                <div class="flight-dash"></div>
-                                <span class="flight-icon">✈</span>
-                                <div class="flight-dash"></div>
-                                <div class="flight-dot"></div>
-                            </div>
-                            <span class="layover-info">{{ cf.layoverMinutes }}min layover at {{ cf.leg1ArrivalAirport }}</span>
-                        </div>
-
-                        <div class="flight-endpoint right">
-                            <span class="flight-time">{{ cf.leg2ArrivalTime }}</span>
-                            <span class="flight-airport">{{ cf.leg2ArrivalAirport }}</span>
-                        </div>
-
-                        <div class="flight-price-col">
-                            <span class="flight-price">£{{ cf.price }}</span>
-                            <label class="select-btn">
-                                <input type="radio" name="outboundFlight" value="{{ cf.leg1FlightId }}_{{ cf.leg2FlightId }}" required style="display:none;">
-                                Select
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <div style="margin-top: 20px;">
-            <a href="/" class="auth-btn">Back</a>
-        </div>
     </section>
 
+    {# --- Return flight area (initially hidden) --- #}
     {% if tripType != "oneway" %}
-    <section class="card booking-card">
-        <h2 class="card-title">Return Flight Results</h2>
+    <section id="return-section" class="card booking-card hidden-section" style="margin-top: 30px;">
+        <h2 class="card-title">Return Flights</h2>
         <p class="card-subtitle">{{ destination }} to {{ departure }} · {{ returnDate }}</p>
 
         {% if returnFlights is not empty %}
@@ -122,47 +124,134 @@
                         <div class="flight-endpoint">
                             <span class="flight-time">{{ flight.departureTime }}</span>
                             <span class="flight-airport">{{ flight.departureAirport }}</span>
-                            <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
+                            {% if not flight.isConnecting %}
+                                <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
+                            {% endif %}
                         </div>
 
                         <div class="flight-line">
-                            <span class="flight-meta">{{ flight.duration }} · {{ flight.stopType }}</span>
+                            <span class="flight-meta">{{ flight.totalDurationDisplay }} · {{ flight.isConnecting ? '1 Stop' : 'Direct' }}</span>
                             <div class="flight-track">
                                 <div class="flight-dot"></div>
                                 <div class="flight-dash"></div>
                                 <span class="flight-icon">✈</span>
+                                {% if flight.isConnecting %}
+                                    <div class="flight-dash"></div>
+                                    <div class="flight-stop-dot"></div>
+                                    <div class="flight-dash"></div>
+                                    <span class="flight-icon">✈</span>
+                                {% endif %}
                                 <div class="flight-dash"></div>
                                 <div class="flight-dot"></div>
                             </div>
+                            {% if flight.isConnecting %}
+                                <span class="layover-info">{{ flight.layoverMinutes }}min layover at {{ flight.stopCity }}</span>
+                            {% endif %}
                         </div>
 
                         <div class="flight-endpoint right">
-                            <span class="flight-time">{{ flight.arrivalTime }}</span>
+                            <span class="flight-time">{{ flight.arrivalTime }}{% if flight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ flight.arrivalDayOffset }}</sup>{% endif %}</span>
                             <span class="flight-airport">{{ flight.arrivalAirport }}</span>
-                            <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
                         </div>
 
-                        <div class="flight-price-col">
-                            <span class="flight-price">£{{ flight.price }}</span>
-                            <label class="select-btn">
-                                <input type="radio" name="returnFlight" value="{{ flight.flightId }}" required style="display:none;">
-                                Select
-                            </label>
+                        <div class="flight-fare-options">
+                            {% if flight.priceEconomy is not null %}
+                            <div class="fare-option">
+                                <span class="fare-class">Economy</span>
+                                <span class="flight-price">£{{ flight.priceEconomy }}</span>
+                                <label class="select-btn">
+                                    <input type="radio" name="returnFlight" value="{{ flight.flightId }}_economy" required style="display:none;">
+                                    Select
+                                </label>
+                            </div>
+                            {% endif %}
+
+                            {% if flight.priceBusiness is not null %}
+                            <div class="fare-option">
+                                <span class="fare-class">Business</span>
+                                <span class="flight-price">£{{ flight.priceBusiness }}</span>
+                                <label class="select-btn">
+                                    <input type="radio" name="returnFlight" value="{{ flight.flightId }}_business" style="display:none;">
+                                    Select
+                                </label>
+                            </div>
+                            {% else %}
+                            <div class="fare-option unavailable">
+                                <span class="fare-class">Business</span>
+                                <span class="flight-meta">N/A</span>
+                            </div>
+                            {% endif %}
+
+                            {% if flight.priceFirst is not null %}
+                            <div class="fare-option">
+                                <span class="fare-class">First</span>
+                                <span class="flight-price">£{{ flight.priceFirst }}</span>
+                                <label class="select-btn">
+                                    <input type="radio" name="returnFlight" value="{{ flight.flightId }}_first" style="display:none;">
+                                    Select
+                                </label>
+                            </div>
+                            {% else %}
+                            <div class="fare-option unavailable">
+                                <span class="fare-class">First</span>
+                                <span class="flight-meta">N/A</span>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
-            <p>No flights found for this route.</p>
+            <p>No return flights found.</p>
         {% endif %}
     </section>
     {% endif %}
 
-    <div style="margin-top: 20px; text-align: center;">
-        <button type="submit" class="select-btn">Continue</button>
+    {# --- Bottom Operation Bar --- #}
+    <div id="action-bar" class="{% if tripType != 'oneway' %}hidden-section{% endif %}" style="margin-top: 30px; text-align: center;">
+        <button type="submit" class="primary-btn" style="width: auto; padding: 16px 60px;">Continue to Passenger Details</button>
     </div>
-
 </form>
 </main>
 
+<style>
+    .hidden-section { display: none !important; }
+    /* highlight */
+    label.select-btn:has(input:checked) {
+        background: var(--navy) !important;
+        color: var(--gold) !important;
+        box-shadow: 0 0 0 2px var(--gold);
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const outboundRadios = document.querySelectorAll('input[name="outboundFlight"]');
+    const returnRadios = document.querySelectorAll('input[name="returnFlight"]');
+    const returnSection = document.getElementById('return-section');
+    const actionBar = document.getElementById('action-bar');
+
+    // after selecting outbound, show inbound
+    outboundRadios.forEach(r => {
+        r.addEventListener('change', () => {
+            if (returnSection) {
+                returnSection.classList.remove('hidden-section');
+                returnSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                actionBar.classList.remove('hidden-section');
+            }
+        });
+    });
+
+    // after select inbound, show button
+    if (returnRadios) {
+        returnRadios.forEach(r => {
+            r.addEventListener('change', () => {
+                actionBar.classList.remove('hidden-section');
+                actionBar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

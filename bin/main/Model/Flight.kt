@@ -6,6 +6,7 @@ import java.time.LocalTime
 data class Flight(
     val flightId: Int,
     val flightNumber: String,
+    val aircraftType: String,
     val departureCity: String,
     val arrivalCity: String,
     val departureAirportName: String,
@@ -15,8 +16,11 @@ data class Flight(
     val departureDate: LocalDate,
     val departureTime: LocalTime,
     val arrivalTime: LocalTime,
+    val arrivalDayOffset: Int = 0,  // 0 = same day, 1 = next day, 2 = next next day
     val durationMinutes: Int,
-    val price: Double,
+    val priceEconomy: Double?,
+    val priceBusiness: Double?,
+    val priceFirst: Double?
 )
 
 data class ConnectingFlight(
