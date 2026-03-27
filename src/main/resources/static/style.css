@@ -274,7 +274,10 @@ input:focus, select:focus{
   .hero h1{ font-size: 40px; }
 }
 
-/* Flights page layout */
+/* ─────────────────────────────────────────
+   Flights page
+───────────────────────────────────────── */
+
 .flights-layout{
   width: min(1100px, 92vw);
   margin: -55px auto 80px auto;
@@ -288,10 +291,47 @@ input:focus, select:focus{
   background: #fff;
 }
 
-.flight-row{
+.flight-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px; /* Spacing between flight info and pricing */
+  justify-content: space-between;
+}
+
+.flight-fare-options {
+  display: flex;
+  gap: 12px;
+  padding-left: 20px;
+  border-left: 2px solid var(--border); /* Visual separator from flight details */
+  min-width: 320px; /* Ensures horizontal alignment without squeezing buttons */
+}
+
+.fare-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 4px;
+}
+
+.fare-class {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--muted); /* Uses the muted color variable */
+  letter-spacing: 0.5px;
+}
+
+/* Styling for unavailable cabin classes */
+.fare-option.unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fare-option.unavailable .flight-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 10px;
 }
 
 /* Left and right airport info */
@@ -380,22 +420,18 @@ input:focus, select:focus{
   min-width: 100px;
 }
 
-.flight-price{
-  font-size: 20px;
+.flight-price {
+  font-size: 16px; 
   font-weight: 900;
   color: var(--text);
 }
 
-.select-btn{
-  text-decoration: none;
+.select-btn {
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
   background: var(--gold);
-  color: var(--navy);
-  padding: 10px 20px;
   border-radius: 999px;
-  font-weight: 900;
-  font-size: 14px;
-  white-space: nowrap;
-  transition: background .2s ease;
 }
 
 .select-btn:hover{
@@ -403,8 +439,9 @@ input:focus, select:focus{
 }
 
 label.select-btn:has(input:checked) {
-  background: var(--navy);
+  background: var(--navy); /* Switches to navy when selected */
   color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold);
 }
 
 .segmented-row {
@@ -606,19 +643,23 @@ label.select-btn:has(input:checked) {
     gap: 32px;
     align-items: flex-start;
     padding: 24px 0;
+    width: min(1200px, 96vw);
+    margin: 0 auto;
 }
 .passengers-panel {
     flex: 0 0 340px;
 }
 .seatmap-panel {
     flex: 1;
-    position: sticky;
-    top: 24px;
+    min-width: 0;
     background: white;
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px;
+    padding: 32px;
     box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* current seat choice highlight */
@@ -743,10 +784,10 @@ button[type=submit]:hover {
     height: 14px;
     border-radius: 3px;
 }
-.legend-item.first::before    { background: var(--gold); }
-.legend-item.business::before { background: var(--navy); }
-.legend-item.economy::before  { background: #22c55e; }
-.legend-item.occupied::before { background: var(--border); border: 1px solid #d1d5db; }
+.legend-item.first::before    { background: #e8d9a0; border: 1px solid #c9b870; }
+.legend-item.business::before { background: #b8c9e0; border: 1px solid #7a9bbf; }
+.legend-item.economy::before  { background: #a8d4b8; border: 1px solid #6aab88; }
+.legend-item.occupied::before { background: #e2e5ea; border: 1px solid #c5cad2; }
 
 /* Seat map */
 .deck-label {
@@ -760,31 +801,44 @@ button[type=submit]:hover {
 .cabin {
     margin-bottom: 2px;
 }
+.aircraft-map {
+    width: 100%;
+    max-width: 500px; 
+    margin: 20px auto;
+}
 .seat-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 40px 1fr 50px;
     align-items: center;
-    gap: 4px;
     margin-bottom: 3px;
-    padding: 2px 4px;
-    border-radius: 6px;
+    padding: 2px 0;
+    width: 100%;
 }
 .seat-row.exit-row {
     background: rgba(212,175,55,0.08);
-    border-left: 3px solid var(--gold);
-    padding-left: 6px;
+    border-radius: 8px;
+    margin: 12px 0;
+    padding: 8px 0;
 }
+
 .row-number {
-    width: 24px;
+    grid-column: 1;
     text-align: right;
+    padding-right: 8px;
     font-size: 11px;
     color: var(--muted);
-    margin-right: 6px;
-    flex-shrink: 0;
     font-weight: 600;
 }
 .seat-group {
     display: flex;
     gap: 3px;
+}
+.seats-center {
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 .aisle {
     width: 18px;
@@ -805,27 +859,20 @@ button[type=submit]:hover {
     opacity: 0.8;
     transform: scale(1.12);
 }
-.seat.first    { background: var(--gold);  color: var(--navy); }
-.seat.business { background: var(--navy);  color: white; }
-.seat.economy  { background: #22c55e;      color: white; }
-.seat.occupied {
-    background: var(--border);
-    color: #b0b8c4;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-.seat.selected {
-    outline: 2.5px solid var(--gold);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(212,175,55,0.2);
-}
+.seat.first    { background: #e8d9a0; color: #5a4510; }
+.seat.business { background: #b8c9e0; color: #1a3050; }
+.seat.economy  { background: #a8d4b8; color: #1a4028; }
+.seat.occupied { background: #e2e5ea; color: #9aa3ad; cursor: not-allowed; opacity: 0.7; }
+.seat.selected { outline: 2.5px solid var(--gold); outline-offset: 2px; box-shadow: 0 0 0 4px rgba(212,175,55,0.2); }
 .exit-label {
-    font-size: 9px;
-    color: var(--gold2);
+    grid-column: 3;
+    font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.05em;
-    margin-left: 6px;
+    color: var(--gold2);
+    letter-spacing: 1px;
     text-transform: uppercase;
+    pointer-events: none;
+    padding-left: 6px;
 }
 
 /* ─────────────────────────────────────────
@@ -940,4 +987,37 @@ button[type=submit]:hover {
     background: #fff;
     border: 1px solid var(--border);
     border-radius: 10px;
+}
+
+/* ─────────────────────────────────────────
+   Seat Class Filtering Logic
+───────────────────────────────────────── */
+
+/* 1. By default, all seats not selected in the cabin class are grayed out and cannot be clicked. */
+.seatmap-panel[data-selected-cabin="economy"] .seat:not(.economy),
+.seatmap-panel[data-selected-cabin="business"] .seat:not(.business),
+.seatmap-panel[data-selected-cabin="first"] .seat:not(.first) {
+    background-color: var(--border) !important;
+    color: #b0b8c4 !important;
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none; /* Completely disable clicking */
+    transform: none !important;
+}
+
+/* 2. Only seats in the selected cabin class display their original colors. */
+.seatmap-panel[data-selected-cabin="economy"] .seat.economy,
+.seatmap-panel[data-selected-cabin="business"] .seat.business,
+.seatmap-panel[data-selected-cabin="first"] .seat.first {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 3. In the header, add a highlight */
+.selected-cabin-info {
+    color: var(--navy);
+    font-weight: 800;
+    background: rgba(212,175,55,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
 }

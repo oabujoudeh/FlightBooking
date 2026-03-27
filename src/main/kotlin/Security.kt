@@ -1,7 +1,7 @@
 package com.flightbooking
 import org.mindrot.jbcrypt.BCrypt
 
-object SecurityDAO{
+object Security{
     fun hashPassword(plainTextPassword: String): String {
         val salt = BCrypt.gensalt()
         return BCrypt.hashpw(plainTextPassword, salt)
@@ -9,11 +9,10 @@ object SecurityDAO{
 
     fun isPasswordValid(plainTextPassword: String):Boolean{
         // password has at least one upper case letter, one lower case, one digtit and length > 8
-        if(plainTextPassword.length < 8) return false
-        val hasUppercase = plainTextPassword.any{it.isUpperCase()}
-        val hasLowercase = plainTextPassword.any{it.isLowerCase()}
-        val hasDigit = plainTextPassword.any{it.isDigit()}
-        return hasUppercase && hasLowercase && hasDigit
+        return plainTextPassword.length >= 8 &&
+               plainTextPassword.any { it.isUpperCase() } &&
+               plainTextPassword.any { it.isLowerCase() } &&
+               plainTextPassword.any { it.isDigit() }
     }
 
     fun verifyPassword(plainTextPassword: String, hashedPasswordFromDb: String): Boolean {

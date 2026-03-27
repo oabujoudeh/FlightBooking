@@ -27,10 +27,10 @@ object UserDAO{
     }
 
     fun register(user: User, inputFirstName: String, inputMiddleName: String, inputLastName: String, inputEmail: String, inputPassword: String): Boolean {
-        if (!SecurityDAO.isPasswordValid(inputPassword)) return false
+        if (!Security.isPasswordValid(inputPassword)) return false
         if (emailExists(inputEmail)) return false
 
-        val hashedPassword = SecurityDAO.hashPassword(inputPassword)
+        val hashedPassword = Security.hashPassword(inputPassword)
         val sql = "INSERT INTO users(first_name, middle_name, last_name, email, password_hash) VALUES(?,?,?,?,?)"
 
         return try {
@@ -53,7 +53,7 @@ object UserDAO{
     data class LoginResult(val success: Boolean, val isAdmin: Boolean = false)
 
     fun loginUser(inputEmail: String, inputPassword: String): LoginResult {
-        val sql = "SELECT password_hash, is_admin FROM users WHERE email = ?"
+        val sql = "SELECT password_hash FROM users WHERE email = ?"
 
         return try{
             Database.getConnection().use{ conn ->
@@ -62,9 +62,8 @@ object UserDAO{
                     stmt.executeQuery().use{ result->
                         if(result.next()){
                             val hashedPasswordFromDb = result.getString("password_hash")
-                            val isAdmin = result.getInt("is_admin") == 1
-                            if(SecurityDAO.verifyPassword(inputPassword, hashedPasswordFromDb)){
-                                LoginResult(success = true, isAdmin = isAdmin)
+                            if(Security.verifyPassword(inputPassword, hashedPasswordFromDb)){
+                                LoginResult(success = true)
                             } else {
                                 LoginResult(success = false)
                             }
@@ -107,12 +106,12 @@ object UserDAO{
         }
 
         // if OTC is valid, check new password validation
-        if(!SecurityDAO.isPasswordValid(newPassword)){
+        if(!Security.isPasswordValid(newPassword)){
             return false
         }
 
         // if valid, hash the new password and update to database
-        val hashedNewPassword = SecurityDAO.hashPassword(newPassword)
+        val hashedNewPassword = Security.hashPassword(newPassword)
         val sql = "UPDATE users SET password_hash = ? WHERE email = ?"
         return try{
             Database.getConnection().use { conn ->
