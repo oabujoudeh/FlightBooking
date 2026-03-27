@@ -47,7 +47,9 @@ class UtilsTest {
     private fun makeFlight(
         flightId: Int = 1,
         flightNumber: String = "EJ101",
-        price: Double = 199.99,
+        priceEconomy: Double? = 199.99,
+        priceBusiness: Double? = 499.99,
+        priceFirst: Double? = null,
         durationMinutes: Int = 120,
         arrivalDayOffset: Int = 0
     ) = Flight(
@@ -65,7 +67,9 @@ class UtilsTest {
         arrivalTime = LocalTime.of(12, 30),
         arrivalDayOffset = arrivalDayOffset,
         durationMinutes = durationMinutes,
-        price = price
+        priceEconomy = priceEconomy,
+        priceBusiness = priceBusiness,
+        priceFirst = priceFirst
     )
 
     @Test
@@ -74,7 +78,8 @@ class UtilsTest {
         val expectedKeys = listOf(
             "flightNumber", "departureAirport", "arrivalAirport",
             "departureTerminal", "arrivalTerminal", "departureTime",
-            "arrivalTime", "duration", "price", "date", "flightId", "arrivalDayOffset"
+            "arrivalTime", "duration", "priceEconomy", "priceBusiness", 
+            "priceFirst", "date", "flightId", "arrivalDayOffset"
         )
         for (key in expectedKeys) {
             assert(map.containsKey(key)) { "should have '$key' in the map" }
@@ -89,7 +94,9 @@ class UtilsTest {
         assertEquals("Charles de Gaulle", map["arrivalAirport"])
         assertEquals("T5", map["departureTerminal"])
         assertEquals("T2", map["arrivalTerminal"])
-        assertEquals(199.99, map["price"])
+        assertEquals(199.99, map["priceEconomy"])
+        assertEquals(499.99, map["priceBusiness"])
+        assertEquals(null, map["priceFirst"])
         assertEquals(1, map["flightId"])
         assertEquals("2h", map["duration"])
         assertEquals("2026-06-15", map["date"])
@@ -119,7 +126,8 @@ class UtilsTest {
         val expectedKeys = listOf(
             "leg1DepartureTime", "leg1ArrivalTime", "leg1DepartureAirport",
             "leg1ArrivalAirport", "leg2DepartureTime", "leg2ArrivalTime",
-            "leg2ArrivalAirport", "layoverMinutes", "totalDuration", "price",
+            "leg2ArrivalAirport", "layoverMinutes", "totalDuration", 
+            "priceEconomy", "priceBusiness", "priceFirst",
             "leg1FlightId", "leg2FlightId", "leg2ArrivalDayOffset"
         )
         for (key in expectedKeys) {
@@ -128,19 +136,27 @@ class UtilsTest {
     }
 
     @Test
-    fun testConnectingFlightToMapValues() {
+    fun testConnectingFlightToMapValues() { 
+        val leg1 = makeFlight(priceEconomy = 100.0, priceBusiness = 200.0, priceFirst = null)
+        val leg2 = makeFlight(priceEconomy = 50.0, priceBusiness = null, priceFirst = 500.0)
+        
         val cf = ConnectingFlight(
-            leg1 = makeFlight(flightId = 10),
-            leg2 = makeFlight(flightId = 20),
+            leg1 = leg1,
+            leg2 = leg2,
             totalDurationMinutes = 300,
             layoverMinutes = 60,
-            totalPrice = 399.99
+            totalPrice = 150.0
         )
         val map = Utils.connectingFlightToMap(cf)
-        assertEquals(60, map["layoverMinutes"])
+        
+        // 100 + 50 = 150
+        assertEquals(150.0, map["priceEconomy"])
+        
+        // If any is null, the result should be null
+        assertEquals(null, map["priceBusiness"])
+        assertEquals(null, map["priceFirst"])
+        
         assertEquals("5h", map["totalDuration"])
-        assertEquals(399.99, map["price"])
-        assertEquals(10, map["leg1FlightId"])
-        assertEquals(20, map["leg2FlightId"])
+        assertEquals(60, map["layoverMinutes"])
     }
 }

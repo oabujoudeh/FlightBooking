@@ -15,14 +15,14 @@ class SecurityTest {
 
     @Test
     fun testHashPasswordReturnsHashedString() {
-        val hash = SecurityDAO.hashPassword("TestPassword1")
+        val hash = Security.hashPassword("TestPassword1")
         assertNotEquals("TestPassword1", hash, "the hash shouldnt just be the plain text lol")
     }
 
     @Test
     fun testHashPasswordProducesDifferentHashesForSameInput() {
-        val hash1 = SecurityDAO.hashPassword("TestPassword1")
-        val hash2 = SecurityDAO.hashPassword("TestPassword1")
+        val hash1 = Security.hashPassword("TestPassword1")
+        val hash2 = Security.hashPassword("TestPassword1")
         assertNotEquals(hash1, hash2, "bcrypt should use different salts each time")
     }
 
@@ -31,20 +31,20 @@ class SecurityTest {
 
     @Test
     fun testVerifyPasswordWithCorrectPassword() {
-        val hash = SecurityDAO.hashPassword("MyPassword123")
-        assertTrue(SecurityDAO.verifyPassword("MyPassword123", hash), "right password should work")
+        val hash = Security.hashPassword("MyPassword123")
+        assertTrue(Security.verifyPassword("MyPassword123", hash), "right password should work")
     }
 
     @Test
     fun testVerifyPasswordWithWrongPassword() {
-        val hash = SecurityDAO.hashPassword("MyPassword123")
-        assertFalse(SecurityDAO.verifyPassword("WrongPassword1", hash), "wrong password shouldnt work")
+        val hash = Security.hashPassword("MyPassword123")
+        assertFalse(Security.verifyPassword("WrongPassword1", hash), "wrong password shouldnt work")
     }
 
     @Test
     fun testVerifyPasswordIsCaseSensitive() {
-        val hash = SecurityDAO.hashPassword("MyPassword123")
-        assertFalse(SecurityDAO.verifyPassword("mypassword123", hash), "should be case sensitive")
+        val hash = Security.hashPassword("MyPassword123")
+        assertFalse(Security.verifyPassword("mypassword123", hash), "should be case sensitive")
     }
 
 
@@ -52,36 +52,36 @@ class SecurityTest {
 
     @Test
     fun testValidPasswordAccepted() {
-        assertTrue(SecurityDAO.isPasswordValid("StrongPass1"), "this should be fine")
+        assertTrue(Security.isPasswordValid("StrongPass1"), "this should be fine")
     }
 
     @Test
     fun testPasswordTooShort() {
-        assertFalse(SecurityDAO.isPasswordValid("Short1"), "too short should fail")
+        assertFalse(Security.isPasswordValid("Short1"), "too short should fail")
     }
 
     @Test
     fun testPasswordExactly8Chars() {
-        assertTrue(SecurityDAO.isPasswordValid("Abcdefg1"), "exactly 8 chars should be ok")
+        assertTrue(Security.isPasswordValid("Abcdefg1"), "exactly 8 chars should be ok")
     }
 
     @Test
     fun testPasswordNoUppercase() {
-        assertFalse(SecurityDAO.isPasswordValid("lowercase1"), "needs at least one uppercase")
+        assertFalse(Security.isPasswordValid("lowercase1"), "needs at least one uppercase")
     }
 
     @Test
     fun testPasswordNoLowercase() {
-        assertFalse(SecurityDAO.isPasswordValid("UPPERCASE1"), "needs at least one lowercase")
+        assertFalse(Security.isPasswordValid("UPPERCASE1"), "needs at least one lowercase")
     }
 
     @Test
     fun testPasswordNoDigit() {
-        assertFalse(SecurityDAO.isPasswordValid("NoDigitsHere"), "needs at least one number")
+        assertFalse(Security.isPasswordValid("NoDigitsHere"), "needs at least one number")
     }
 
     @Test
     fun testEmptyPasswordRejected() {
-        assertFalse(SecurityDAO.isPasswordValid(""), "empty password obviously shouldnt work")
+        assertFalse(Security.isPasswordValid(""), "empty password obviously shouldnt work")
     }
 }
