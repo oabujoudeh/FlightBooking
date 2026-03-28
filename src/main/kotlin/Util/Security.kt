@@ -1,5 +1,7 @@
 package com.flightbooking
+
 import org.mindrot.jbcrypt.BCrypt
+
 
 object Security{
     fun hashPassword(plainTextPassword: String): String {

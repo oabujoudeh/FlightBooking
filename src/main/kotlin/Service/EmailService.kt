@@ -5,6 +5,7 @@ import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
 import java.util.Properties
 
+
 object EmailService {
     private const val username = "6aff3dc4f403a8" 
     private const val password = "de49a98f194e65" 

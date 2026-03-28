@@ -1,5 +1,6 @@
 package com.flightbooking
 
+
 object Utils {
     fun formatDuration(minutes: Int): String {
         val hours = minutes / 60

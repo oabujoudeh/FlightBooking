@@ -10,6 +10,7 @@ import io.ktor.server.response.*
 import io.ktor.http.*
 import java.time.LocalDate
 
+
 // helper that wraps getSessionData and guarantees non‑nullable values
 private fun ApplicationCall.nonNullSessionData(): Map<String, Any> =
     getSessionData(this).mapValues { it.value ?: "" }
