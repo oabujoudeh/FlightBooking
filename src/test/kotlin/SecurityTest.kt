@@ -11,8 +11,13 @@ import kotlin.test.assertNotEquals
 
 class SecurityTest {
 
-    // hashing tests
 
+    /**
+    * Tests for password hashing.
+    *
+    * These checks make sure the password gets turned into a hash and that the
+    * same password does not give the exact same hash every time.
+    */
     @Test
     fun testHashPasswordReturnsHashedString() {
         val hash = Security.hashPassword("TestPassword1")
@@ -27,8 +32,12 @@ class SecurityTest {
     }
 
 
-    // verification - checking passwords match their hashes
-
+    /**
+    * Tests for password checking.
+    *
+    * These checks make sure the correct password matches, the wrong one fails,
+    * and password checking is case sensitive.
+    */
     @Test
     fun testVerifyPasswordWithCorrectPassword() {
         val hash = Security.hashPassword("MyPassword123")
@@ -48,8 +57,12 @@ class SecurityTest {
     }
 
 
-    // password validation rules - min 8 chars, upper, lower, digit
-
+    /**
+    * Tests for password validation rules.
+    *
+    * These checks make sure only passwords that meet the basic rules are
+    * accepted, and invalid ones are rejected.
+    */
     @Test
     fun testValidPasswordAccepted() {
         assertTrue(Security.isPasswordValid("StrongPass1"), "this should be fine")
