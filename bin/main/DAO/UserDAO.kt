@@ -6,6 +6,13 @@ import java.time.ZonedDateTime
 
 
 object UserDAO{
+
+    /**
+    * Checks if an email is already in the users table.
+    *
+    * @param email the email to check
+    * @return true if the email exists, otherwise false
+    */
     fun emailExists(email: String): Boolean {
         val sql = "SELECT count(*) FROM users WHERE email = ?"
         return try {
@@ -26,6 +33,21 @@ object UserDAO{
         }
     }
 
+
+    /**
+    * Registers a new user in the database.
+    *
+    * It first checks if the password is valid and if the email is already used.
+    * If both checks pass, the password is hashed and the user is added.
+    *
+    * @param user the user object
+    * @param inputFirstName the user's first name
+    * @param inputMiddleName the user's middle name
+    * @param inputLastName the user's last name
+    * @param inputEmail the user's email
+    * @param inputPassword the user's password
+    * @return true if the user was added, otherwise false
+    */
     fun register(user: User, inputFirstName: String, inputMiddleName: String, inputLastName: String, inputEmail: String, inputPassword: String): Boolean {
         if (!Security.isPasswordValid(inputPassword)) return false
         if (emailExists(inputEmail)) return false
@@ -50,8 +72,25 @@ object UserDAO{
         }
     }
 
+
+    /**
+    * Simple result for a login attempt.
+    *
+    * It stores whether the login worked and whether the user is an admin.
+    */
     data class LoginResult(val success: Boolean, val isAdmin: Boolean = false)
 
+
+    /**
+    * Checks if a user can log in.
+    *
+    * It looks up the email, gets the saved password hash, and compares it
+    * with the password the user entered.
+    *
+    * @param inputEmail the email entered by the user
+    * @param inputPassword the password entered by the user
+    * @return a `LoginResult` showing if the login worked
+    */
     fun loginUser(inputEmail: String, inputPassword: String): LoginResult {
         val sql = "SELECT password_hash FROM users WHERE email = ?"
 
@@ -78,6 +117,15 @@ object UserDAO{
         }
     }
 
+
+    /**
+    * Starts the password reset process for a user.
+    *
+    * It checks if the email exists, makes a one-time code, and sends it by email.
+    *
+    * @param inputEmail the email for the password reset
+    * @return true if the reset email was sent, otherwise false
+    */
     fun resetPassword(inputEmail: String):Boolean{
         if(!emailExists(inputEmail)){
             return false
@@ -99,6 +147,17 @@ object UserDAO{
     }
 
 
+    /**
+    * Finishes resetting a user's password.
+    *
+    * It checks the one-time code, checks the new password, and then updates
+    * the saved password in the database.
+    *
+    * @param inputEmail the user's email
+    * @param inputOTC the one-time code
+    * @param newPassword the new password
+    * @return true if the password was updated, otherwise false
+    */
     fun confirmResetPassword(inputEmail: String, inputOTC: String, newPassword: String):Boolean{
         // check if OTC is valid and expired
         if(!OTC.verify(inputEmail, inputOTC)){
@@ -129,6 +188,12 @@ object UserDAO{
         }
     }
 
+    /**
+    * Gets the user ID for an email.
+    *
+    * @param username the user's email
+    * @return the user ID, or -1 if it is not found
+    */
     fun getUserID(username: String): Int {
         val sql = "SELECT user_id FROM users WHERE email = ?"
         return try {
@@ -145,8 +210,15 @@ object UserDAO{
         }
     }
 
-    // pulls the flight info out of a single row and converts it into a map
-    // we need to do some timezone fixes ton get correct arrival time i think 
+    /**
+    * Turns one database row into a map of flight info.
+    *
+    * It reads the flight details, works out the arrival time, and puts the
+    * values into a map.
+    *
+    * @param result the current row from the query result
+    * @return a map with flight details like times, cities, airports, terminals, and duration
+    */
     private fun getFlightInfoFromRow(result: java.sql.ResultSet): Map<String, Any> {
         val durationMinutes = result.getInt("base_duration_minutes")
 
@@ -176,6 +248,15 @@ object UserDAO{
         return flightInfo
     }
 
+
+    /**
+    * Gets all non-cancelled bookings for a user.
+    *
+    * It also groups together any flights that belong to the same booking.
+    *
+    * @param userID the ID of the user
+    * @return a list of booking maps, where each booking includes its flight details
+    */
     fun getBookings(userID: Int): List<Map<String, Any>> {
         // get all bookings for the user, joining to get the flight and route info
         // a booking can have multiple flights so we group by booking_id at the end
@@ -237,6 +318,16 @@ object UserDAO{
         }
     }
 
+
+    /**
+    * Gets one booking for a user.
+    *
+    * It returns the booking details, its flights, and its passengers.
+    *
+    * @param bookingId the ID of the booking
+    * @param userID the ID of the user
+    * @return a booking map, or null if it is not found
+    */
     fun getBookingById(bookingId: Int, userID: Int): Map<String, Any>? {
         // get a single booking with its flights and passengers
         val bookingSql = """
@@ -313,6 +404,13 @@ object UserDAO{
         }
     }
 
+    /**
+    * Cancels a booking for a user.
+    *
+    * @param bookingId the ID of the booking
+    * @param userID the ID of the user
+    * @return true if the booking was cancelled, otherwise false
+    */
     fun cancelBooking(bookingId: Int, userID: Int): Boolean {
         val sql = "UPDATE bookings SET status = 'cancelled' WHERE booking_id = ? AND user_id = ?"
         return try {
@@ -326,8 +424,19 @@ object UserDAO{
         } catch(e: Exception){
             false
         }
-    }
+    }  
 
+    /**
+    * Updates the passengers for a booking.
+    *
+    * It checks the booking belongs to the user, removes the old passengers,
+    * and adds the new ones.
+    *
+    * @param bookingId the ID of the booking
+    * @param userID the ID of the user
+    * @param passengers the updated passenger list
+    * @return true if the update worked, otherwise false
+    */
     fun updateBookingPassengers(bookingId: Int, userID: Int, passengers: List<Map<String, String>>): Boolean {
         // make sure booking belongs to this user
         val checkSql = "SELECT count(*) FROM bookings WHERE booking_id = ? AND user_id = ?"
@@ -370,6 +479,20 @@ object UserDAO{
         }
     }
 
+
+    /**
+    * Creates a new booking in the database.
+    *
+    * It saves the booking, adds the flights and passengers, and marks the
+    * chosen seats as occupied.
+    *
+    * @param userID the ID of the user making the booking
+    * @param email the contact email for the booking
+    * @param flightIds the flight IDs in the booking
+    * @param totalPrice the total booking price
+    * @param passengers the passenger details
+    * @return true if the booking was created, otherwise false
+    */
     fun createBooking(userID: Int, email: String, flightIds: List<Int>, totalPrice: Double, passengers: List<Map<String, String>>): Boolean {
         return try {
             Database.getConnection().use { conn ->

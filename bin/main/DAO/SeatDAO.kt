@@ -3,6 +3,11 @@ package com.flightbooking
 
 object SeatDAO {
 
+    /**
+    * Gets the seats for a flight.
+    *
+    * If the seats have not been made yet, it creates them first.
+    */
     fun getOrGenerateSeats(flightId: Int, aircraftType: String): List<Seat> {
         if (!seatsExist(flightId)) {
             generateSeats(flightId, aircraftType)
@@ -10,6 +15,13 @@ object SeatDAO {
         return getSeats(flightId)
     }
 
+
+    /**
+    * Checks if seats already exist for a flight.
+    *
+    * @param flightId the ID of the flight
+    * @return true if the flight has seats, otherwise false
+    */
     private fun seatsExist(flightId: Int): Boolean {
         val sql = "SELECT COUNT(*) FROM seats WHERE flight_id = ?"
         Database.getConnection().use { conn ->
@@ -21,6 +33,12 @@ object SeatDAO {
         }
     }
 
+    /**
+    * Gets all seats for a flight from the database.
+    *
+    * @param flightId the ID of the flight
+    * @return a list of seats for that flight
+    */
     private fun getSeats(flightId: Int): List<Seat> {
         val sql = """
             SELECT seat_id, flight_id, seat_number, class, is_occupied 
@@ -49,6 +67,12 @@ object SeatDAO {
         return seats
     }
 
+
+    /**
+    * Creates seat records for a flight based on the aircraft layout.
+    *
+    * It builds the seats from the aircraft config and saves them in the database.
+    */
     private fun generateSeats(flightId: Int, aircraftType: String) {
         val config = AircraftConfigs.getConfig(aircraftType)
         val sql = "INSERT INTO seats (flight_id, seat_number, class, is_occupied) VALUES (?, ?, ?, ?)"
