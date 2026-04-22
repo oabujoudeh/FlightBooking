@@ -1,5 +1,19 @@
 package com.flightbooking
 
+/**
+ * DAO object used for admin database queries.
+ *
+ * This object contains functions that help fetch data for the admin side of
+ * the flight booking system. It is used for the dashboard
+ * information, such as total users, booking statistics, recent bookings,
+ * cancellations, upcoming flights, and busiest routes.
+ *
+ * Each function connects to the database, runs a query, and returns the
+ * results in a simple format that can be used by the rest of the program.
+ *
+ * If a query fails, the functions usually return a default value like `0`
+ * or an empty list instead of crashing the program.
+ */
 object AdminDAO {
 
 
