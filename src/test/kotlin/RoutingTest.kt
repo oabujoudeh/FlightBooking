@@ -14,8 +14,13 @@ import kotlin.test.assertContains
 
 class RoutingTest {
 
-    // just checking basic pages actually load without crashing
 
+    /**
+    * Basic page load tests.
+    *
+    * These checks make sure the main public pages open properly and that the
+    * home page shows the app branding.
+    */
     @Test
     fun testHomePageLoads() = testApplication {
         application { module() }
@@ -57,7 +62,12 @@ class RoutingTest {
     }
 
 
-    // login tests - making sure bad logins dont get through
+    /**
+    * Login test for invalid details.
+    *
+    * This checks that a bad login stays on the login page and shows an error
+    * message instead of letting the user in.
+    */
 
     @Test
     fun testBadLoginShowsError() = testApplication {
@@ -75,8 +85,11 @@ class RoutingTest {
     }
 
 
-    // logout should send you back to the home page
-
+    /**
+    * Logout route test.
+    *
+    * This checks that logging out redirects the user back to the home page.
+    */
     @Test
     fun testLogoutSendsYouHome() = testApplication {
         application { module() }
@@ -89,9 +102,12 @@ class RoutingTest {
     }
 
 
-    // these tests check that you cant access protected pages without logging in first
-    // all of these should kick you to /login
-
+    /**
+    * Tests for protected routes.
+    *
+    * These checks make sure users who are not logged in get redirected to the
+    * login page instead of being allowed onto protected pages.
+    */
     @Test
     fun testCantAccessProfileWithoutLogin() = testApplication {
         application { module() }
@@ -157,8 +173,13 @@ class RoutingTest {
     }
 
 
-    // airport search endpoint tests
 
+    /**
+    * Tests for the airport search endpoint.
+    *
+    * These checks make sure the search does not return results for very short
+    * input and that it can find matching airports or cities.
+    */
     @Test
     fun testAirportSearchNeedsTwoChars() = testApplication {
         application { module() }
@@ -179,8 +200,13 @@ class RoutingTest {
     }
 
 
-    // flight search with nothing filled in should just send you home
 
+    /**
+    * Flight search validation test.
+    *
+    * This checks that if no search details are given, the user gets sent back
+    * instead of the search trying to run.
+    */
     @Test
     fun testFlightSearchWithNothingRedirects() = testApplication {
         application { module() }
@@ -196,9 +222,12 @@ class RoutingTest {
     }
 
 
-    // admin chart routes - normal users shouldnt be able to see these
-    // they should all redirect to home
-
+    /**
+    * Tests for admin-only chart routes.
+    *
+    * These checks make sure normal users cannot open the admin chart pages
+    * and get redirected back to the home page.
+    */
     @Test
     fun testNonAdminCantSeeBookingsChart() = testApplication {
         application { module() }
