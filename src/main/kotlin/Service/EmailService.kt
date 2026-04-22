@@ -10,6 +10,14 @@ object EmailService {
     private const val username = "6aff3dc4f403a8" 
     private const val password = "de49a98f194e65" 
 
+
+    /**
+    * Sends an email using the mail server settings.
+    *
+    * @param to the email address to send to
+    * @param subject the subject of the email
+    * @param body the main email text
+    */
     fun sendEmail(to: String, subject: String, body: String) {
         val props = Properties().apply {
             put("mail.smtp.auth", "true")

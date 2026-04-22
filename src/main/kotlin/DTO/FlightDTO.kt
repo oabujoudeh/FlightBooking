@@ -4,7 +4,10 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 /**
- * Unified display model: used to render both direct and connecting flights simultaneously on the front end.
+ * Simple model used to show flight results on the front end.
+ *
+ * It is used for both direct flights and connecting flights so the UI can
+ * handle them in the same way.
  */
 data class FlightDisplayDTO(
     val flightId: String,          // Direct flights are "123", connecting flights are "123_456"

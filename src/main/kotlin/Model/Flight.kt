@@ -3,7 +3,9 @@ package com.flightbooking
 import java.time.LocalDate
 import java.time.LocalTime
 
-
+/**
+ * Stores the main details for one flight.
+ */
 data class Flight(
     val flightId: Int,
     val flightNumber: String,
@@ -24,6 +26,9 @@ data class Flight(
     val priceFirst: Double?
 )
 
+/**
+ * Stores two flights that make up a connecting journey.
+ */
 data class ConnectingFlight(
     val leg1: Flight,
     val leg2: Flight,
