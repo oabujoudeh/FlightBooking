@@ -14,6 +14,12 @@ import java.time.ZoneId
 
 object ChartService {
 
+    /**
+    * Makes a chart showing bookings and revenue over time.
+    *
+    * @param data the booking data to plot
+    * @return the chart as PNG bytes
+    */
     fun generateBookingsOverTimeChart(data: List<Map<String, Any>>): ByteArray {
         val dates = data.map {
             val localDate = LocalDate.parse(it["date"] as String)
@@ -45,6 +51,12 @@ object ChartService {
         return out.toByteArray()
     }
 
+    /**
+    * Makes a pie chart for booking statuses.
+    *
+    * @param data the status data to show
+    * @return the chart as PNG bytes
+    */
     fun generateBookingStatusChart(data: List<Map<String, Any>>): ByteArray {
         val chart = PieChartBuilder()
             .width(600)
@@ -75,6 +87,12 @@ object ChartService {
         return out.toByteArray()
     }
 
+    /**
+    * Makes a chart for the busiest routes.
+    *
+    * @param data the route booking data
+    * @return the chart as PNG bytes
+    */
     fun generateBusiestRoutesChart(data: List<Map<String, Any>>): ByteArray {
         val labels = data.map { "${it["departureCity"]} → ${it["arrivalCity"]}" }
         val counts = data.map { (it["bookingCount"] as Int).toDouble() }
