@@ -8,7 +8,7 @@
 
     <div class="auth-card">
 
-        <h2 class="auth-title">Login</h2>
+        <h1 class="auth-title">Login</h1>
 
         {% if error is not empty %}
         <div class="error-box" role="alert">

@@ -9,7 +9,7 @@
 <div class="auth-container">
 <div class="auth-card">
 
-    <h2>Booking #{{ booking.bookingId }}</h2>
+    <h1>Booking #{{ booking.bookingId }}</h1>
 
     <div class="booking-meta">
         <p><strong>Booking Date:</strong> {{ booking.bookingDate }}</p>
@@ -20,7 +20,7 @@
 
     <hr>
 
-    <h3>Flights</h3>
+    <h2>Flights</h2>
 
     {% for flight in booking.flights %}
     <div class="flight-card">
@@ -34,18 +34,18 @@
 
     <hr>
 
-    <h3>Passengers</h3>
+    <h2>Passengers</h2>
 
     <form method="post" action="/edit-booking">
 
         {% for passenger in booking.passengers %}
         <div class="passenger-card">
 
-            <label>Full Name</label>
-            <input type="text" name="name_{{ loop.index }}" value="{{ passenger.name }}">
+            <label for="name_{{ loop.index }}">Full Name</label>
+            <input type="text" id="name_{{ loop.index }}" name="name_{{ loop.index }}" value="{{ passenger.name }}">
 
-            <label>ID Number</label>
-            <input type="text" name="id_{{ loop.index }}" value="{{ passenger.id }}">
+            <label for="id_{{ loop.index }}">ID Number</label>
+            <input type="text" id="id_{{ loop.index }}" name="id_{{ loop.index }}" value="{{ passenger.id }}">
 
             <p><strong>Type:</strong> {{ passenger.type }}</p>
             <p><strong>Seat:</strong> {{ passenger.seat }}</p>
