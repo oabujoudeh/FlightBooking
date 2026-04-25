@@ -2,6 +2,8 @@
 
 {% block content %}
 
+<h1 class="sr-only">Complete Booking</h1>
+
 <div class="booking-summary">
     {# Displaying correct Cabin Price based on selection #}
     {% if outboundFlight is not null %}
@@ -47,7 +49,7 @@
     </div>
 </div>
 
-<main class="layout">
+<div class="layout">
     <form method="post" action="/confirm-booking">
         <input type="hidden" name="outboundFlightId" value="{{ outboundFlight.flightId }}">
         <input type="hidden" name="outboundCabin" value="{{ outboundCabin }}">
@@ -140,7 +142,7 @@
             </div>
         </div>
     </form>
-</main>
+</div>
 
 <script>
 let currentPassengerField = null;

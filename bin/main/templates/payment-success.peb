@@ -7,7 +7,7 @@
 <div class="payment-success-wrapper">
 <div class="payment-success-card">
 
-    <h2>Payment Successful</h2>
+    <h1>Payment Successful</h1>
 
     <p>Your booking has been confirmed.</p>
 
