@@ -3,6 +3,7 @@ package com.flightbooking
 import java.time.LocalDate
 import java.time.LocalTime
 
+
 data class Flight(
     val flightId: Int,
     val flightNumber: String,

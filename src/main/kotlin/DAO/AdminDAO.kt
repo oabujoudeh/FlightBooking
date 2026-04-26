@@ -1,7 +1,6 @@
 package com.flightbooking
 
 object AdminDAO {
-
     fun getTotalUsers(): Int {
         val sql = "SELECT COUNT(*) FROM users"
         return try {
@@ -30,11 +29,13 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "date" to (rs.getString("date") ?: ""),
-                                "count" to rs.getInt("count"),
-                                "revenue" to rs.getDouble("revenue")
-                            ))
+                            results.add(
+                                mapOf(
+                                    "date" to (rs.getString("date") ?: ""),
+                                    "count" to rs.getInt("count"),
+                                    "revenue" to rs.getDouble("revenue"),
+                                ),
+                            )
                         }
                         results
                     }
@@ -57,10 +58,12 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "status" to rs.getString("status"),
-                                "count" to rs.getInt("count")
-                            ))
+                            results.add(
+                                mapOf(
+                                    "status" to rs.getString("status"),
+                                    "count" to rs.getInt("count"),
+                                ),
+                            )
                         }
                         results
                     }
@@ -85,13 +88,15 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "bookingId" to rs.getInt("booking_id"),
-                                "bookingDate" to (rs.getString("booking_date") ?: ""),
-                                "totalPrice" to rs.getDouble("total_price"),
-                                "status" to rs.getString("status"),
-                                "contactEmail" to (rs.getString("contact_email") ?: "")
-                            ))
+                            results.add(
+                                mapOf(
+                                    "bookingId" to rs.getInt("booking_id"),
+                                    "bookingDate" to (rs.getString("booking_date") ?: ""),
+                                    "totalPrice" to rs.getDouble("total_price"),
+                                    "status" to rs.getString("status"),
+                                    "contactEmail" to (rs.getString("contact_email") ?: ""),
+                                ),
+                            )
                         }
                         results
                     }
@@ -117,12 +122,14 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "bookingId" to rs.getInt("booking_id"),
-                                "bookingDate" to (rs.getString("booking_date") ?: ""),
-                                "totalPrice" to rs.getDouble("total_price"),
-                                "contactEmail" to (rs.getString("contact_email") ?: "")
-                            ))
+                            results.add(
+                                mapOf(
+                                    "bookingId" to rs.getInt("booking_id"),
+                                    "bookingDate" to (rs.getString("booking_date") ?: ""),
+                                    "totalPrice" to rs.getDouble("total_price"),
+                                    "contactEmail" to (rs.getString("contact_email") ?: ""),
+                                ),
+                            )
                         }
                         results
                     }
@@ -153,16 +160,18 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "flightId" to rs.getInt("flight_id"),
-                                "flightDate" to (rs.getString("flight_date") ?: ""),
-                                "status" to rs.getString("status"),
-                                "flightNumber" to rs.getString("flight_number"),
-                                "departureTime" to (rs.getString("planned_departure") ?: ""),
-                                "departureCity" to rs.getString("departure_city"),
-                                "arrivalCity" to rs.getString("arrival_city"),
-                                "price" to rs.getDouble("price")
-                            ))
+                            results.add(
+                                mapOf(
+                                    "flightId" to rs.getInt("flight_id"),
+                                    "flightDate" to (rs.getString("flight_date") ?: ""),
+                                    "status" to rs.getString("status"),
+                                    "flightNumber" to rs.getString("flight_number"),
+                                    "departureTime" to (rs.getString("planned_departure") ?: ""),
+                                    "departureCity" to rs.getString("departure_city"),
+                                    "arrivalCity" to rs.getString("arrival_city"),
+                                    "price" to rs.getDouble("price"),
+                                ),
+                            )
                         }
                         results
                     }
@@ -193,12 +202,14 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "departureCity" to rs.getString("departure_city"),
-                                "arrivalCity" to rs.getString("arrival_city"),
-                                "flightNumber" to rs.getString("flight_number"),
-                                "bookingCount" to rs.getInt("booking_count")
-                            ))
+                            results.add(
+                                mapOf(
+                                    "departureCity" to rs.getString("departure_city"),
+                                    "arrivalCity" to rs.getString("arrival_city"),
+                                    "flightNumber" to rs.getString("flight_number"),
+                                    "bookingCount" to rs.getInt("booking_count"),
+                                ),
+                            )
                         }
                         results
                     }

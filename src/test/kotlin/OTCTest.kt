@@ -1,17 +1,14 @@
 package com.flightbooking
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
-import kotlin.test.assertFalse
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /* tests for the one time code system
    used for password resets */
 
 class OTCTest {
-
     // code generation stuff
 
     @Test
@@ -33,7 +30,6 @@ class OTCTest {
         // the old one should stop working after you generate a new one
         assertFalse(OTC.verify("overwrite@example.com", code1), "old code shouldnt work anymore")
     }
-
 
     // verification tests
 
@@ -60,7 +56,6 @@ class OTCTest {
         assertTrue(OTC.verify("consumed@example.com", code), "first time should work")
         assertFalse(OTC.verify("consumed@example.com", code), "second time should fail cos its used up")
     }
-
 
     // making sure codes dont leak between emails
 

@@ -91,7 +91,6 @@
                     </fieldset>
                     {% endfor %}
 
-                    <button type="submit" class="primary-btn">Confirm Booking</button>
                 </section>
             </div>
 
@@ -118,7 +117,7 @@
                                                 <div class="seat-group">
                                                     {% for seat in group %}
                                                         <button type="button"
-                                                            class="seat {{ seat.seatClass }}"
+                                                            class="seat {{ seat.seatClass }}{% if seat.isOccupied %} occupied{% endif %}"
                                                             data-seat="{{ seat.seatNumber }}"
                                                             data-class="{{ seat.seatClass }}"
                                                             onclick="selectSeat(this)"
@@ -185,6 +184,16 @@ function selectSeat(btn) {
     currentInput.value = seat;
     document.getElementById(currentPassengerField + '_label').textContent = 'Selected: ' + seat;
 }
+
+const selectedClass = "{{ outboundCabin }}".toLowerCase();
+document.querySelectorAll('.seat').forEach(seat => {
+     const seatClass = seat.dataset.class;
+
+      if (seatClass !== selectedClass) {
+        seat.disabled = true;
+         seat.classList.add('disabled-seat');
+      }
+});
 </script>
 
 {% endblock %}

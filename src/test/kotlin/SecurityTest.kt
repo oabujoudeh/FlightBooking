@@ -1,16 +1,14 @@
 package com.flightbooking
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
-
+import kotlin.test.assertTrue
 
 /* testing the password hashing and validation stuff
    making sure bcrypt is working and our password rules are right */
 
 class SecurityTest {
-
     // hashing tests
 
     @Test
@@ -25,7 +23,6 @@ class SecurityTest {
         val hash2 = Security.hashPassword("TestPassword1")
         assertNotEquals(hash1, hash2, "bcrypt should use different salts each time")
     }
-
 
     // verification - checking passwords match their hashes
 
@@ -46,7 +43,6 @@ class SecurityTest {
         val hash = Security.hashPassword("MyPassword123")
         assertFalse(Security.verifyPassword("mypassword123", hash), "should be case sensitive")
     }
-
 
     // password validation rules - min 8 chars, upper, lower, digit
 

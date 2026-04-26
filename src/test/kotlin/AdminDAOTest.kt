@@ -1,15 +1,13 @@
 package com.flightbooking
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
-
+import kotlin.test.assertTrue
 
 /* testing all the admin dashboard queries
    these pull data for charts and tables on the admin home page */
 
 class AdminDAOTest {
-
     // total users count
 
     @Test
@@ -17,7 +15,6 @@ class AdminDAOTest {
         val count = AdminDAO.getTotalUsers()
         assertTrue(count >= 0, "cant have negative users lol")
     }
-
 
     // bookings grouped by date - used for the line chart
 
@@ -50,7 +47,6 @@ class AdminDAOTest {
         }
     }
 
-
     // booking status counts - for the pie chart
 
     @Test
@@ -78,7 +74,6 @@ class AdminDAOTest {
         }
     }
 
-
     // recent bookings table
 
     @Test
@@ -100,7 +95,6 @@ class AdminDAOTest {
         }
     }
 
-
     // recent cancellations
 
     @Test
@@ -115,7 +109,6 @@ class AdminDAOTest {
         val result = AdminDAO.getRecentCancellations(3)
         assertTrue(result.size <= 3, "shouldnt return more than we asked for")
     }
-
 
     // upcoming flights
 
@@ -144,7 +137,6 @@ class AdminDAOTest {
             assertTrue(entry.containsKey("arrivalCity"))
         }
     }
-
 
     // busiest routes - for the bar chart
 

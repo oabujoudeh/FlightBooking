@@ -11,6 +11,7 @@ import java.time.LocalDate
 import java.util.Date
 import java.time.ZoneId
 
+
 object ChartService {
 
     fun generateBookingsOverTimeChart(data: List<Map<String, Any>>): ByteArray {

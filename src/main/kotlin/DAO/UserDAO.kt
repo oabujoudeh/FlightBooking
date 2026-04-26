@@ -4,8 +4,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
-
-object UserDAO{
+object UserDAO {
     fun emailExists(email: String): Boolean {
         val sql = "SELECT count(*) FROM users WHERE email = ?"
         return try {
@@ -26,7 +25,14 @@ object UserDAO{
         }
     }
 
-    fun register(user: User, inputFirstName: String, inputMiddleName: String, inputLastName: String, inputEmail: String, inputPassword: String): Boolean {
+    fun register(
+        user: User,
+        inputFirstName: String,
+        inputMiddleName: String,
+        inputLastName: String,
+        inputEmail: String,
+        inputPassword: String,
+    ): Boolean {
         if (!Security.isPasswordValid(inputPassword)) return false
         if (emailExists(inputEmail)) return false
 
@@ -50,81 +56,89 @@ object UserDAO{
         }
     }
 
-    data class LoginResult(val success: Boolean, val isAdmin: Boolean = false)
+    data class LoginResult(
+        val success: Boolean,
+        val isAdmin: Boolean = false,
+    )
 
-    fun loginUser(inputEmail: String, inputPassword: String): LoginResult {
+    fun loginUser(
+        inputEmail: String,
+        inputPassword: String,
+    ): LoginResult {
         val sql = "SELECT password_hash FROM users WHERE email = ?"
 
-        return try{
-            Database.getConnection().use{ conn ->
-                conn.prepareStatement(sql).use{ stmt ->
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
                     stmt.setString(1, inputEmail)
-                    stmt.executeQuery().use{ result->
-                        if(result.next()){
+                    stmt.executeQuery().use { result ->
+                        if (result.next()) {
                             val hashedPasswordFromDb = result.getString("password_hash")
-                            if(Security.verifyPassword(inputPassword, hashedPasswordFromDb)){
+                            if (Security.verifyPassword(inputPassword, hashedPasswordFromDb)) {
                                 LoginResult(success = true)
                             } else {
                                 LoginResult(success = false)
                             }
-                        }else{
+                        } else {
                             LoginResult(success = false)
                         }
                     }
                 }
             }
-        }catch(e:Exception){
+        } catch (e: Exception) {
             LoginResult(success = false)
         }
     }
 
-    fun resetPassword(inputEmail: String):Boolean{
-        if(!emailExists(inputEmail)){
+    fun resetPassword(inputEmail: String): Boolean {
+        if (!emailExists(inputEmail)) {
             return false
         }
-        return try{
+        return try {
             // email found, generate OTC and send email
             val generatedCode = OTC.generateAndSave(inputEmail)
 
             EmailService.sendEmail(
                 to = inputEmail,
                 subject = "Your One-Time Code for Password Reset",
-                body = "Your one-time code is: $generatedCode. It will expire in 5 minutes."
+                body = "Your one-time code is: $generatedCode. It will expire in 5 minutes.",
             )
             true
-        }
-        catch(e:Exception){
+        } catch (e: Exception) {
             false
         }
     }
 
-
-    fun confirmResetPassword(inputEmail: String, inputOTC: String, newPassword: String):Boolean{
+    fun confirmResetPassword(
+        inputEmail: String,
+        inputOTC: String,
+        newPassword: String,
+    ): Boolean {
         // check if OTC is valid and expired
-        if(!OTC.verify(inputEmail, inputOTC)){
+        if (!OTC.verify(inputEmail, inputOTC)) {
             return false
         }
 
         // if OTC is valid, check new password validation
-        if(!Security.isPasswordValid(newPassword)){
+        if (!Security.isPasswordValid(newPassword)) {
             return false
         }
 
         // if valid, hash the new password and update to database
         val hashedNewPassword = Security.hashPassword(newPassword)
         val sql = "UPDATE users SET password_hash = ? WHERE email = ?"
-        return try{
+        return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     stmt.setString(1, hashedNewPassword)
                     stmt.setString(2, inputEmail)
-                
+
                     val rowsAffected = stmt.executeUpdate()
-                
+
                     rowsAffected > 0
                 }
             }
-        }catch(e: Exception){
+        } catch (e: Exception) {
             false
         }
     }
@@ -146,7 +160,7 @@ object UserDAO{
     }
 
     // pulls the flight info out of a single row and converts it into a map
-    // we need to do some timezone fixes ton get correct arrival time i think 
+    // we need to do some timezone fixes ton get correct arrival time i think
     private fun getFlightInfoFromRow(result: java.sql.ResultSet): Map<String, Any> {
         val durationMinutes = result.getInt("base_duration_minutes")
 
@@ -224,6 +238,7 @@ object UserDAO{
 
                             // add this flight to the booking's flight list
                             val booking = seenBookingIds[bookingId]!!
+
                             @Suppress("UNCHECKED_CAST")
                             val flightList = booking["flights"] as MutableList<Map<String, Any>>
                             flightList.add(getFlightInfoFromRow(result))
@@ -237,7 +252,10 @@ object UserDAO{
         }
     }
 
-    fun getBookingById(bookingId: Int, userID: Int): Map<String, Any>? {
+    fun getBookingById(
+        bookingId: Int,
+        userID: Int,
+    ): Map<String, Any>? {
         // get a single booking with its flights and passengers
         val bookingSql = """
             SELECT
@@ -272,8 +290,8 @@ object UserDAO{
                         val flights = mutableListOf<Map<String, Any>>()
                         var found = false
 
-                        while(result.next()){
-                            if(!found){
+                        while (result.next()) {
+                            if (!found) {
                                 booking["bookingId"] = result.getInt("booking_id")
                                 booking["bookingDate"] = result.getString("booking_date") ?: ""
                                 booking["totalPrice"] = result.getDouble("total_price")
@@ -284,7 +302,7 @@ object UserDAO{
                             flights.add(getFlightInfoFromRow(result))
                         }
 
-                        if(!found) return@use null
+                        if (!found) return@use null
                         booking["flights"] = flights
                     }
                 }
@@ -294,13 +312,15 @@ object UserDAO{
                     stmt.setInt(1, bookingId)
                     stmt.executeQuery().use { result ->
                         val passengers = mutableListOf<Map<String, Any>>()
-                        while(result.next()){
-                            passengers.add(mapOf(
-                                "fullName" to result.getString("full_name"),
-                                "idNumber" to result.getString("id_number"),
-                                "type" to result.getString("type"),
-                                "seat" to result.getString("seat_id")
-                            ))
+                        while (result.next()) {
+                            passengers.add(
+                                mapOf(
+                                    "fullName" to result.getString("full_name"),
+                                    "idNumber" to result.getString("id_number"),
+                                    "type" to result.getString("type"),
+                                    "seat" to result.getString("seat_id"),
+                                ),
+                            )
                         }
                         booking["passengers"] = passengers
                     }
@@ -308,12 +328,15 @@ object UserDAO{
 
                 booking
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
             null
         }
     }
 
-    fun cancelBooking(bookingId: Int, userID: Int): Boolean {
+    fun cancelBooking(
+        bookingId: Int,
+        userID: Int,
+    ): Boolean {
         val sql = "UPDATE bookings SET status = 'cancelled' WHERE booking_id = ? AND user_id = ?"
         return try {
             Database.getConnection().use { conn ->
@@ -323,12 +346,16 @@ object UserDAO{
                     stmt.executeUpdate() > 0
                 }
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
             false
         }
     }
 
-    fun updateBookingPassengers(bookingId: Int, userID: Int, passengers: List<Map<String, String>>): Boolean {
+    fun updateBookingPassengers(
+        bookingId: Int,
+        userID: Int,
+        passengers: List<Map<String, String>>,
+    ): Boolean {
         // make sure booking belongs to this user
         val checkSql = "SELECT count(*) FROM bookings WHERE booking_id = ? AND user_id = ?"
         return try {
@@ -337,7 +364,7 @@ object UserDAO{
                     stmt.setInt(1, bookingId)
                     stmt.setInt(2, userID)
                     stmt.executeQuery().use { result ->
-                        if(!result.next() || result.getInt(1) == 0) return false
+                        if (!result.next() || result.getInt(1) == 0) return false
                     }
                 }
 
@@ -351,7 +378,7 @@ object UserDAO{
 
                 val insertSql = "INSERT INTO booking_passengers(booking_id, full_name, id_number, type, seat_id) VALUES(?, ?, ?, ?, ?)"
                 conn.prepareStatement(insertSql).use { stmt ->
-                    for(p in passengers){
+                    for (p in passengers) {
                         stmt.setInt(1, bookingId)
                         stmt.setString(2, p["fullName"] ?: "")
                         stmt.setString(3, p["idNumber"] ?: "")
@@ -365,18 +392,35 @@ object UserDAO{
                 conn.commit()
                 true
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
             false
         }
     }
 
-    fun createBooking(userID: Int, email: String, flightIds: List<Int>, totalPrice: Double, passengers: List<Map<String, String>>): Boolean {
+    fun createBooking(
+        userID: Int,
+        email: String,
+        flightIds: List<Int>,
+        totalPrice: Double,
+        passengers: List<Map<String, String>>,
+    ): Boolean {
         return try {
             Database.getConnection().use { conn ->
                 conn.autoCommit = false
 
                 // insert booking
-                val bookingSql = "INSERT INTO bookings(user_id, booking_date, total_price, status, contact_email, contact_phone) VALUES(?, datetime('now'), ?, 'confirmed', ?, 0)"
+                val bookingSql =
+                    """
+                    INSERT INTO bookings(
+                        user_id,
+                        booking_date,
+                        total_price,
+                        status,
+                        contact_email,
+                        contact_phone,
+                    )
+                    VALUES(?, datetime('now'), ?, 'confirmed',?,0)
+                    """.trimIndent()
                 val bookingStmt = conn.prepareStatement(bookingSql, java.sql.Statement.RETURN_GENERATED_KEYS)
                 bookingStmt.setInt(1, userID)
                 bookingStmt.setDouble(2, totalPrice)
@@ -384,7 +428,7 @@ object UserDAO{
                 bookingStmt.executeUpdate()
 
                 val keys = bookingStmt.generatedKeys
-                if(!keys.next()){
+                if (!keys.next()) {
                     conn.rollback()
                     return false
                 }
@@ -393,7 +437,7 @@ object UserDAO{
                 // insert booking flights
                 val flightSql = "INSERT INTO booking_flights(booking_id, flight_id, flight_sequence) VALUES(?, ?, ?)"
                 val flightStmt = conn.prepareStatement(flightSql)
-                for((index, flightId) in flightIds.withIndex()){
+                for ((index, flightId) in flightIds.withIndex()) {
                     flightStmt.setInt(1, bookingId)
                     flightStmt.setInt(2, flightId)
                     flightStmt.setInt(3, index + 1)
@@ -404,7 +448,7 @@ object UserDAO{
                 // insert passengers
                 val passengerSql = "INSERT INTO booking_passengers(booking_id, full_name, id_number, type, seat_id) VALUES(?, ?, ?, ?, ?)"
                 val passengerStmt = conn.prepareStatement(passengerSql)
-                for(p in passengers){
+                for (p in passengers) {
                     passengerStmt.setInt(1, bookingId)
                     passengerStmt.setString(2, p["fullName"] ?: "")
                     passengerStmt.setString(3, p["idNumber"] ?: "")
@@ -417,8 +461,8 @@ object UserDAO{
                 // mark seats as occupied
                 val seatSql = "UPDATE seats SET is_occupied = 1 WHERE flight_id = ? AND seat_number = ?"
                 val seatStmt = conn.prepareStatement(seatSql)
-                for(p in passengers){
-                    for(flightId in flightIds){
+                for (p in passengers) {
+                    for (flightId in flightIds) {
                         seatStmt.setInt(1, flightId)
                         seatStmt.setString(2, p["seat"] ?: "")
                         seatStmt.addBatch()
@@ -429,7 +473,7 @@ object UserDAO{
                 conn.commit()
                 true
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
             false
         }
     }

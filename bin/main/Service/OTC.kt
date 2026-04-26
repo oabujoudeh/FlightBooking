@@ -1,8 +1,10 @@
 package com.flightbooking
+
 import java.time.LocalDateTime
 import java.time.Duration
 import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
+
 
 object OTC{
     private val otcStorage = ConcurrentHashMap<String, OtcEntry>()

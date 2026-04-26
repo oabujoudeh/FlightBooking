@@ -1,14 +1,10 @@
 package com.flightbooking
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
-
+import kotlin.test.assertTrue
 
 class UserDAOTest {
-
     // checking if emails exist in the database
 
     @Test
@@ -28,7 +24,6 @@ class UserDAOTest {
         val result = UserDAO.emailExists("TNVN3422@LEEDS.AC.UK")
         assertTrue(result || !result, "should return without crashing")
     }
-
 
     // login tests
 
@@ -51,7 +46,6 @@ class UserDAOTest {
         assertFalse(result.success, "empty password shouldnt work")
     }
 
-
     // getUserID
 
     @Test
@@ -66,7 +60,6 @@ class UserDAOTest {
         assertTrue(id == -1, "unknown user should get -1")
     }
 
-
     // bookings
 
     @Test
@@ -74,7 +67,6 @@ class UserDAOTest {
         val bookings = UserDAO.getBookings(-1)
         assertTrue(bookings.isEmpty(), "invalid user id should return nothing")
     }
-
 
     // cancel booking
 
@@ -84,31 +76,32 @@ class UserDAOTest {
         assertFalse(result, "cant cancel a booking that doesnt exist")
     }
 
-
     // registration
 
     @Test
     fun testRegisterWithDuplicateEmail() {
-        val user = User(
-            firstName = "Test",
-            lastName = "User",
-            email = "tnvn3422@leeds.ac.uk",
-            middleName = "",
-            passwordHash = ""
-        )
+        val user =
+            User(
+                firstName = "Test",
+                lastName = "User",
+                email = "tnvn3422@leeds.ac.uk",
+                middleName = "",
+                passwordHash = "",
+            )
         val result = UserDAO.register(user, "Test", "", "User", "tnvn3422@leeds.ac.uk", "StrongPass1")
         assertFalse(result, "shouldnt be able to register with an email thats already taken")
     }
 
     @Test
     fun testRegisterWithWeakPassword() {
-        val user = User(
-            firstName = "Test",
-            lastName = "User",
-            email = "newuser_weak@test.com",
-            middleName = "",
-            passwordHash = ""
-        )
+        val user =
+            User(
+                firstName = "Test",
+                lastName = "User",
+                email = "newuser_weak@test.com",
+                middleName = "",
+                passwordHash = "",
+            )
         val result = UserDAO.register(user, "Test", "", "User", "newuser_weak@test.com", "weak")
         assertFalse(result, "weak password should get rejected")
     }
