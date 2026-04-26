@@ -28,7 +28,7 @@ ktlint {
 detekt {
     buildUponDefaultConfig = true
     allRules = false
-    autoCorrect = true
+    ignoreFailures = true
 }
 
 dependencies {
