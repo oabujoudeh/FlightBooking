@@ -92,27 +92,50 @@ object UserDAO{
     * @return a `LoginResult` showing if the login worked
     */
     fun loginUser(inputEmail: String, inputPassword: String): LoginResult {
-        val sql = "SELECT password_hash FROM users WHERE email = ?"
-
-        return try{
-            Database.getConnection().use{ conn ->
-                conn.prepareStatement(sql).use{ stmt ->
+        // Check admins table first — match by email or username
+        val adminSql = "SELECT password_hash FROM admins WHERE email = ? OR username = ?"
+        try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(adminSql).use { stmt ->
                     stmt.setString(1, inputEmail)
-                    stmt.executeQuery().use{ result->
-                        if(result.next()){
-                            val hashedPasswordFromDb = result.getString("password_hash")
-                            if(Security.verifyPassword(inputPassword, hashedPasswordFromDb)){
+                    stmt.setString(2, inputEmail)
+                    stmt.executeQuery().use { result ->
+                        if (result.next()) {
+                            val hash = result.getString("password_hash")
+                            return if (Security.verifyPassword(inputPassword, hash)) {
+                                LoginResult(success = true, isAdmin = true)
+                            } else {
+                                LoginResult(success = false)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            return LoginResult(success = false)
+        }
+
+        // Fall back to regular users table
+        val userSql = "SELECT password_hash FROM users WHERE email = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(userSql).use { stmt ->
+                    stmt.setString(1, inputEmail)
+                    stmt.executeQuery().use { result ->
+                        if (result.next()) {
+                            val hash = result.getString("password_hash")
+                            if (Security.verifyPassword(inputPassword, hash)) {
                                 LoginResult(success = true)
                             } else {
                                 LoginResult(success = false)
                             }
-                        }else{
+                        } else {
                             LoginResult(success = false)
                         }
                     }
                 }
             }
-        }catch(e:Exception){
+        } catch (e: Exception) {
             LoginResult(success = false)
         }
     }
