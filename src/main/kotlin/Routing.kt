@@ -312,7 +312,9 @@ fun Application.configureRouting() {
                     "returnFlights" to returnFlightsList, // Also a unified list for the return journey
                 )
 
-            call.respondTemplate("flights.peb", templateData)
+            call.respondTemplate("flights.peb",
+             call.nonNullSessionData() + templateData,
+             )
         }
 
         get("/search-airports") {
@@ -432,7 +434,9 @@ fun Application.configureRouting() {
                 templateData["returnCabin"] = returnCabin ?: "economy"
             }
 
-            call.respondTemplate("confirmBooking.peb", templateData)
+            call.respondTemplate("confirmBooking.peb",
+             call.nonNullSessionData() + templateData,
+             )
         }
 
         get("/admin/chart/booking-status") {
@@ -478,6 +482,27 @@ fun Application.configureRouting() {
                 return@post
             }
 
+        post("/cancel-booking") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
+                return@post
+            }
+            val params = call.receiveParameters()
+            val bookingId = params["bookingId"]?.toIntOrNull()
+
+            if (bookingId == null) {
+                call.respondRedirect("/profile")
+                return@post
+            }
+
+            val userID = UserDAO.getUserID(session.username)
+
+            UserDAO.cancelBooking(bookingId, userID)
+
+            call.respondRedirect("/profile")
+        }  
+
             val params = call.receiveParameters()
             val outboundFlightId = params["outboundFlightId"]?.toIntOrNull()
             val returnFlightId = params["returnFlightId"]?.toIntOrNull()
@@ -502,6 +527,7 @@ fun Application.configureRouting() {
                 call.respond(
                     PebbleContent(
                         "payment.peb",
+                        call.nonNullSessionData() +
                         mapOf(
                             "outboundCabin" to outboundCabin,
                         ),
@@ -514,7 +540,9 @@ fun Application.configureRouting() {
             }
 
             get("/payment-success") {
-                call.respond(PebbleContent("payment-success.peb", mapOf()))
+                call.respond(PebbleContent("payment-success.peb",
+                call.nonNullSessionData(),
+                 ))
             }
 
             // get the flight prices to calculate total
