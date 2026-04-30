@@ -9,19 +9,40 @@ import java.time.ZonedDateTime
 
 object FlightDAO {
     /**
-     * Core function: Obtain the merged list of direct and connecting flights.
-     */
-    fun getAvailableFlights(
-        dep: String,
-        arr: String,
-        date: LocalDate,
-    ): List<FlightDisplayDTO> {
+    * gets all available flights for a given journey and date.
+    *
+    * This function combines both direct flights and connecting flights between the departure and arrival locations. It converts them into
+    * `FlightDisplayDTO` objects and returns them as one merged list.
+    *
+    * final list is sorted by departure time so the flights appear in time order.
+    *
+    * @param dep the departure airport or city
+    * @param arr the arrival airport or city
+    * @param date the date to search flights for
+    * @return a sorted list of direct and connecting flights for the given route and date
+    */
+    fun getAvailableFlights(dep: String, arr: String, date: LocalDate): List<FlightDisplayDTO> {
         val direct = searchFlights(dep, arr, date).map { it.toDisplayDTO() }
         val connecting = searchConnectingFlights(dep, arr, date).map { it.toDisplayDTO() }
 
         return (direct + connecting).sortedBy { it.departureTime }
     }
 
+
+    /**
+    * Turns a database result row into a `Flight` object.
+    *
+    * This function reads the flight data from the `ResultSet` and builds a `Flight` object from it. It also works out the arrival time and arrival
+    * date by using the departure date, departure time, flight duration, and
+    * the time zones for the departure and arrival airports.
+    *
+    * the `arrivalDayOffset` value shows whether the flight arrives on the same day, the next day, or later compared to the departure date.
+    *
+    * If a timezone is missing, `"UTC"` is used. Some text fields also use empty strings if their value is missing.
+    *
+    * @param result the current row from the SQL query result
+    * @return a `Flight` object created from the result data
+    */
     private fun mapResultToFlight(result: ResultSet): Flight {
         val durationMinutes = result.getInt("base_duration_minutes")
         val depZone = ZoneId.of(result.getString("departure_timezone") ?: "UTC")
@@ -58,11 +79,22 @@ object FlightDAO {
         )
     }
 
-    fun searchFlights(
-        departure: String,
-        arrival: String,
-        date: LocalDate,
-    ): List<Flight> {
+    /**
+    * Searches for direct flights between two locations on a given date.
+    *
+    * This function looks for flights in the database where the departure matches the given city or airport ID, and the arrival also matches the
+    * given city or airport ID. Only flights on the given date are included.
+    *
+    * Cancelled flights are left out of the results.
+    *
+    * The flights are returned in departure time order and each row from the database is turned into a `Flight` object using `mapResultToFlight`.
+    *
+    * @param departure the departure city or airport ID
+    * @param arrival the arrival city or airport ID
+    * @param date the date to search for flights on
+    * @return a list of matching direct flights
+    */
+    fun searchFlights(departure: String, arrival: String, date: LocalDate): List<Flight> {
         val sql = """
             SELECT f.flight_id, f.flight_date, r.flight_number, r.aircraft_type,
                    r.departure_terminal, r.arrival_terminal, r.planned_departure, 
@@ -94,13 +126,22 @@ object FlightDAO {
         }
     }
 
-    fun searchConnectingFlights(
-        departure: String,
-        arrival: String,
-        date: LocalDate,
-        minLayover: Int = 45,
-        maxLayover: Int = 480,
-    ): List<ConnectingFlight> {
+
+    /**
+    * Searches for connecting flights between two places on a given date.
+    *
+    * It finds possible first and second flights, checks if they connect at the
+    * same airport, and makes sure the layover is within the allowed range.
+    *
+    * @param departure the departure city or airport
+    * @param arrival the arrival city or airport
+    * @param date the date to search on
+    * @param minLayover the minimum layover time in minutes
+    * @param maxLayover the maximum layover time in minutes
+    * @return a list of matching connecting flights sorted by departure time
+    */
+    fun searchConnectingFlights(departure: String, arrival: String, date: LocalDate, 
+                                minLayover: Int = 45, maxLayover: Int = 480): List<ConnectingFlight> {
         val outboundSql = """
             SELECT f.*, r.*, dep.city as departure_city, arr.city as arrival_city,
                    dep.name as departure_airport_name, arr.name as arrival_airport_name,
@@ -170,6 +211,14 @@ object FlightDAO {
         }
     }
 
+    /**
+    * Gets basic details for one flight.
+    *
+    * It looks up the flight by its ID and returns it as a `Flight` object.
+    *
+    * @param flightId the ID of the flight
+    * @return the flight if found, or null if it is not found
+    */
     fun getFlightOverview(flightId: Int): Flight? {
         val sql = """
             SELECT 
@@ -197,54 +246,54 @@ object FlightDAO {
         }
     }
 
-    private fun Flight.toDisplayDTO() =
-        FlightDisplayDTO(
-            flightId = this.flightId.toString(),
-            isConnecting = false,
-            departureAirport = this.departureAirportName,
-            arrivalAirport = this.arrivalAirportName,
-            departureTime = this.departureTime,
-            arrivalTime = this.arrivalTime,
-            arrivalDayOffset = this.arrivalDayOffset,
-            totalDurationDisplay = "${this.durationMinutes / 60}h ${this.durationMinutes % 60}m",
-            priceEconomy = this.priceEconomy,
-            priceBusiness = this.priceBusiness,
-            priceFirst = this.priceFirst,
-            departureTerminal = this.departureTerminal,
-            arrivalTerminal = this.arrivalTerminal,
-        )
+    /**
+    * Changes a `Flight` into a `FlightDisplayDTO`.
+    *
+    * This is used to format a flight so it can be shown more easily in the UI.
+    */
+    private fun Flight.toDisplayDTO() = FlightDisplayDTO(
+        flightId = this.flightId.toString(),
+        isConnecting = false,
+        departureAirport = this.departureAirportName,
+        arrivalAirport = this.arrivalAirportName,
+        departureTime = this.departureTime,
+        arrivalTime = this.arrivalTime,
+        arrivalDayOffset = this.arrivalDayOffset,
+        totalDurationDisplay = "${this.durationMinutes / 60}h ${this.durationMinutes % 60}m",
+        priceEconomy = this.priceEconomy,
+        priceBusiness = this.priceBusiness,
+        priceFirst = this.priceFirst,
+        departureTerminal = this.departureTerminal,
+        arrivalTerminal = this.arrivalTerminal
+    )
 
-    private fun ConnectingFlight.toDisplayDTO() =
-        FlightDisplayDTO(
-            flightId = "${this.leg1.flightId}_${this.leg2.flightId}",
-            isConnecting = true,
-            departureAirport = this.leg1.departureAirportName,
-            arrivalAirport = this.leg2.arrivalAirportName,
-            departureTime = this.leg1.departureTime,
-            arrivalTime = this.leg2.arrivalTime,
-            arrivalDayOffset =
-                (this.leg2.departureDate.toEpochDay() - this.leg1.departureDate.toEpochDay()).toInt() + this.leg2.arrivalDayOffset,
-            totalDurationDisplay = "${this.totalDurationMinutes / 60}h ${this.totalDurationMinutes % 60}m",
-            // Only calculate sum if BOTH legs have the cabin available
-            priceEconomy =
-                if (leg1.priceEconomy != null && leg2.priceEconomy != null) {
-                    leg1.priceEconomy + leg2.priceEconomy
-                } else {
-                    null
-                },
-            priceBusiness =
-                if (leg1.priceBusiness != null && leg2.priceBusiness != null) {
-                    leg1.priceBusiness + leg2.priceBusiness
-                } else {
-                    null
-                },
-            priceFirst =
-                if (leg1.priceFirst != null && leg2.priceFirst != null) {
-                    leg1.priceFirst + leg2.priceFirst
-                } else {
-                    null
-                },
-            stopCity = this.leg1.arrivalCity,
-            layoverMinutes = this.layoverMinutes,
-        )
+    /**
+    * Changes a `ConnectingFlight` into a `FlightDisplayDTO`.
+    *
+    * This is used to format a connecting flight so it can be shown in the UI.
+    * It also adds things like the stop city, layover time, and total prices.
+    */
+    private fun ConnectingFlight.toDisplayDTO() = FlightDisplayDTO(
+        flightId = "${this.leg1.flightId}_${this.leg2.flightId}",
+        isConnecting = true,
+        departureAirport = this.leg1.departureAirportName,
+        arrivalAirport = this.leg2.arrivalAirportName,
+        departureTime = this.leg1.departureTime,
+        arrivalTime = this.leg2.arrivalTime,
+        arrivalDayOffset = (this.leg2.departureDate.toEpochDay() - this.leg1.departureDate.toEpochDay()).toInt() + this.leg2.arrivalDayOffset,
+        totalDurationDisplay = "${this.totalDurationMinutes / 60}h ${this.totalDurationMinutes % 60}m",
+        
+        // Only calculate sum if BOTH legs have the cabin available
+        priceEconomy = if (leg1.priceEconomy != null && leg2.priceEconomy != null) 
+                    leg1.priceEconomy + leg2.priceEconomy else null,
+                    
+        priceBusiness = if (leg1.priceBusiness != null && leg2.priceBusiness != null) 
+                        leg1.priceBusiness + leg2.priceBusiness else null,
+                        
+        priceFirst = if (leg1.priceFirst != null && leg2.priceFirst != null) 
+                    leg1.priceFirst + leg2.priceFirst else null,
+                    
+        stopCity = this.leg1.arrivalCity,
+        layoverMinutes = this.layoverMinutes
+    )
 }

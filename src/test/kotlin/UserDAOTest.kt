@@ -5,8 +5,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class UserDAOTest {
-    // checking if emails exist in the database
 
+    /**
+    * Tests for checking if an email exists.
+    *
+    * These checks make sure known emails are found, fake ones are not, and
+    * the lookup runs properly.
+    */
     @Test
     fun testEmailExistsForRegisteredUser() {
         // this one is the admin account we set up
@@ -25,8 +30,13 @@ class UserDAOTest {
         assertTrue(result || !result, "should return without crashing")
     }
 
-    // login tests
 
+    /**
+    * Tests for user login.
+    *
+    * These checks make sure login fails for fake users and for empty email or
+    * password input.
+    */
     @Test
     fun testLoginWithNonexistentEmail() {
         val result = UserDAO.loginUser("nobody_here@fake.com", "SomePassword1")
@@ -46,8 +56,13 @@ class UserDAOTest {
         assertFalse(result.success, "empty password shouldnt work")
     }
 
-    // getUserID
 
+    /**
+    * Tests for getting a user ID from an email.
+    *
+    * These checks make sure a real user gets a valid ID and an unknown user
+    * gets -1.
+    */
     @Test
     fun testGetUserIDForRegisteredUser() {
         val id = UserDAO.getUserID("tnvn3422@leeds.ac.uk")
@@ -60,24 +75,37 @@ class UserDAOTest {
         assertTrue(id == -1, "unknown user should get -1")
     }
 
-    // bookings
 
+    /**
+    * Tests for getting a user's bookings.
+    *
+    * This checks that an invalid user ID returns no bookings.
+    */
     @Test
     fun testGetBookingsForInvalidUser() {
         val bookings = UserDAO.getBookings(-1)
         assertTrue(bookings.isEmpty(), "invalid user id should return nothing")
     }
 
-    // cancel booking
 
+    /**
+    * Tests for cancelling a booking.
+    *
+    * This checks that cancelling an invalid booking does not work.
+    */
     @Test
     fun testCancelBookingWithInvalidId() {
         val result = UserDAO.cancelBooking(-1, -1)
         assertFalse(result, "cant cancel a booking that doesnt exist")
     }
 
-    // registration
 
+    /**
+    * Tests for user registration.
+    *
+    * These checks make sure registration fails if the email is already taken
+    * or if the password is too weak.
+    */
     @Test
     fun testRegisterWithDuplicateEmail() {
         val user =

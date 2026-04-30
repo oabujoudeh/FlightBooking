@@ -21,9 +21,19 @@ import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import java.time.LocalDate
 
-// helper that wraps getSessionData and guarantees non‑nullable values
-private fun ApplicationCall.nonNullSessionData(): Map<String, Any> = getSessionData(this).mapValues { it.value }
 
+/**
+* Gets session data and replaces any null values with empty strings.
+*/
+private fun ApplicationCall.nonNullSessionData(): Map<String, Any> =
+    getSessionData(this).mapValues { it.value ?: "" }
+
+
+/**
+* Sets up the main routes for the app.
+*
+* This includes pages for login, register, flights, bookings, profile,admin charts, and payment.
+*/
 fun Application.configureRouting() {
     routing {
         staticResources("/static", "static")

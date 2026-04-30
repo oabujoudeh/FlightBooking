@@ -1,6 +1,24 @@
 package com.flightbooking
 
 object AirportDAO {
+
+
+    /**
+    * Searches for airports or cities that match a text.
+    *
+    * This function looks in the `airports` table for matches based on the search query. It first finds matching cities and adds them as options
+    * for searching all airports in that city. After that, it looks for individual airports that match by city name, airport name, or airport ID.
+    *
+    * The returned list contains maps with:
+    * - `"label"`: the text shown to the user
+    * - `"value"`: the value used for the search
+    * - `"type"`: whether the result is a `"city"` or an `"airport"`
+    *
+    * City matches are added first, followed by airport matches.
+    *
+    * @param query the text to search for
+    * @return a list of matching city and airport results
+    */
     fun searchAirport(query: String): List<Map<String, String>> {
         // match city (all airports)
         val citySql = """
@@ -60,6 +78,24 @@ object AirportDAO {
         return results
     }
 
+    /**
+    * Gets a display label for a city or airport value.
+    *
+    * This function checks the `airports` table to see if the given value
+    * matches either an airport ID or a city name. If it finds a match,
+    * it returns a label in a user-friendly format.
+    *
+    * If the value matches a city, the label will be like:
+    * `"City (all airports)"`
+    *
+    * If the value matches an airport ID, the label will be like:
+    * `"City - Airport Name (Code)"`
+    *
+    * If nothing is found in the database, the original value is returned.
+    *
+    * @param value the airport ID or city name to look up
+    * @return a formatted label for the value, or the original value if no match is found
+    */
     fun getLabel(value: String): String {
         val sql = """
             SELECT airport_id, name, city FROM airports

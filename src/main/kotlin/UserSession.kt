@@ -9,6 +9,9 @@ import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
 import kotlinx.serialization.Serializable
 
+/**
+* Stores the current user's session data.
+*/
 @Serializable
 data class UserSession(
     val username: String = "",
@@ -17,6 +20,11 @@ data class UserSession(
     val isAdmin: Boolean = false,
 )
 
+/**
+* Sets up session support for the app.
+*
+* It stores user session data in a cookie.
+*/
 fun Application.configureSessions() {
     install(Sessions) {
         cookie<UserSession>("user_session") {
@@ -26,6 +34,12 @@ fun Application.configureSessions() {
     }
 }
 
+/**
+* Gets the main session values for the current user.
+*
+* @param call the current application call
+* @return a map with login and session details
+*/
 fun getSessionData(call: ApplicationCall): Map<String, Any> {
     val session = call.sessions.get<UserSession>()
     return mapOf(

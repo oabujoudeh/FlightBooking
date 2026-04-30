@@ -9,8 +9,13 @@ import kotlin.test.assertTrue
    used for password resets */
 
 class OTCTest {
-    // code generation stuff
 
+    /**
+    * Tests for one-time code generation.
+    *
+    * These checks make sure the code is 6 digits, only contains numbers,
+    * and that making a new code replaces the old one.
+    */
     @Test
     fun testGenerateCodeReturns6Digits() {
         val code = OTC.generateAndSave("test@example.com")
@@ -31,7 +36,13 @@ class OTCTest {
         assertFalse(OTC.verify("overwrite@example.com", code1), "old code shouldnt work anymore")
     }
 
-    // verification tests
+
+    /**
+    * Tests for one-time code checking.
+    *
+    * These checks make sure the right code works, wrong ones fail, unknown
+    * emails fail, and a code cant be used twice.
+    */
 
     @Test
     fun testVerifyWithCorrectCode() {
@@ -57,8 +68,13 @@ class OTCTest {
         assertFalse(OTC.verify("consumed@example.com", code), "second time should fail cos its used up")
     }
 
-    // making sure codes dont leak between emails
 
+    /**
+    * Tests for keeping one-time codes separate between emails.
+    *
+    * These checks make sure each email uses its own code and one user's code
+    * cannot be used for another user.
+    */
     @Test
     fun testDifferentEmailsDifferentCodes() {
         val code1 = OTC.generateAndSave("user1@example.com")

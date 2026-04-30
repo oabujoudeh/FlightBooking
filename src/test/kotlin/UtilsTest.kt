@@ -6,8 +6,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class UtilsTest {
-    // testing the duration formatter
 
+    /**
+    * Tests for formatting flight durations.
+    *
+    * These checks make sure durations are shown properly for hours, minutes,
+    * zero time, and longer flights.
+    */
     @Test
     fun testFormatDurationHoursOnly() {
         assertEquals("2h", Utils.formatDuration(120))
@@ -39,8 +44,13 @@ class UtilsTest {
         assertEquals("14h 25m", Utils.formatDuration(865))
     }
 
-    // flightToMap - converts a Flight object into a map for the templates
 
+    /**
+    * Tests for changing a `Flight` object into a map for templates.
+    *
+    * These checks make sure all the expected fields are included and that the
+    * values are copied over properly, including overnight flight info.
+    */
     private fun makeFlight(
         flightId: Int = 1,
         flightNumber: String = "EJ101",
@@ -117,8 +127,13 @@ class UtilsTest {
         assertEquals(1, map["arrivalDayOffset"])
     }
 
-    // connecting flight map tests
 
+    /**
+    * Tests for changing a connecting flight into a map.
+    *
+    * These checks make sure the map has the main fields and that prices,
+    * layover time, and total duration are worked out properly.
+    */
     @Test
     fun testConnectingFlightToMapContainsAllKeys() {
         val cf =

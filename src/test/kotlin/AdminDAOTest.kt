@@ -8,16 +8,23 @@ import kotlin.test.assertTrue
    these pull data for charts and tables on the admin home page */
 
 class AdminDAOTest {
-    // total users count
 
+    /**
+    * Tests that the total number of users is never negative.
+    */
     @Test
     fun testGetTotalUsersReturnsNonNegative() {
         val count = AdminDAO.getTotalUsers()
         assertTrue(count >= 0, "cant have negative users lol")
     }
 
-    // bookings grouped by date - used for the line chart
 
+    /**
+    * Tests for booking data grouped by date.
+    *
+    * These checks make sure the result is returned properly, has the right
+    * keys, and is sorted from oldest date to newest date.
+    */
     @Test
     fun testGetAllBookingsGroupedByDateReturnslist() {
         val result = AdminDAO.getAllBookingsGroupedByDate()
@@ -47,8 +54,13 @@ class AdminDAOTest {
         }
     }
 
-    // booking status counts - for the pie chart
 
+    /**
+    * Tests for booking status count data.
+    *
+    * These checks make sure the data comes back as expected, has the right
+    * keys, and only contains positive booking counts.
+    */
     @Test
     fun testGetBookingStatusCountsReturnsList() {
         val result = AdminDAO.getBookingStatusCounts()
@@ -74,8 +86,13 @@ class AdminDAOTest {
         }
     }
 
-    // recent bookings table
 
+    /**
+    * Tests for recent booking data.
+    *
+    * These checks make sure the limit works properly and that each booking
+    * has the main fields we expect.
+    */
     @Test
     fun testGetRecentBookingsRespectsLimit() {
         val result = AdminDAO.getRecentBookings(5)
@@ -95,8 +112,13 @@ class AdminDAOTest {
         }
     }
 
-    // recent cancellations
 
+    /**
+    * Tests for recent cancellation data.
+    *
+    * These checks make sure cancelled bookings are returned properly and that
+    * the limit value is being followed.
+    */
     @Test
     fun testGetRecentCancellationsOnlyContainsCancelled() {
         val result = AdminDAO.getRecentCancellations()
@@ -110,7 +132,13 @@ class AdminDAOTest {
         assertTrue(result.size <= 3, "shouldnt return more than we asked for")
     }
 
-    // upcoming flights
+
+    /**
+    * Tests for upcoming flight data.
+    *
+    * These checks make sure the data comes back, the limit works, and the
+    * main flight fields are there.
+    */
 
     @Test
     fun testGetUpcomingFlightsReturnsList() {
@@ -138,7 +166,13 @@ class AdminDAOTest {
         }
     }
 
-    // busiest routes - for the bar chart
+
+   /**
+    * Tests for busiest route data.
+    *
+    * These checks make sure the data is returned, the limit is followed,
+    * and the routes are sorted from busiest to least busy.
+    */
 
     @Test
     fun testGetBusiestRoutesReturnsList() {

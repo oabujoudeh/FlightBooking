@@ -11,13 +11,13 @@
     <div class="auth-container">
         <div class="auth-card">
 
-            <h2>Your Profile</h2>
+            <h1>Your Profile</h1>
             <p><strong>Username:</strong> {{ username }}</p>
 
             <div class="profile-sections">
 
                 <div class="profile-box">
-                    <h3>Your Bookings</h3>
+                    <h2>Your Bookings</h2>
 
                     {% if bookings is empty %}
                         <p>You have no bookings yet.</p>
@@ -43,7 +43,7 @@
                 </div>
 
                 <div class="profile-box loyalty-box">
-                    <h3>Loyalty Points</h3>
+                    <h2>Loyalty Points</h2>
                     <p><strong>Air Miles:</strong> 0</p>
                     <p>Your loyalty points section will appear here.</p>
                 </div>

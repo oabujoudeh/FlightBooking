@@ -1,11 +1,17 @@
 package com.flightbooking
 
+/**
+* Stores the seat setup for one cabin section.
+*/
 data class CabinConfig(
     val seatClass: String,
     val rows: IntRange,
     val layout: List<List<String>>, // e.g. [["A","B"], ["C","D","E","F"], ["G","H"]] is 2-4-2
 )
 
+/**
+* Stores the layout details for one deck of the plane.
+*/
 data class DeckConfig(
     val deckName: String,
     val cabins: List<CabinConfig>,
@@ -13,6 +19,9 @@ data class DeckConfig(
     val bassinetRows: Set<Int>,
 )
 
+/**
+* Stores the seat layout setup for an aircraft.
+*/
 data class AircraftConfig(
     val decks: List<DeckConfig>,
 )
