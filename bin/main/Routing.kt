@@ -1,26 +1,32 @@
 package com.flightbooking
 
-import io.ktor.server.application.*
-import io.ktor.server.pebble.*
-import io.ktor.server.request.*
-import io.ktor.server.routing.*
-import io.ktor.server.http.content.*
-import io.ktor.server.sessions.*
-import io.ktor.server.response.*
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.call
+import io.ktor.server.http.content.staticResources
+import io.ktor.server.pebble.PebbleContent
+import io.ktor.server.pebble.respondTemplate
+import io.ktor.server.request.receiveParameters
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.sessions.clear
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
+import io.ktor.server.sessions.set
 import java.time.LocalDate
 
-
 // helper that wraps getSessionData and guarantees non‑nullable values
-private fun ApplicationCall.nonNullSessionData(): Map<String, Any> =
-    getSessionData(this).mapValues { it.value ?: "" }
+private fun ApplicationCall.nonNullSessionData(): Map<String, Any> = getSessionData(this).mapValues { it.value }
 
 fun Application.configureRouting() {
     routing {
-
-        static("/static") {
-            resources("static")
-        }
+        staticResources("/static", "static")
 
         route("/register") {
             get {
@@ -36,13 +42,14 @@ fun Application.configureRouting() {
                 val email = params["email"] ?: ""
                 val password = params["password"] ?: ""
 
-                val tempUser = User(
-                    firstName = firstName,
-                    lastName = lastName,
-                    email = email,
-                    middleName = middleName,
-                    passwordHash = ""
-                )
+                val tempUser =
+                    User(
+                        firstName = firstName,
+                        lastName = lastName,
+                        email = email,
+                        middleName = middleName,
+                        passwordHash = "",
+                    )
 
                 val isSuccess = UserDAO.register(tempUser, firstName, middleName, lastName, email, password)
 
@@ -62,12 +69,16 @@ fun Application.configureRouting() {
                 val recentCancellations = AdminDAO.getRecentCancellations()
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
                 val totalUsers = AdminDAO.getTotalUsers()
-                call.respondTemplate("adminHome.peb", call.nonNullSessionData() + mapOf(
-                    "recentBookings" to recentBookings,
-                    "recentCancellations" to recentCancellations,
-                    "upcomingFlights" to upcomingFlights,
-                    "totalUsers" to totalUsers
-                ))
+                call.respondTemplate(
+                    "adminHome.peb",
+                    call.nonNullSessionData() +
+                        mapOf(
+                            "recentBookings" to recentBookings,
+                            "recentCancellations" to recentCancellations,
+                            "upcomingFlights" to upcomingFlights,
+                            "totalUsers" to totalUsers,
+                        ),
+                )
             } else {
                 // use non‑nullable version of the map
                 call.respondTemplate("searchFlight.peb", call.nonNullSessionData())
@@ -80,20 +91,20 @@ fun Application.configureRouting() {
 
         get("/login") {
             // get Referer, if empty then go to home page
-            val referer = call.request.headers["Referer"] ?:"/"
+            val referer = call.request.headers["Referer"] ?: "/"
 
             call.respondTemplate("login.peb", mapOf("error" to "", "redirect_url" to referer))
         }
 
         post("/login") {
             val params = call.receiveParameters()
-            val email = params["username"]?:""
-            val password = params["password"]?:""
+            val email = params["username"] ?: ""
+            val password = params["password"] ?: ""
 
             // if not get redirect_url, goto /profile
-            var redirectUrl = params["redirect_url"]?:"/profile"
+            var redirectUrl = params["redirect_url"] ?: "/profile"
 
-            if(redirectUrl.contains("forgot-password") || redirectUrl.contains("reset-password") || redirectUrl.contains("register")){
+            if (redirectUrl.contains("forgot-password") || redirectUrl.contains("reset-password") || redirectUrl.contains("register")) {
                 redirectUrl = "/profile"
             }
 
@@ -105,8 +116,8 @@ fun Application.configureRouting() {
                     UserSession(
                         username = email,
                         loggedIn = true,
-                        isAdmin = loginResult.isAdmin
-                    )
+                        isAdmin = loginResult.isAdmin,
+                    ),
                 )
                 // should decide whether redirect to profile or booking page
                 call.respondRedirect(redirectUrl)
@@ -116,40 +127,43 @@ fun Application.configureRouting() {
                     mapOf(
                         "loggedIn" to false,
                         "error" to "Invalid email or password",
-                        "redirect_url" to redirectUrl
-                    )
+                        "redirect_url" to redirectUrl,
+                    ),
                 )
             }
         }
 
-        get("/forgot-password"){
+        get("/forgot-password") {
             call.respondTemplate("forgotPwd.peb", mapOf<String, Any>())
         }
 
-        post("/forgot-password"){
+        post("/forgot-password") {
             val params = call.receiveParameters()
-            val email = params["email"] ?:""
+            val email = params["email"] ?: ""
 
-            if(UserDAO.resetPassword(email)){
+            if (UserDAO.resetPassword(email)) {
                 call.respondTemplate("reset-password.peb", mapOf("email" to email))
-            }else{
+            } else {
                 call.respondTemplate("forgotPwd.peb", mapOf("error" to "Email not found"))
             }
         }
 
-        post("/reset-password"){
+        post("/reset-password") {
             val params = call.receiveParameters()
-            val email = params["email"]?:""
-            val otc = params["otc"]?:""
-            val newPassword = params["newPassword"]?:""
+            val email = params["email"] ?: ""
+            val otc = params["otc"] ?: ""
+            val newPassword = params["newPassword"] ?: ""
 
-            if(UserDAO.confirmResetPassword(email, otc, newPassword)){
+            if (UserDAO.confirmResetPassword(email, otc, newPassword)) {
                 call.respondRedirect("/login")
-            }else{
-                call.respondTemplate("reset-password.peb", mapOf(
-                    "email" to email,
-                    "error" to "Invalid code or password"
-                ))
+            } else {
+                call.respondTemplate(
+                    "reset-password.peb",
+                    mapOf(
+                        "email" to email,
+                        "error" to "Invalid code or password",
+                    ),
+                )
             }
         }
 
@@ -163,7 +177,7 @@ fun Application.configureRouting() {
 
             if (session != null && session.loggedIn) {
                 val username = session.username
-                
+
                 val userID = UserDAO.getUserID(username)
 
                 val bookings = UserDAO.getBookings(userID)
@@ -174,9 +188,9 @@ fun Application.configureRouting() {
             }
         }
 
-        post("/cancel-booking"){
+        post("/cancel-booking") {
             val session = call.sessions.get<UserSession>()
-            if(session == null || !session.loggedIn){
+            if (session == null || !session.loggedIn) {
                 call.respondRedirect("/login")
                 return@post
             }
@@ -184,7 +198,7 @@ fun Application.configureRouting() {
             val params = call.receiveParameters()
             val bookingId = params["bookingId"]?.toIntOrNull()
 
-            if(bookingId == null){
+            if (bookingId == null) {
                 call.respondRedirect("/profile")
                 return@post
             }
@@ -195,9 +209,9 @@ fun Application.configureRouting() {
             call.respondRedirect("/profile")
         }
 
-        post("/update-booking"){
+        post("/update-booking") {
             val session = call.sessions.get<UserSession>()
-            if(session == null || !session.loggedIn){
+            if (session == null || !session.loggedIn) {
                 call.respondRedirect("/login")
                 return@post
             }
@@ -206,19 +220,21 @@ fun Application.configureRouting() {
             val bookingId = params["bookingId"]?.toIntOrNull()
             val passengerCount = params["passengerCount"]?.toIntOrNull() ?: 0
 
-            if(bookingId == null){
+            if (bookingId == null) {
                 call.respondRedirect("/profile")
                 return@post
             }
 
             val passengers = mutableListOf<Map<String, String>>()
-            for(i in 0 until passengerCount){
-                passengers.add(mapOf(
-                    "fullName" to (params["passenger_${i}_fullName"] ?: ""),
-                    "idNumber" to (params["passenger_${i}_ID"] ?: ""),
-                    "type" to (params["passenger_${i}_type"] ?: "adult"),
-                    "seat" to (params["passenger_${i}_seat"] ?: "")
-                ))
+            for (i in 0 until passengerCount) {
+                passengers.add(
+                    mapOf(
+                        "fullName" to (params["passenger_${i}_fullName"] ?: ""),
+                        "idNumber" to (params["passenger_${i}_ID"] ?: ""),
+                        "type" to (params["passenger_${i}_type"] ?: "adult"),
+                        "seat" to (params["passenger_${i}_seat"] ?: ""),
+                    ),
+                )
             }
 
             val userID = UserDAO.getUserID(session.username)
@@ -227,15 +243,15 @@ fun Application.configureRouting() {
             call.respondRedirect("/profile")
         }
 
-        get("/edit-booking"){
+        get("/edit-booking") {
             val session = call.sessions.get<UserSession>()
-            if(session == null || !session.loggedIn){
+            if (session == null || !session.loggedIn) {
                 call.respondRedirect("/login")
                 return@get
             }
 
             val bookingId = call.request.queryParameters["id"]?.toIntOrNull()
-            if(bookingId == null){
+            if (bookingId == null) {
                 call.respondRedirect("/profile")
                 return@get
             }
@@ -243,7 +259,7 @@ fun Application.configureRouting() {
             val userID = UserDAO.getUserID(session.username)
             val booking = UserDAO.getBookingById(bookingId, userID)
 
-            if(booking == null){
+            if (booking == null) {
                 call.respondRedirect("/profile")
                 return@get
             }
@@ -280,23 +296,25 @@ fun Application.configureRouting() {
             }
 
             // Prepare Template Data
-            val templateData = mapOf<String, Any>(
-                "departure" to departure,
-                "destination" to destination,
-                "departureDate" to departureDate,
-                "returnDate" to (returnDate ?: ""),
-                "tripType" to tripType,
-                "adults" to adults,
-                "children" to children,
-                "combinedFlights" to combinedFlights, // The unified list for the frontend loop
-                "returnFlights" to returnFlightsList   // Also a unified list for the return journey
-            )
+            val templateData =
+                mapOf<String, Any>(
+                    "departure" to departure,
+                    "destination" to destination,
+                    "departureDate" to departureDate,
+                    "returnDate" to (returnDate ?: ""),
+                    "tripType" to tripType,
+                    "adults" to adults,
+                    "children" to children,
+                    "combinedFlights" to combinedFlights, // The unified list for the frontend loop
+                    "returnFlights" to returnFlightsList, // Also a unified list for the return journey
+                )
 
-            call.respondTemplate("flights.peb", templateData)
+            call.respondTemplate("flights.peb",
+             call.nonNullSessionData() + templateData,
+             )
         }
 
         get("/search-airports") {
-
             val query = call.request.queryParameters["q"] ?: ""
 
             if (query.length < 2) {
@@ -310,11 +328,11 @@ fun Application.configureRouting() {
 
         post("/book-flights") {
             val params = call.receiveParameters()
-            
+
             // Extract the raw selection strings (e.g., "123_economy" or "45_67_business")
             val outboundRaw = params["outboundFlight"] ?: ""
             val returnRaw = params["returnFlight"] ?: ""
-            
+
             val adults = params["adults"]?.toIntOrNull() ?: 1
             val children = params["children"]?.toIntOrNull() ?: 0
 
@@ -326,10 +344,10 @@ fun Application.configureRouting() {
             // Parse the ID and the Cabin Class from the selection string
             val outboundParts = outboundRaw.split("_")
             val outboundCabin = outboundParts.last() // "economy", "business", or "first"
-            
+
             // Handle both direct ("ID") and connecting ("ID1_ID2") by joining all but the last part
             val outboundFlightIdStr = outboundParts.dropLast(1).joinToString("_")
-            
+
             // For seat selection, need the first leg's ID if it's a connecting flight
             val primaryOutboundId = outboundParts.first().toIntOrNull() ?: 0
 
@@ -357,54 +375,65 @@ fun Application.configureRouting() {
             val seats = SeatDAO.getOrGenerateSeats(primaryOutboundId, outboundFlight.aircraftType)
             val seatMap = seats.associateBy { it.seatNumber }
 
-            val deckData = config.decks.map { deck ->
-                val prefix = if (config.decks.size > 1)
-                    mapOf("Main Deck" to "M", "Upper Deck" to "U")[deck.deckName] ?: "" else ""
+            val deckData =
+                config.decks.map { deck ->
+                    val prefix =
+                        if (config.decks.size > 1) {
+                            mapOf("Main Deck" to "M", "Upper Deck" to "U")[deck.deckName] ?: ""
+                        } else {
+                            ""
+                        }
 
-                mapOf(
-                    "deckName" to deck.deckName,
-                    "cabins" to deck.cabins.map { cabin ->
-                        mapOf(
-                            "seatClass" to cabin.seatClass,
-                            "rows" to cabin.rows.map { row ->
+                    mapOf(
+                        "deckName" to deck.deckName,
+                        "cabins" to
+                            deck.cabins.map { cabin ->
                                 mapOf(
-                                    "rowNumber" to row,
-                                    "isExit" to (row in deck.exitRows),
-                                    "isBassinet" to (row in deck.bassinetRows),
-                                    "groups" to cabin.layout.map { group ->
-                                        group.map { col ->
-                                            val seatNumber = "$prefix$row$col"
-                                            val seat = seatMap[seatNumber]
+                                    "seatClass" to cabin.seatClass,
+                                    "rows" to
+                                        cabin.rows.map { row ->
                                             mapOf(
-                                                "seatNumber" to seatNumber,
-                                                "col" to col,
-                                                "isOccupied" to (seat?.isOccupied ?: false),
-                                                "seatClass" to cabin.seatClass
+                                                "rowNumber" to row,
+                                                "isExit" to (row in deck.exitRows),
+                                                "isBassinet" to (row in deck.bassinetRows),
+                                                "groups" to
+                                                    cabin.layout.map { group ->
+                                                        group.map { col ->
+                                                            val seatNumber = "$prefix$row$col"
+                                                            val seat = seatMap[seatNumber]
+                                                            mapOf(
+                                                                "seatNumber" to seatNumber,
+                                                                "col" to col,
+                                                                "isOccupied" to (seat?.isOccupied ?: false),
+                                                                "seatClass" to cabin.seatClass,
+                                                            )
+                                                        }
+                                                    },
                                             )
-                                        }
-                                    }
+                                        },
                                 )
-                            }
-                        )
-                    }
-                )
-            }
+                            },
+                    )
+                }
 
             // Prepare Template Data
-            val templateData = mutableMapOf<String, Any>(
-                "outboundFlight" to Utils.flightToMap(outboundFlight),
-                "outboundCabin" to outboundCabin, // Pass the chosen class to the next page
-                "deckData" to deckData,
-                "adults" to adults,
-                "children" to children
-            )
+            val templateData =
+                mutableMapOf<String, Any>(
+                    "outboundFlight" to Utils.flightToMap(outboundFlight),
+                    "outboundCabin" to outboundCabin, // Pass the chosen class to the next page
+                    "deckData" to deckData,
+                    "adults" to adults,
+                    "children" to children,
+                )
 
             if (returnFlight != null) {
                 templateData["returnFlight"] = Utils.flightToMap(returnFlight)
                 templateData["returnCabin"] = returnCabin ?: "economy"
             }
 
-            call.respondTemplate("confirmBooking.peb", templateData)
+            call.respondTemplate("confirmBooking.peb",
+             call.nonNullSessionData() + templateData,
+             )
         }
 
         get("/admin/chart/booking-status") {
@@ -450,10 +479,31 @@ fun Application.configureRouting() {
                 return@post
             }
 
+        post("/cancel-booking") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
+                return@post
+            }
+            val params = call.receiveParameters()
+            val bookingId = params["bookingId"]?.toIntOrNull()
+
+            if (bookingId == null) {
+                call.respondRedirect("/profile")
+                return@post
+            }
+
+            val userID = UserDAO.getUserID(session.username)
+
+            UserDAO.cancelBooking(bookingId, userID)
+
+            call.respondRedirect("/profile")
+        }  
+
             val params = call.receiveParameters()
             val outboundFlightId = params["outboundFlightId"]?.toIntOrNull()
             val returnFlightId = params["returnFlightId"]?.toIntOrNull()
-            
+
             // Retrieve the selected cabin classes
             val outboundCabin = params["outboundCabin"] ?: "economy"
             val returnCabin = params["returnCabin"] ?: "economy"
@@ -468,22 +518,29 @@ fun Application.configureRouting() {
 
             call.respondRedirect("/payment?outboundCabin=$outboundCabin")
 
-        get("/payment"){
+            get("/payment") {
+                val outboundCabin = call.parameters["outboundCabin"] ?: "economy"
 
-            val outboundCabin = call.parameters["outboundCabin"] ?: "economy"
+                call.respond(
+                    PebbleContent(
+                        "payment.peb",
+                        call.nonNullSessionData() +
+                        mapOf(
+                            "outboundCabin" to outboundCabin,
+                        ),
+                    ),
+                )
+            }
 
-            call.respond(PebbleContent("payment.peb", mapOf(
-                "outboundCabin" to outboundCabin
-            )))
-        }
+            post("/payment") {
+                call.respondRedirect("/payment-success")
+            }
 
-        post("/payment"){
-            call.respondRedirect("/payment-success")
-        }
-
-        get("/payment-success") {
-            call.respond(PebbleContent("payment-success.peb", mapOf()))
-        }    
+            get("/payment-success") {
+                call.respond(PebbleContent("payment-success.peb",
+                call.nonNullSessionData(),
+                 ))
+            }
 
             // get the flight prices to calculate total
             val outboundFlight = FlightDAO.getFlightOverview(outboundFlightId)
@@ -493,17 +550,21 @@ fun Application.configureRouting() {
             }
 
             // Helper function to pick the correct price based on cabin class
-            fun getPriceByCabin(flight: Flight, cabin: String): Double {
-                val price = when (cabin.lowercase()) {
-                    "business" -> flight.priceBusiness
-                    "first" -> flight.priceFirst
-                    else -> flight.priceEconomy
-                }
+            fun getPriceByCabin(
+                flight: Flight,
+                cabin: String,
+            ): Double {
+                val price =
+                    when (cabin.lowercase()) {
+                        "business" -> flight.priceBusiness
+                        "first" -> flight.priceFirst
+                        else -> flight.priceEconomy
+                    }
                 // Provide a default value to satisfy the Double return type
-                return price ?: 0.0 
+                return price ?: 0.0
             }
 
-            // Calculate total price using cabin-specific rates 
+            // Calculate total price using cabin-specific rates
             var totalPrice = getPriceByCabin(outboundFlight, outboundCabin) * (adults + children)
             val flightIds = mutableListOf(outboundFlightId)
 
@@ -519,23 +580,27 @@ fun Application.configureRouting() {
             val passengers = mutableListOf<Map<String, String>>()
 
             for (i in 0 until adults) {
-                passengers.add(mapOf(
-                    "fullName" to (params["adult_${i}_fullName"] ?: ""),
-                    "idNumber" to (params["adult_${i}_ID"] ?: ""),
-                    "type" to "adult",
-                    "seat" to (params["adult_${i}_seat"] ?: ""),
-                    "cabin" to outboundCabin // Store the cabin choice for each passenger
-                ))
+                passengers.add(
+                    mapOf(
+                        "fullName" to (params["adult_${i}_fullName"] ?: ""),
+                        "idNumber" to (params["adult_${i}_ID"] ?: ""),
+                        "type" to "adult",
+                        "seat" to (params["adult_${i}_seat"] ?: ""),
+                        "cabin" to outboundCabin, // Store the cabin choice for each passenger
+                    ),
+                )
             }
 
             for (i in 0 until children) {
-                passengers.add(mapOf(
-                    "fullName" to (params["child_${i}_fullName"] ?: ""),
-                    "idNumber" to (params["child_${i}_ID"] ?: ""),
-                    "type" to "child",
-                    "seat" to (params["child_${i}_seat"] ?: ""),
-                    "cabin" to outboundCabin
-                ))
+                passengers.add(
+                    mapOf(
+                        "fullName" to (params["child_${i}_fullName"] ?: ""),
+                        "idNumber" to (params["child_${i}_ID"] ?: ""),
+                        "type" to "child",
+                        "seat" to (params["child_${i}_seat"] ?: ""),
+                        "cabin" to outboundCabin,
+                    ),
+                )
             }
 
             val userID = UserDAO.getUserID(session.username)
@@ -548,6 +613,5 @@ fun Application.configureRouting() {
                 call.respondRedirect("/")
             }
         }
-
     }
 }

@@ -1,6 +1,5 @@
 package com.flightbooking
 
-
 data class User(
     val userId: Int? = null,
     val firstName: String,
@@ -8,5 +7,5 @@ data class User(
     val lastName: String,
     val email: String,
     val passwordHash: String,
-    val createdAt: String? = null
+    val createdAt: String? = null,
 )

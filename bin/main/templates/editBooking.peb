@@ -55,10 +55,20 @@
 
         <div class="edit-actions">
             <button type="submit" class="primary-btn">Save Changes</button>
-            <a href="/cancel-booking?id={{ booking.bookingId }}" class="danger-btn">Cancel Booking</a>
         </div>
 
-    </form>
+        </form>
+
+        <form method="post" action="/cancel-booking">
+            <input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
+            <button
+             type="submit"
+              class="danger-btn"
+              onclick="return confirm('Are you sure you want to cancel this booking?')"
+              >
+              Cancel Booking
+              </button>
+        </form>    
 
     <a href="/profile" class="back-link">← Back to Profile</a>
 

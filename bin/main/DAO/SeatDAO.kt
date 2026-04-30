@@ -1,9 +1,10 @@
 package com.flightbooking
 
-
 object SeatDAO {
-
-    fun getOrGenerateSeats(flightId: Int, aircraftType: String): List<Seat> {
+    fun getOrGenerateSeats(
+        flightId: Int,
+        aircraftType: String,
+    ): List<Seat> {
         if (!seatsExist(flightId)) {
             generateSeats(flightId, aircraftType)
         }
@@ -36,12 +37,12 @@ object SeatDAO {
                 while (rs.next()) {
                     seats.add(
                         Seat(
-                            seatId     = rs.getInt("seat_id"),
-                            flightId   = rs.getInt("flight_id"),
+                            seatId = rs.getInt("seat_id"),
+                            flightId = rs.getInt("flight_id"),
                             seatNumber = rs.getString("seat_number"),
-                            seatClass  = rs.getString("class"),
-                            isOccupied = rs.getInt("is_occupied") == 1
-                        )
+                            seatClass = rs.getString("class"),
+                            isOccupied = rs.getInt("is_occupied") == 1,
+                        ),
                     )
                 }
             }
@@ -49,7 +50,10 @@ object SeatDAO {
         return seats
     }
 
-    private fun generateSeats(flightId: Int, aircraftType: String) {
+    private fun generateSeats(
+        flightId: Int,
+        aircraftType: String,
+    ) {
         val config = AircraftConfigs.getConfig(aircraftType)
         val sql = "INSERT INTO seats (flight_id, seat_number, class, is_occupied) VALUES (?, ?, ?, ?)"
         val deckPrefix = mapOf("Main Deck" to "M", "Upper Deck" to "U")
@@ -78,4 +82,3 @@ object SeatDAO {
         }
     }
 }
-

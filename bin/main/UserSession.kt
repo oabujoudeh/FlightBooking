@@ -1,16 +1,20 @@
 package com.flightbooking
 
-import io.ktor.server.application.*
-import io.ktor.server.sessions.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.install
+import io.ktor.server.sessions.Sessions
+import io.ktor.server.sessions.cookie
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
 import kotlinx.serialization.Serializable
-
 
 @Serializable
 data class UserSession(
     val username: String = "",
     val loggedIn: Boolean = false,
     val message: String = "",
-    val isAdmin: Boolean = false
+    val isAdmin: Boolean = false,
 )
 
 fun Application.configureSessions() {
@@ -22,13 +26,12 @@ fun Application.configureSessions() {
     }
 }
 
-
 fun getSessionData(call: ApplicationCall): Map<String, Any> {
     val session = call.sessions.get<UserSession>()
     return mapOf(
         "loggedIn" to (session?.loggedIn ?: false),
         "username" to (session?.username ?: ""),
         "message" to (session?.message ?: ""),
-        "isAdmin" to (session?.isAdmin ?: false)
+        "isAdmin" to (session?.isAdmin ?: false),
     )
 }

@@ -1,34 +1,34 @@
 package com.flightbooking
 
-import org.knowm.xchart.XYChartBuilder
-import org.knowm.xchart.PieChartBuilder
-import org.knowm.xchart.CategoryChartBuilder
 import org.knowm.xchart.BitmapEncoder
+import org.knowm.xchart.CategoryChartBuilder
+import org.knowm.xchart.PieChartBuilder
+import org.knowm.xchart.XYChartBuilder
 import org.knowm.xchart.style.Styler
 import java.awt.Color
 import java.io.ByteArrayOutputStream
 import java.time.LocalDate
-import java.util.Date
 import java.time.ZoneId
-
+import java.util.Date
 
 object ChartService {
-
     fun generateBookingsOverTimeChart(data: List<Map<String, Any>>): ByteArray {
-        val dates = data.map {
-            val localDate = LocalDate.parse(it["date"] as String)
-            Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant())
-        }
+        val dates =
+            data.map {
+                val localDate = LocalDate.parse(it["date"] as String)
+                Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant())
+            }
         val counts = data.map { (it["count"] as Int).toDouble() }
         val revenue = data.map { it["revenue"] as Double }
 
-        val chart = XYChartBuilder()
-            .width(800)
-            .height(400)
-            .title("Bookings Over Time")
-            .xAxisTitle("Date")
-            .yAxisTitle("Revenue")
-            .build()
+        val chart =
+            XYChartBuilder()
+                .width(800)
+                .height(400)
+                .title("Bookings Over Time")
+                .xAxisTitle("Date")
+                .yAxisTitle("Revenue")
+                .build()
 
         chart.styler.legendPosition = Styler.LegendPosition.InsideNW
         chart.styler.isXAxisTicksVisible = true
@@ -46,22 +46,24 @@ object ChartService {
     }
 
     fun generateBookingStatusChart(data: List<Map<String, Any>>): ByteArray {
-        val chart = PieChartBuilder()
-            .width(600)
-            .height(400)
-            .title("Booking Status Breakdown")
-            .build()
+        val chart =
+            PieChartBuilder()
+                .width(600)
+                .height(400)
+                .title("Booking Status Breakdown")
+                .build()
 
         chart.styler.chartBackgroundColor = Color.WHITE
         chart.styler.plotBackgroundColor = Color.WHITE
         chart.styler.isLegendVisible = true
         chart.styler.legendPosition = Styler.LegendPosition.OutsideE
 
-        val colors = mapOf(
-            "confirmed" to Color(76, 175, 80),
-            "cancelled" to Color(244, 67, 54),
-            "pending" to Color(255, 193, 7)
-        )
+        val colors =
+            mapOf(
+                "confirmed" to Color(76, 175, 80),
+                "cancelled" to Color(244, 67, 54),
+                "pending" to Color(255, 193, 7),
+            )
 
         for (entry in data) {
             val status = entry["status"] as String
@@ -79,13 +81,14 @@ object ChartService {
         val labels = data.map { "${it["departureCity"]} → ${it["arrivalCity"]}" }
         val counts = data.map { (it["bookingCount"] as Int).toDouble() }
 
-        val chart = CategoryChartBuilder()
-            .width(800)
-            .height(400)
-            .title("Busiest Routes")
-            .xAxisTitle("Route")
-            .yAxisTitle("Bookings")
-            .build()
+        val chart =
+            CategoryChartBuilder()
+                .width(800)
+                .height(400)
+                .title("Busiest Routes")
+                .xAxisTitle("Route")
+                .yAxisTitle("Bookings")
+                .build()
 
         chart.styler.chartBackgroundColor = Color.WHITE
         chart.styler.plotBackgroundColor = Color.WHITE

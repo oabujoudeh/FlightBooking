@@ -1,8 +1,6 @@
 package com.flightbooking
 
-
 object AirportDAO {
-
     fun searchAirport(query: String): List<Map<String, String>> {
         // match city (all airports)
         val citySql = """
@@ -30,11 +28,13 @@ object AirportDAO {
                 val rs = stmt.executeQuery()
                 while (rs.next()) {
                     val city = rs.getString("city")
-                    results.add(mapOf(
-                        "label" to "$city (all airports)",
-                        "value" to city,  // send city to search
-                        "type" to "city"
-                    ))
+                    results.add(
+                        mapOf(
+                            "label" to "$city (all airports)",
+                            "value" to city, // send city to search
+                            "type" to "city",
+                        ),
+                    )
                 }
             }
             // airport options
@@ -47,17 +47,18 @@ object AirportDAO {
                     val code = rs.getString("airport_id")
                     val name = rs.getString("name")
                     val city = rs.getString("city")
-                    results.add(mapOf(
-                        "label" to "$city - $name ($code)",
-                        "value" to code,
-                        "type" to "airport"
-                    ))
+                    results.add(
+                        mapOf(
+                            "label" to "$city - $name ($code)",
+                            "value" to code,
+                            "type" to "airport",
+                        ),
+                    )
                 }
             }
         }
         return results
     }
-
 
     fun getLabel(value: String): String {
         val sql = """
@@ -74,11 +75,14 @@ object AirportDAO {
                     val code = rs.getString("airport_id")
                     val name = rs.getString("name")
                     val city = rs.getString("city")
-                    return if (value == city) "$city (all airports)"
-                        else "$city - $name ($code)"
+                    return if (value == city) {
+                        "$city (all airports)"
+                    } else {
+                        "$city - $name ($code)"
+                    }
                 }
             }
         }
-        return value  // fallback
+        return value // fallback
     }
 }

@@ -4,8 +4,7 @@ import io.ktor.http.ContentType
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
-import io.ktor.server.http.content.resources
-import io.ktor.server.http.content.static
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.pebble.PebbleContent
 import io.ktor.server.pebble.respondTemplate
 import io.ktor.server.request.receiveParameters
@@ -23,13 +22,11 @@ import io.ktor.server.sessions.set
 import java.time.LocalDate
 
 // helper that wraps getSessionData and guarantees non‑nullable values
-private fun ApplicationCall.nonNullSessionData(): Map<String, Any> = getSessionData(this).mapValues { it.value ?: "" }
+private fun ApplicationCall.nonNullSessionData(): Map<String, Any> = getSessionData(this).mapValues { it.value }
 
 fun Application.configureRouting() {
     routing {
-        static("/static") {
-            resources("static")
-        }
+        staticResources("/static", "static")
 
         route("/register") {
             get {

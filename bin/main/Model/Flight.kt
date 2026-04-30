@@ -3,7 +3,6 @@ package com.flightbooking
 import java.time.LocalDate
 import java.time.LocalTime
 
-
 data class Flight(
     val flightId: Int,
     val flightNumber: String,
@@ -17,11 +16,11 @@ data class Flight(
     val departureDate: LocalDate,
     val departureTime: LocalTime,
     val arrivalTime: LocalTime,
-    val arrivalDayOffset: Int = 0,  // 0 = same day, 1 = next day, 2 = next next day
+    val arrivalDayOffset: Int = 0, // 0 = same day, 1 = next day, 2 = next next day
     val durationMinutes: Int,
     val priceEconomy: Double?,
     val priceBusiness: Double?,
-    val priceFirst: Double?
+    val priceFirst: Double?,
 )
 
 data class ConnectingFlight(
@@ -29,5 +28,5 @@ data class ConnectingFlight(
     val leg2: Flight,
     val totalDurationMinutes: Int,
     val layoverMinutes: Int,
-    val totalPrice: Double
+    val totalPrice: Double,
 )
