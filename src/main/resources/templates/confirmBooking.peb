@@ -35,7 +35,7 @@
             </div>
             {# Logic to show only the selected cabin's price #}
             <div class="flight-summary-price">
-                £{% if outboundCabin == "first" %}{{ outboundFlight.priceFirst }}{% elseif outboundCabin == "business" %}{{ outboundFlight.priceBusiness }}{% else %}{{ outboundFlight.priceEconomy }}{% endif %}
+                £{{ totalPrice }}
             </div>
         </div>
     </div>
@@ -55,6 +55,7 @@
         <input type="hidden" name="outboundCabin" value="{{ outboundCabin }}">
         <input type="hidden" name="adults" value="{{ adults }}">
         <input type="hidden" name="children" value="{{ children }}">
+        <input type="hidden" name="totalPrice" value="{{ totalPrice }}">
         
         {% if returnFlight != null %}
             <input type="hidden" name="returnFlightId" value="{{ returnFlight.flightId }}">

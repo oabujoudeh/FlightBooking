@@ -532,9 +532,9 @@ object UserDAO{
                         total_price,
                         status,
                         contact_email,
-                        contact_phone,
+                        contact_phone
                     )
-                    VALUES(?, datetime('now'), ?, 'confirmed',?,0)
+                    VALUES (?, datetime('now'), ?, 'confirmed', ?, 0)
                     """.trimIndent()
                 val bookingStmt = conn.prepareStatement(bookingSql, java.sql.Statement.RETURN_GENERATED_KEYS)
                 bookingStmt.setInt(1, userID)
@@ -589,7 +589,41 @@ object UserDAO{
                 true
             }
         } catch (e: Exception) {
+             e.printStackTrace()
             false
         }
     }
-}
+
+    fun getLoyaltyPoints(userID: Int): Int {
+        val sql = 
+            """
+            SELECT COALESCE(SUM(total_price), 0) AS points
+            FROM bookings
+            WHERE user_id = ?
+            AND status = 'confirmed'
+            """.trimIndent()
+
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userID)
+                    
+                    stmt.executeQuery().use { result ->
+                        if (result.next()) {
+                            result.getDouble("points").toInt()
+                        } else {
+                            0
+                        }
+
+                    }
+                }
+            }
+
+        } catch (e: Exception){
+            e.printStackTrace()
+            0
+        }
+        }   
+
+    }
+
