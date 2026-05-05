@@ -11,6 +11,9 @@ import java.time.LocalTime
 data class FlightDisplayDTO(
     val flightId: String, // Direct flights are "123", connecting flights are "123_456"
     val isConnecting: Boolean, // Whether it is a connecting flight
+
+    val aircraftType: String,
+    
     // Core flight information
     val departureAirport: String,
     val arrivalAirport: String,
@@ -26,5 +29,5 @@ data class FlightDisplayDTO(
     val departureTerminal: String? = null,
     val arrivalTerminal: String? = null,
     val stopCity: String? = null, // Connecting city name
-    val layoverMinutes: Int = 0, // Layover duration in minutes
+    val layoverMinutes: Int = 0 // Layover duration in minutes
 )

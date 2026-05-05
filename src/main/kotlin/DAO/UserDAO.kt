@@ -576,11 +576,21 @@ object UserDAO{
                 // mark seats as occupied
                 val seatSql = "UPDATE seats SET is_occupied = 1 WHERE flight_id = ? AND seat_number = ?"
                 val seatStmt = conn.prepareStatement(seatSql)
+
                 for (p in passengers) {
-                    for (flightId in flightIds) {
-                        seatStmt.setInt(1, flightId)
-                        seatStmt.setString(2, p["seat"] ?: "")
-                        seatStmt.addBatch()
+                    // 1. Separate "12A,14C" to ["12A", "14C"]
+                    val seatString = p["seat"] ?: ""
+                    val individualSeats = seatString.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+                    // 2. Iterate flight ID, use to get seat number
+                    for ((index, flightId) in flightIds.withIndex()) {
+                        if (index < individualSeats.size) {
+                            val seatNumber = individualSeats[index]
+                            
+                            seatStmt.setInt(1, flightId)
+                            seatStmt.setString(2, seatNumber)
+                            seatStmt.addBatch()
+                        }
                     }
                 }
                 seatStmt.executeBatch()
@@ -626,4 +636,3 @@ object UserDAO{
         }   
 
     }
-

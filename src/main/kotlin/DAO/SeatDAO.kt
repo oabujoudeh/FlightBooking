@@ -57,7 +57,7 @@ object SeatDAO {
                             flightId = rs.getInt("flight_id"),
                             seatNumber = rs.getString("seat_number"),
                             seatClass = rs.getString("class"),
-                            isOccupied = rs.getInt("is_occupied") == 1,
+                            isOccupied = rs.getInt("is_occupied") == 1
                         ),
                     )
                 }
