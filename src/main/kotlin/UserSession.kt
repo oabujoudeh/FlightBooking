@@ -1,7 +1,12 @@
 package com.flightbooking
 
-import io.ktor.server.application.*
-import io.ktor.server.sessions.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.install
+import io.ktor.server.sessions.Sessions
+import io.ktor.server.sessions.cookie
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
 import kotlinx.serialization.Serializable
 
 /**

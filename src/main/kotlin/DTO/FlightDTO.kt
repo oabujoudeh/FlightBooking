@@ -1,6 +1,6 @@
 package com.flightbooking
 
-import java.time.LocalDate
+
 import java.time.LocalTime
 
 /**
@@ -10,8 +10,8 @@ import java.time.LocalTime
  * handle them in the same way.
  */
 data class FlightDisplayDTO(
-    val flightId: String,          // Direct flights are "123", connecting flights are "123_456"
-    val isConnecting: Boolean,     // Whether it is a connecting flight
+    val flightId: String, // Direct flights are "123", connecting flights are "123_456"
+    val isConnecting: Boolean, // Whether it is a connecting flight
 
     val aircraftType: String,
     
@@ -31,6 +31,6 @@ data class FlightDisplayDTO(
     // Terminal and connecting flight specific information
     val departureTerminal: String? = null,
     val arrivalTerminal: String? = null,
-    val stopCity: String? = null,     // Connecting city name
-    val layoverMinutes: Int = 0       // Layover duration in minutes
+    val stopCity: String? = null, // Connecting city name
+    val layoverMinutes: Int = 0 // Layover duration in minutes
 )

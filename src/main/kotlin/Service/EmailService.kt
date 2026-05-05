@@ -1,14 +1,19 @@
 package com.flightbooking
 
-import jakarta.mail.*
+import jakarta.mail.Authenticator
+import jakarta.mail.Message
+import jakarta.mail.MessagingException
+import jakarta.mail.PasswordAuthentication
+import jakarta.mail.Session
+import jakarta.mail.Transport
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
 import java.util.Properties
 
 
 object EmailService {
-    private const val username = "6aff3dc4f403a8" 
-    private const val password = "de49a98f194e65" 
+    private const val USERNAME = "6aff3dc4f403a8"
+    private const val PASSWORD = "de49a98f194e65"
 
 
     /**
@@ -29,7 +34,7 @@ object EmailService {
 
         val session = Session.getInstance(props, object : Authenticator() {
             override fun getPasswordAuthentication(): PasswordAuthentication {
-                return PasswordAuthentication(username, password)
+                return PasswordAuthentication(USERNAME, PASSWORD)
             }
         })
 

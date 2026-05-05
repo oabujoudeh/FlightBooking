@@ -1,6 +1,7 @@
 package com.flightbooking
 
-import java.sql.*
+import java.sql.Connection
+import java.sql.DriverManager
 
 
 object Database {

@@ -4,14 +4,12 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 
 /* tests for the one time code system
    used for password resets */
 
 class OTCTest {
-
 
     /**
     * Tests for one-time code generation.

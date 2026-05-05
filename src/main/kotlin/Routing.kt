@@ -1,13 +1,24 @@
 package com.flightbooking
 
-import io.ktor.server.application.*
-import io.ktor.server.pebble.*
-import io.ktor.server.request.*
-import io.ktor.server.routing.*
-import io.ktor.server.http.content.*
-import io.ktor.server.sessions.*
-import io.ktor.server.response.*
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.call
+import io.ktor.server.http.content.staticResources
+import io.ktor.server.pebble.PebbleContent
+import io.ktor.server.pebble.respondTemplate
+import io.ktor.server.request.receiveParameters
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.sessions.clear
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
+import io.ktor.server.sessions.set
 import java.time.LocalDate
 
 
@@ -62,16 +73,25 @@ private fun buildDeckData(flightId: Int, aircraftType: String): List<Map<String,
 
 
 /**
+ * Returns the price for a given flight and cabin class.
+ */
+private fun getPriceByCabin(flight: Flight, cabin: String): Double {
+    return when (cabin.lowercase()) {
+        "business" -> flight.priceBusiness
+        "first"    -> flight.priceFirst
+        else       -> flight.priceEconomy
+    } ?: 0.0
+}
+
+
+/**
 * Sets up the main routes for the app.
 *
 * This includes pages for login, register, flights, bookings, profile, admin charts, and payment.
 */
 fun Application.configureRouting() {
     routing {
-
-        static("/static") {
-            resources("static")
-        }
+        staticResources("/static", "static")
 
         route("/register") {
             get {
@@ -87,13 +107,14 @@ fun Application.configureRouting() {
                 val email = params["email"] ?: ""
                 val password = params["password"] ?: ""
 
-                val tempUser = User(
-                    firstName = firstName,
-                    lastName = lastName,
-                    email = email,
-                    middleName = middleName,
-                    passwordHash = ""
-                )
+                val tempUser =
+                    User(
+                        firstName = firstName,
+                        lastName = lastName,
+                        email = email,
+                        middleName = middleName,
+                        passwordHash = "",
+                    )
 
                 val isSuccess = UserDAO.register(tempUser, firstName, middleName, lastName, email, password)
 
@@ -113,12 +134,16 @@ fun Application.configureRouting() {
                 val recentCancellations = AdminDAO.getRecentCancellations()
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
                 val totalUsers = AdminDAO.getTotalUsers()
-                call.respondTemplate("adminHome.peb", call.nonNullSessionData() + mapOf(
-                    "recentBookings" to recentBookings,
-                    "recentCancellations" to recentCancellations,
-                    "upcomingFlights" to upcomingFlights,
-                    "totalUsers" to totalUsers
-                ))
+                call.respondTemplate(
+                    "adminHome.peb",
+                    call.nonNullSessionData() +
+                        mapOf(
+                            "recentBookings" to recentBookings,
+                            "recentCancellations" to recentCancellations,
+                            "upcomingFlights" to upcomingFlights,
+                            "totalUsers" to totalUsers,
+                        ),
+                )
             } else {
                 call.respondTemplate("searchFlight.peb", call.nonNullSessionData())
             }
@@ -210,7 +235,16 @@ fun Application.configureRouting() {
                 val username = session.username
                 val userID = UserDAO.getUserID(username)
                 val bookings = UserDAO.getBookings(userID)
-                call.respondTemplate("profile.peb", call.nonNullSessionData() + mapOf("bookings" to bookings))
+                val loyaltyPoints = UserDAO.getLoyaltyPoints(userID)
+
+                call.respondTemplate(
+                    "profile.peb",
+                    call.nonNullSessionData() +
+                        mapOf(
+                            "bookings" to bookings,
+                            "loyaltyPoints" to loyaltyPoints,
+                        ),
+                )        
             } else {
                 call.respondRedirect("/login")
             }
@@ -330,7 +364,9 @@ fun Application.configureRouting() {
                 "returnFlights" to returnFlightsList
             )
 
-            call.respondTemplate("flights.peb", templateData)
+            call.respondTemplate("flights.peb",
+            call.nonNullSessionData() + templateData,
+            )
         }
 
         get("/search-airports") {
@@ -354,6 +390,7 @@ fun Application.configureRouting() {
 
             val adults = params["adults"]?.toIntOrNull() ?: 1
             val children = params["children"]?.toIntOrNull() ?: 0
+            val totalPassengers = adults + children
 
             if (outboundRaw.isEmpty()) {
                 call.respondRedirect("/")
@@ -459,6 +496,18 @@ fun Application.configureRouting() {
                 }
             }
 
+            // Calculate preview total price:
+            // Sum each leg's per-person price × total passengers (adults + children, no discount)
+            var previewTotalPrice = 0.0
+            for (id in outboundFlightIds) {
+                val flight = FlightDAO.getFlightOverview(id) ?: continue
+                previewTotalPrice += getPriceByCabin(flight, outboundCabin) * totalPassengers
+            }
+            for (id in returnFlightIds) {
+                val flight = FlightDAO.getFlightOverview(id) ?: continue
+                previewTotalPrice += getPriceByCabin(flight, returnCabin ?: "economy") * totalPassengers
+            }
+
             // Prepare template data
             val templateData = mutableMapOf<String, Any>(
                 "outboundFlight" to Utils.flightToMap(primaryOutboundFlight),
@@ -470,7 +519,9 @@ fun Application.configureRouting() {
                 // Pass raw IDs as hidden fields for confirm-booking
                 "outboundFlightIdsRaw" to outboundFlightIds.joinToString(","),
                 "returnFlightIdsRaw" to returnFlightIds.joinToString(","),
-                "returnCabinVal" to (returnCabin ?: "")
+                "returnCabinVal" to (returnCabin ?: ""),
+                // Preview price shown on the confirmation page before final booking
+                "totalPrice" to previewTotalPrice
             )
 
             // Pass leg 2 flight info and layover duration for connecting flights (for summary display)
@@ -561,6 +612,7 @@ fun Application.configureRouting() {
             val returnCabin = params["returnCabin"] ?: "economy"
             val adults = params["adults"]?.toIntOrNull() ?: 1
             val children = params["children"]?.toIntOrNull() ?: 0
+            val totalPassengers = adults + children
 
             // Parse all flight IDs (comma-separated)
             val outboundFlightIds = params["outboundFlightIdsRaw"]
@@ -573,33 +625,21 @@ fun Application.configureRouting() {
                 return@post
             }
 
-            // Helper to pick price by cabin
-            fun getPriceByCabin(flight: Flight, cabin: String): Double {
-                return when (cabin.lowercase()) {
-                    "business" -> flight.priceBusiness
-                    "first" -> flight.priceFirst
-                    else -> flight.priceEconomy
-                } ?: 0.0
-            }
-
-            // Calculate total price across all legs
+            // Calculate total price:
+            // Each leg's per-person price × total passengers (adults + children, no discount)
             var totalPrice = 0.0
             val allFlightIds = mutableListOf<Int>()
 
             for (id in outboundFlightIds) {
-                val flight = FlightDAO.getFlightOverview(id)
-                if (flight != null) {
-                    totalPrice += getPriceByCabin(flight, outboundCabin) * (adults + children)
-                    allFlightIds.add(id)
-                }
+                val flight = FlightDAO.getFlightOverview(id) ?: continue
+                totalPrice += getPriceByCabin(flight, outboundCabin) * totalPassengers
+                allFlightIds.add(id)
             }
 
             for (id in returnFlightIds) {
-                val flight = FlightDAO.getFlightOverview(id)
-                if (flight != null) {
-                    totalPrice += getPriceByCabin(flight, returnCabin) * (adults + children)
-                    allFlightIds.add(id)
-                }
+                val flight = FlightDAO.getFlightOverview(id) ?: continue
+                totalPrice += getPriceByCabin(flight, returnCabin) * totalPassengers
+                allFlightIds.add(id)
             }
 
             // Collect passenger info
@@ -648,7 +688,17 @@ fun Application.configureRouting() {
         }
 
         get("/payment") {
-            call.respond(PebbleContent("payment.peb", mapOf()))
+            val totalPrice = call.parameters["totalPrice"] ?: "0.0"
+
+            call.respond(
+                PebbleContent(
+                    "payment.peb",
+                    call.nonNullSessionData() +
+                        mapOf(
+                            "totalPrice" to totalPrice,
+                        ),
+                ),
+            )
         }
 
         post("/payment") {
@@ -656,7 +706,12 @@ fun Application.configureRouting() {
         }
 
         get("/payment-success") {
-            call.respond(PebbleContent("payment-success.peb", mapOf()))
+            call.respond(
+                PebbleContent(
+                    "payment-success.peb",
+                    call.nonNullSessionData(),
+                ),
+            )
         }
     }
 }

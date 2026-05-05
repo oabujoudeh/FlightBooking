@@ -54,12 +54,12 @@ object SeatDAO {
                 while (rs.next()) {
                     seats.add(
                         Seat(
-                            seatId     = rs.getInt("seat_id"),
-                            flightId   = rs.getInt("flight_id"),
+                            seatId = rs.getInt("seat_id"),
+                            flightId = rs.getInt("flight_id"),
                             seatNumber = rs.getString("seat_number"),
-                            seatClass  = rs.getString("class"),
+                            seatClass = rs.getString("class"),
                             isOccupied = rs.getInt("is_occupied") == 1
-                        )
+                        ),
                     )
                 }
             }

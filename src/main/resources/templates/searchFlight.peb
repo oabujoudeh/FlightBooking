@@ -34,29 +34,29 @@
 
                 <div class="pax-controls">
                     <div class="pax-field">
-                        <label for="adults">Adults</label>
-                        <input type="number" id="adults" name="adults" min="1" max="9" value="1" required>
+                        <label>Adults</label>
+                        <input type="number" name="adults" min="1" max="9" value="1" required>
                     </div>
                     <div class="pax-field">
-                        <label for="children">Children</label>
-                        <input type="number" id="children" name="children" min="0" max="9" value="0">
+                        <label>Children</label>
+                        <input type="number" name="children" min="0" max="9" value="0">
                     </div>
                 </div>
             </div>
 
             <div class="route-row">
                 <div class="route-field" style="position:relative">
-                    <input type="text" id="departureInput" class="route-input" placeholder="From" autocomplete="off" required value="{{ departureLabel }}" aria-label="Departure airport">
+                    <input type="text" id="departureInput" class="route-input" placeholder="From" autocomplete="off" required value="{{ departureLabel }}">
                     <input type="hidden" name="departure" id="departureValue" value="{{ departure }}">
                     <ul id="departureSuggestions" class="suggestions"></ul>
                 </div>
 
                 <div class="route-arrow">
-                    <button type="button" id="swapBtn" title="Swap departure and destination" aria-label="Swap departure and destination">⇄</button>
+                    <button type="button" id="swapBtn" title="Swap">⇄</button>
                 </div>
 
                 <div class="route-field" style="position:relative">
-                    <input type="text" id="destinationInput" class="route-input" placeholder="To" autocomplete="off" required value="{{ destinationLabel }}" aria-label="Destination airport">
+                    <input type="text" id="destinationInput" class="route-input" placeholder="To" autocomplete="off" required value="{{ destinationLabel }}">
                     <input type="hidden" name="destination" id="destinationValue" value="{{ destination }}">
                     <ul id="destinationSuggestions" class="suggestions"></ul>
                 </div>
@@ -64,12 +64,12 @@
 
             <div class="form-grid">
                 <div class="field">
-                    <label for="departureDate">Departure Date</label>
+                    <label>Departure Date</label>
                     <input type="date" id="departureDate" name="departureDate" required value="{{ departureDate }}">
                 </div>
 
                 <div class="field" id="returnDateField" style="display:none;">
-                    <label for="returnDate">Return Date</label>
+                    <label>Return Date</label>
                     <input type="date" name="returnDate" id="returnDate">
                 </div>
             </div>
