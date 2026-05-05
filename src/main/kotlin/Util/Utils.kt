@@ -11,6 +11,7 @@ object Utils {
     // Return Map<String, Any?> to allow nullable prices
     fun flightToMap(f: Flight): Map<String, Any?> = mapOf(
         "flightNumber"      to f.flightNumber,
+        "aircraftType"      to f.aircraftType,
         "departureAirport"  to f.departureAirportName,
         "arrivalAirport"    to f.arrivalAirportName,
         "departureTerminal" to f.departureTerminal,
@@ -28,6 +29,7 @@ object Utils {
 
     // Use if-checks to safely add prices for connecting flights
     fun connectingFlightToMap(cf: ConnectingFlight): Map<String, Any?> = mapOf(
+        "aircraftType" to "${cf.leg1.aircraftType} / ${cf.leg2.aircraftType}",
         "leg1DepartureTime"    to cf.leg1.departureTime.toString(),
         "leg1ArrivalTime"      to cf.leg1.arrivalTime.toString(),
         "leg1DepartureAirport" to cf.leg1.departureAirportName,

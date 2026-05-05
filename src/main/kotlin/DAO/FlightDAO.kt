@@ -173,18 +173,27 @@ object FlightDAO {
                 while (rs.next()) outbound.add(mapResultToFlight(rs) to rs.getString("arrival_airport_id"))
             }
 
+            // Also search next day for inbound, to handle overnight leg1 arrivals
             val inbound = mutableListOf<Pair<Flight, String>>()
-            conn.prepareStatement(inboundSql).use { stmt ->
-                stmt.setString(1, arrival); stmt.setString(2, arrival); stmt.setString(3, date.toString())
-                val rs = stmt.executeQuery()
-                while (rs.next()) inbound.add(mapResultToFlight(rs) to rs.getString("departure_airport_id"))
+            for (searchDate in listOf(date, date.plusDays(1))) {
+                conn.prepareStatement(inboundSql).use { stmt ->
+                    stmt.setString(1, arrival); stmt.setString(2, arrival); stmt.setString(3, searchDate.toString())
+                    val rs = stmt.executeQuery()
+                    while (rs.next()) inbound.add(mapResultToFlight(rs) to rs.getString("departure_airport_id"))
+                }
             }
 
             val connections = mutableListOf<ConnectingFlight>()
                 for ((leg1, midId1) in outbound) {
                     for ((leg2, midId2) in inbound) {
                         if (midId1 != midId2) continue
-                        val layover = Duration.between(leg1.arrivalTime, leg2.departureTime).toMinutes()
+
+                        // Account for overnight flights: leg1 may arrive the next day
+                        val leg1ArrivalDate = leg1.departureDate.plusDays(leg1.arrivalDayOffset.toLong())
+                        val leg1ArrivalZdt = java.time.ZonedDateTime.of(leg1ArrivalDate, leg1.arrivalTime, java.time.ZoneId.of("UTC"))
+                        val leg2DepartureZdt = java.time.ZonedDateTime.of(leg2.departureDate, leg2.departureTime, java.time.ZoneId.of("UTC"))
+
+                        val layover = java.time.Duration.between(leg1ArrivalZdt, leg2DepartureZdt).toMinutes()
                         if (layover in minLayover..maxLayover) {
                             
                             // Fix: null check
@@ -248,6 +257,7 @@ object FlightDAO {
     private fun Flight.toDisplayDTO() = FlightDisplayDTO(
         flightId = this.flightId.toString(),
         isConnecting = false,
+        aircraftType = this.aircraftType,
         departureAirport = this.departureAirportName,
         arrivalAirport = this.arrivalAirportName,
         departureTime = this.departureTime,
@@ -270,6 +280,7 @@ object FlightDAO {
     private fun ConnectingFlight.toDisplayDTO() = FlightDisplayDTO(
         flightId = "${this.leg1.flightId}_${this.leg2.flightId}",
         isConnecting = true,
+        aircraftType ="${this.leg1.aircraftType}_${this.leg2.aircraftType}",
         departureAirport = this.leg1.departureAirportName,
         arrivalAirport = this.leg2.arrivalAirportName,
         departureTime = this.leg1.departureTime,

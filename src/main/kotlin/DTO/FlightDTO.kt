@@ -12,6 +12,8 @@ import java.time.LocalTime
 data class FlightDisplayDTO(
     val flightId: String,          // Direct flights are "123", connecting flights are "123_456"
     val isConnecting: Boolean,     // Whether it is a connecting flight
+
+    val aircraftType: String,
     
     // Core flight information
     val departureAirport: String,

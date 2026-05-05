@@ -4,40 +4,158 @@
 
 <h1 class="sr-only">Complete Booking</h1>
 
+{# ── Booking Summary ── #}
 <div class="booking-summary">
-    {# Displaying correct Cabin Price based on selection #}
+
+    {# --- Outbound Card (single or connecting) --- #}
     {% if outboundFlight is not null %}
     <div class="flight-summary-card">
         <div class="flight-summary-header">
-            <span class="flight-summary-date">{{ outboundFlight.date }} · {{ outboundFlight.flightNumber }}</span>
-            <span class="flight-summary-badge">Outbound - {{ outboundCabin | capitalize }}</span>
+            <span class="flight-summary-date">{{ outboundFlight.date }}
+                {% if outboundLeg2Flight is not null %}
+                <span style="margin-left:8px;color:#888;font-size:0.85rem;">· 1 Stop</span>
+                {% endif %}
+            </span>
+            <span class="flight-summary-badge">Outbound – {{ outboundCabin | capitalize }}</span>
         </div>
-        <div class="flight-summary-row">
-            <div class="flight-summary-endpoint">
-                <span class="flight-summary-time">{{ outboundFlight.departureTime }}</span>
-                <span class="flight-summary-airport">{{ outboundFlight.departureAirport }}</span>
-                <span class="flight-summary-terminal">Terminal {{ outboundFlight.departureTerminal }}</span>
+
+        {# Leg 1 #}
+        <div class="leg-row">
+            <div class="leg-track-col">
+                <div class="track-dot"></div>
+                <div class="track-solid-line"></div>
+                <div class="track-dot"></div>
             </div>
-            <div class="flight-summary-middle">
-                <span class="flight-summary-meta">{{ outboundFlight.duration }}</span>
-                <div class="flight-track">
-                    <div class="flight-dot"></div>
-                    <div class="flight-dash"></div>
-                    <span class="flight-icon" aria-hidden="true">✈</span>
-                    <div class="flight-dash"></div>
-                    <div class="flight-dot"></div>
+            <div class="leg-body">
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ outboundFlight.departureTime }}</span>
+                    <span class="leg-airport"><strong>{{ outboundFlight.departureAirport }}</strong> <span class="terminal-tag">Terminal {{ outboundFlight.departureTerminal }}</span></span>
+                </div>
+                <div class="leg-meta-row">
+                    <span class="leg-duration">{{ outboundFlight.duration }}</span>
+                    <span class="mid-flight-meta">{{ outboundFlight.flightNumber }} · {{ outboundFlight.aircraftType }}</span>
+                </div>
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ outboundFlight.arrivalTime }}{% if outboundFlight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ outboundFlight.arrivalDayOffset }}</sup>{% endif %}</span>
+                    <span class="leg-airport"><strong>{{ outboundFlight.arrivalAirport }}</strong> <span class="terminal-tag">Terminal {{ outboundFlight.arrivalTerminal }}</span></span>
                 </div>
             </div>
-            <div class="flight-summary-endpoint right">
-                <span class="flight-summary-time">{{ outboundFlight.arrivalTime }}</span>
-                <span class="flight-summary-airport">{{ outboundFlight.arrivalAirport }}</span>
-                <span class="flight-summary-terminal">Terminal {{ outboundFlight.arrivalTerminal }}</span>
-            </div>
-            {# Logic to show only the selected cabin's price #}
-            <div class="flight-summary-price">
+            <div class="leg-price-col">
                 £{% if outboundCabin == "first" %}{{ outboundFlight.priceFirst }}{% elseif outboundCabin == "business" %}{{ outboundFlight.priceBusiness }}{% else %}{{ outboundFlight.priceEconomy }}{% endif %}
+                {% if outboundLeg2Flight is not null %}<div class="price-sub">Leg 1</div>{% endif %}
             </div>
         </div>
+
+        {# Layover bar + Leg 2 #}
+        {% if outboundLeg2Flight is not null %}
+        <div class="layover-bar">
+            <span class="layover-icon">⟳</span>
+            <span class="layover-duration">{{ outboundLayoverDisplay }}</span> layover at {{ outboundFlight.arrivalAirport }}
+        </div>
+
+        <div class="leg-row">
+            <div class="leg-track-col">
+                <div class="track-dot"></div>
+                <div class="track-solid-line"></div>
+                <div class="track-dot"></div>
+            </div>
+            <div class="leg-body">
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ outboundLeg2Flight.departureTime }}{% if outboundLeg2DayOffset > 0 %}<sup class="day-offset">+{{ outboundLeg2DayOffset }}</sup>{% endif %}</span>
+                    <span class="leg-airport"><strong>{{ outboundLeg2Flight.departureAirport }}</strong> <span class="terminal-tag">Terminal {{ outboundLeg2Flight.departureTerminal }}</span></span>
+                </div>
+                <div class="leg-meta-row">
+                    <span class="leg-duration">{{ outboundLeg2Flight.duration }}</span>
+                    <span class="mid-flight-meta">{{ outboundLeg2Flight.flightNumber }} · {{ outboundLeg2Flight.aircraftType }}</span>
+                </div>
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ outboundLeg2Flight.arrivalTime }}{% if outboundLeg2ArrivalDayOffset > 0 %}<sup class="day-offset">+{{ outboundLeg2ArrivalDayOffset }}</sup>{% endif %}</span>
+                    <span class="leg-airport"><strong>{{ outboundLeg2Flight.arrivalAirport }}</strong> <span class="terminal-tag">Terminal {{ outboundLeg2Flight.arrivalTerminal }}</span></span>
+                </div>
+            </div>
+            <div class="leg-price-col">
+                £{% if outboundCabin == "first" %}{{ outboundLeg2Flight.priceFirst }}{% elseif outboundCabin == "business" %}{{ outboundLeg2Flight.priceBusiness }}{% else %}{{ outboundLeg2Flight.priceEconomy }}{% endif %}
+                <div class="price-sub">Leg 2</div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+    {# --- Return Card (single or connecting) --- #}
+    {% if returnFlight is not null %}
+    <div class="flight-summary-card" style="margin-top:15px;">
+        <div class="flight-summary-header">
+            <span class="flight-summary-date">{{ returnFlight.date }}
+                {% if returnLeg2Flight is not null %}
+                <span style="margin-left:8px;color:#888;font-size:0.85rem;">· 1 Stop</span>
+                {% endif %}
+            </span>
+            <span class="flight-summary-badge">Return – {{ returnCabin | capitalize }}</span>
+        </div>
+
+        {# Leg 1 #}
+        <div class="leg-row">
+            <div class="leg-track-col">
+                <div class="track-dot"></div>
+                <div class="track-solid-line"></div>
+                <div class="track-dot"></div>
+            </div>
+            <div class="leg-body">
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ returnFlight.departureTime }}</span>
+                    <span class="leg-airport"><strong>{{ returnFlight.departureAirport }}</strong> <span class="terminal-tag">Terminal {{ returnFlight.departureTerminal }}</span></span>
+                </div>
+                <div class="leg-meta-row">
+                    <span class="leg-duration">{{ returnFlight.duration }}</span>
+                    <span class="mid-flight-meta">{{ returnFlight.flightNumber }} · {{ returnFlight.aircraftType }}</span>
+                </div>
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ returnFlight.arrivalTime }}{% if returnFlight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ returnFlight.arrivalDayOffset }}</sup>{% endif %}</span>
+                    <span class="leg-airport"><strong>{{ returnFlight.arrivalAirport }}</strong> <span class="terminal-tag">Terminal {{ returnFlight.arrivalTerminal }}</span></span>
+                </div>
+            </div>
+            <div class="leg-price-col">
+                £{% if returnCabin == "first" %}{{ returnFlight.priceFirst }}{% elseif returnCabin == "business" %}{{ returnFlight.priceBusiness }}{% else %}{{ returnFlight.priceEconomy }}{% endif %}
+                {% if returnLeg2Flight is not null %}<div class="price-sub">Leg 1</div>{% endif %}
+            </div>
+        </div>
+
+        {# Layover bar + Leg 2 #}
+        {% if returnLeg2Flight is not null %}
+        <div class="layover-bar">
+            <span class="layover-icon">⟳</span>
+            <span class="layover-duration">{{ returnLayoverDisplay }}</span> layover at {{ returnFlight.arrivalAirport }}
+        </div>
+
+        <div class="leg-row">
+            <div class="leg-track-col">
+                <div class="track-dot"></div>
+                <div class="track-solid-line"></div>
+                <div class="track-dot"></div>
+            </div>
+            <div class="leg-body">
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ returnLeg2Flight.departureTime }}{% if returnLeg2DayOffset > 0 %}<sup class="day-offset">+{{ returnLeg2DayOffset }}</sup>{% endif %}</span>
+                    <span class="leg-airport"><strong>{{ returnLeg2Flight.departureAirport }}</strong> <span class="terminal-tag">Terminal {{ returnLeg2Flight.departureTerminal }}</span></span>
+                </div>
+                <div class="leg-meta-row">
+                    <span class="leg-duration">{{ returnLeg2Flight.duration }}</span>
+                    <span class="mid-flight-meta">{{ returnLeg2Flight.flightNumber }} · {{ returnLeg2Flight.aircraftType }}</span>
+                </div>
+                <div class="leg-endpoint">
+                    <span class="leg-time">{{ returnLeg2Flight.arrivalTime }}{% if returnLeg2ArrivalDayOffset > 0 %}<sup class="day-offset">+{{ returnLeg2ArrivalDayOffset }}</sup>{% endif %}</span>
+                    <span class="leg-airport"><strong>{{ returnLeg2Flight.arrivalAirport }}</strong> <span class="terminal-tag">Terminal {{ returnLeg2Flight.arrivalTerminal }}</span></span>
+                </div>
+            </div>
+            <div class="leg-price-col">
+                £{% if returnCabin == "first" %}{{ returnLeg2Flight.priceFirst }}{% elseif returnCabin == "business" %}{{ returnLeg2Flight.priceBusiness }}{% else %}{{ returnLeg2Flight.priceEconomy }}{% endif %}
+                <div class="price-sub">Leg 2</div>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
     {% endif %}
 
@@ -49,143 +167,405 @@
     </div>
 </div>
 
-<div class="layout">
-    <form method="post" action="/confirm-booking">
-        <input type="hidden" name="outboundFlightId" value="{{ outboundFlight.flightId }}">
-        <input type="hidden" name="outboundCabin" value="{{ outboundCabin }}">
-        <input type="hidden" name="adults" value="{{ adults }}">
-        <input type="hidden" name="children" value="{{ children }}">
-        
-        {% if returnFlight != null %}
-            <input type="hidden" name="returnFlightId" value="{{ returnFlight.flightId }}">
-            <input type="hidden" name="returnCabin" value="{{ returnCabin }}">
-        {% endif %}
+<style>
+    .leg-row {
+        display: flex;
+        gap: 14px;
+        padding: 12px 16px;
+        align-items: stretch;
+    }
 
-        <div class="booking-layout">
-            <div class="passengers-panel">
-                <section class="card booking-card">
-                    <h2 class="card-title">Passenger Details</h2>
-                    <p class="card-subtitle">Please select a passenger to choose their seat</p>
-                    
-                    {% for i in range(0, adults - 1) %}
-                    <fieldset class="passenger-fieldset" id="fieldset-adult_{{ i }}_seat">
-                        <legend>Adult {{ i + 1 }}</legend>
-                        <p><input type="text" name="adult_{{ i }}_fullName" placeholder="Full Name" required></p>
-                        <p><input type="text" name="adult_{{ i }}_ID" placeholder="ID Number" required></p>
-                        <button type="button" class="select-seat-btn" onclick="setActivePassenger('adult_{{ i }}_seat')">
-                            Select Seat ▼
-                        </button>
-                        <p class="seat-label" id="adult_{{ i }}_seat_label">No seat selected</p>
-                        <input type="hidden" name="adult_{{ i }}_seat" id="adult_{{ i }}_seat" required>
-                    </fieldset>
-                    {% endfor %}
+    .leg-track-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 4px;
+        width: 14px;
+        flex-shrink: 0;
+    }
+    .track-dot {
+        width: 10px; height: 10px;
+        border: 2px solid var(--gold);
+        border-radius: 50%; background: #fff;
+        flex-shrink: 0;
+    }
+    .track-solid-line {
+        flex: 1;
+        width: 2px;
+        background: #d0d0d0;
+        min-height: 24px;
+    }
 
-                    {% for i in range(0, children - 1) %}
-                    <fieldset class="passenger-fieldset" id="fieldset-child_{{ i }}_seat">
-                        <legend>Child {{ i + 1 }}</legend>
-                        <p><input type="text" name="child_{{ i }}_fullName" placeholder="Full Name" required></p>
-                        <p><input type="text" name="child_{{ i }}_ID" placeholder="ID Number" required></p>
-                        <button type="button" class="select-seat-btn" onclick="setActivePassenger('child_{{ i }}_seat')">
-                            Select Seat ▼
-                        </button>
-                        <p class="seat-label" id="child_{{ i }}_seat_label">No seat selected</p>
-                        <input type="hidden" name="child_{{ i }}_seat" id="child_{{ i }}_seat" required>
-                    </fieldset>
-                    {% endfor %}
+    .leg-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .leg-endpoint {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+    }
+    .leg-time {
+        font-size: 1.15rem;
+        font-weight: bold;
+        color: var(--navy);
+        min-width: 52px;
+    }
+    .leg-airport { font-size: 0.95rem; color: var(--navy); }
+    .terminal-tag { font-size: 0.8rem; color: #999; margin-left: 4px; }
 
-                    <button type="submit" class="primary-btn">Confirm Booking</button>
-                </section>
-            </div>
+    .leg-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 2px;
+        margin: 2px 0;
+    }
+    .leg-duration { font-size: 0.8rem; color: #aaa; min-width: 52px; }
+    .mid-flight-meta {
+        font-size: 0.82rem; color: #666;
+        background: #f4f4f4;
+        padding: 2px 10px;
+        border-radius: 4px;
+    }
 
-        <button type="submit">Proceed to Payment</button>
+    .leg-price-col {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--navy);
+        text-align: right;
+        align-self: center;
+        min-width: 75px;
+        flex-shrink: 0;
+    }
+    .price-sub {
+        font-size: 0.72rem;
+        font-weight: normal;
+        color: #aaa;
+        text-align: right;
+    }
+
+    .layover-bar {
+        margin: 0 16px;
+        padding: 8px 14px;
+        background: #f5f5f5;
+        border-radius: 6px;
+        font-size: 0.83rem;
+        color: #555;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 6px;
+        border-left: 3px solid #ddd;
+    }
+    .layover-icon {
+        font-size: 1rem;
+        color: var(--gold);
+    }
+    .layover-duration {
+        font-weight: 700;
+        color: var(--navy);
+    }
+    .day-offset {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--gold);
+        vertical-align: super;
+        margin-left: 1px;
+    }
+    .layover-duration {
+        font-weight: 600;
+        color: var(--navy);
+        font-size: 0.85rem;
+    }
+</style>
+
+
+{# ── Step Indicator ── #}
+<div class="step-indicator" 
+     style="display:flex; gap:12px; justify-content:center; 
+            margin: 20px 0 40px 0;
+            flex-wrap:wrap; position: relative; z-index: 10;">
+    {% for step in flightSteps %}
+    <div class="step-pill" id="pill-{{ step.stepIndex }}"
+         style="padding:6px 16px;border-radius:999px;border:2px solid var(--navy);opacity:0.4;font-size:0.85rem;transition:all 0.2s;">
+        {{ step.stepIndex }}. {{ step.label }}
     </div>
+    {% endfor %}
+</div>
 
-                <div class="seat-legend">
-                    <div class="legend-item first">First</div>
-                    <div class="legend-item business">Business</div>
-                    <div class="legend-item economy">Economy</div>
-                    <div class="legend-item occupied">Occupied</div>
+<div class="layout">
+    <form method="post" action="/confirm-booking" id="booking-form">
+
+        {# Hidden fields #}
+        <input type="hidden" name="outboundCabin"        value="{{ outboundCabin }}">
+        <input type="hidden" name="returnCabin"          value="{{ returnCabinVal }}">
+        <input type="hidden" name="adults"               value="{{ adults }}">
+        <input type="hidden" name="children"             value="{{ children }}">
+        <input type="hidden" name="outboundFlightIdsRaw" value="{{ outboundFlightIdsRaw }}">
+        <input type="hidden" name="returnFlightIdsRaw"   value="{{ returnFlightIdsRaw }}">
+
+        {# ── Per-step panels ── #}
+        {% for step in flightSteps %}
+        <div class="seat-step-panel" id="step-panel-{{ step.stepIndex }}"
+             style="display:{% if step.stepIndex == 1 %}block{% else %}none{% endif %};">
+
+            <div class="booking-layout">
+
+                {# Left: passenger info (step 1 only) + seat pickers #}
+                <div class="passengers-panel">
+                    <section class="card booking-card">
+
+                        {% if step.stepIndex == 1 %}
+                        <h2 class="card-title">Passenger Details</h2>
+                        <p class="card-subtitle">Enter your details, then select seats for each flight</p>
+
+                        {% for i in range(0, adults - 1) %}
+                        <fieldset class="passenger-fieldset">
+                            <legend>Adult {{ i + 1 }}</legend>
+                            <p><input type="text" name="adult_{{ i }}_fullName" placeholder="Full Name" required></p>
+                            <p><input type="text" name="adult_{{ i }}_ID"       placeholder="ID Number"  required></p>
+                        </fieldset>
+                        {% endfor %}
+
+                        {% for i in range(0, children - 1) %}
+                        <fieldset class="passenger-fieldset">
+                            <legend>Child {{ i + 1 }}</legend>
+                            <p><input type="text" name="child_{{ i }}_fullName" placeholder="Full Name" required></p>
+                            <p><input type="text" name="child_{{ i }}_ID"       placeholder="ID Number"  required></p>
+                        </fieldset>
+                        {% endfor %}
+
+                        <hr style="margin:20px 0;">
+                        {% endif %}
+
+                        <h3 style="margin-bottom:8px;">{{ step.label }} – Select Seats</h3>
+                        <p class="card-subtitle">{{ step.cabin | capitalize }} class · Click a passenger then pick their seat</p>
+
+                        {% for i in range(0, adults - 1) %}
+                        <fieldset class="passenger-fieldset" id="fieldset-adult_{{ i }}_s{{ step.stepIndex }}">
+                            <legend>Adult {{ i + 1 }}</legend>
+                            <button type="button" class="select-seat-btn"
+                                    onclick="setActivePassenger('adult_{{ i }}_seat_step{{ step.stepIndex }}', {{ step.stepIndex }})">
+                                Select Seat ▼
+                            </button>
+                            <p class="seat-label" id="adult_{{ i }}_seat_step{{ step.stepIndex }}_label">No seat selected</p>
+                            <input type="hidden"
+                                   name="adult_{{ i }}_seat_step{{ step.stepIndex }}"
+                                   id="adult_{{ i }}_seat_step{{ step.stepIndex }}"
+                                   required>
+                        </fieldset>
+                        {% endfor %}
+
+                        {% for i in range(0, children - 1) %}
+                        <fieldset class="passenger-fieldset" id="fieldset-child_{{ i }}_s{{ step.stepIndex }}">
+                            <legend>Child {{ i + 1 }}</legend>
+                            <button type="button" class="select-seat-btn"
+                                    onclick="setActivePassenger('child_{{ i }}_seat_step{{ step.stepIndex }}', {{ step.stepIndex }})">
+                                Select Seat ▼
+                            </button>
+                            <p class="seat-label" id="child_{{ i }}_seat_step{{ step.stepIndex }}_label">No seat selected</p>
+                            <input type="hidden"
+                                   name="child_{{ i }}_seat_step{{ step.stepIndex }}"
+                                   id="child_{{ i }}_seat_step{{ step.stepIndex }}"
+                                   required>
+                        </fieldset>
+                        {% endfor %}
+
+                        {% if step.stepIndex == totalSteps %}
+                        <button type="button" class="primary-btn" style="margin-top:20px;"
+                                onclick="submitBooking({{ step.stepIndex }})">
+                            Confirm &amp; Proceed to Payment
+                        </button>
+                        {% else %}
+                        <button type="button" class="primary-btn" style="margin-top:20px;"
+                                onclick="nextStep({{ step.stepIndex }})">
+                            Next Flight →
+                        </button>
+                        {% endif %}
+
+                    </section>
                 </div>
 
-                <div class="aircraft-map">
-                    {% for deck in deckData %}
+                {# Right: seat map #}
+                <div class="seatmap-panel">
+                    <div class="seat-legend">
+                        <div class="legend-item first">First</div>
+                        <div class="legend-item business">Business</div>
+                        <div class="legend-item economy">Economy</div>
+                        <div class="legend-item occupied">Occupied</div>
+                    </div>
+
+                    <p class="seatmap-prompt" id="prompt-{{ step.stepIndex }}"
+                       style="text-align:center;font-weight:bold;margin-bottom:10px;">
+                        Please select a passenger first
+                    </p>
+
+                    <div class="aircraft-map">
+                        {% for deck in step.deckData %}
                         <div class="deck-label">{{ deck.deckName }}</div>
                         {% for cabin in deck.cabins %}
-                            <div class="cabin">
-                                {% for row in cabin.rows %}
-                                    <div class="seat-row {% if row.isExit %}exit-row{% endif %}">
-                                        <div class="row-number">{{ row.rowNumber }}</div>
-                                        <div class="seats-center">
-                                            {% for group in row.groups %}
-                                                <div class="seat-group">
-                                                    {% for seat in group %}
-                                                        <button type="button"
-                                                            class="seat {{ seat.seatClass }}"
-                                                            data-seat="{{ seat.seatNumber }}"
-                                                            data-class="{{ seat.seatClass }}"
-                                                            onclick="selectSeat(this)"
-                                                            {% if seat.isOccupied %}disabled{% endif %}>
-                                                            {{ seat.col }}
-                                                        </button>
-                                                    {% endfor %}
-                                                </div>
-                                                {% if not loop.last %}<div class="aisle"></div>{% endif %}
-                                            {% endfor %}
-                                        </div>
-                                        {% if row.isExit %}<span class="exit-label">EXIT</span>{% endif %}
+                        <div class="cabin">
+                            {% for row in cabin.rows %}
+                            <div class="seat-row {% if row.isExit %}exit-row{% endif %}">
+                                <div class="row-number">{{ row.rowNumber }}</div>
+                                <div class="seats-center">
+                                    {% for group in row.groups %}
+                                    <div class="seat-group">
+                                        {% for seat in group %}
+                                        <button type="button"
+                                                class="seat {{ seat.seatClass }}"
+                                                data-seat="{{ seat.seatNumber }}"
+                                                data-class="{{ seat.seatClass }}"
+                                                data-step="{{ step.stepIndex }}"
+                                                onclick="selectSeat(this)"
+                                                {% if seat.isOccupied or seat.seatClass != step.cabin %}aria-disabled="true" tabindex="-1"{% endif %}>
+                                            {{ seat.col }}
+                                        </button>
+                                        {% endfor %}
                                     </div>
-                                {% endfor %}
+                                    {% if not loop.last %}<div class="aisle"></div>{% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% if row.isExit %}<span class="exit-label">EXIT</span>{% endif %}
                             </div>
+                            {% endfor %}
+                        </div>
                         {% endfor %}
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
                 </div>
+
             </div>
         </div>
+        {% endfor %}
+
     </form>
 </div>
 
-<script>
-let currentPassengerField = null;
+<style>
+    .step-pill.active {
+        opacity: 1 !important;
+        background: var(--navy);
+        color: var(--gold);
+    }
+    .step-pill.done {
+        opacity: 0.7 !important;
+        background: #e0e0e0;
+    }
+    .seat[aria-disabled="true"] {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+    .seat.selected {
+        outline: 3px solid var(--gold);
+    }
+</style>
 
-function setActivePassenger(fieldId) {
+<script>
+const totalSteps = {{ totalSteps }};
+let currentPassengerField = null;
+let currentStepIndex = 1;
+
+document.addEventListener('DOMContentLoaded', () => activatePill(1));
+
+function activatePill(stepIndex) {
+    document.querySelectorAll('.step-pill').forEach((p, i) => {
+        const idx = i + 1;
+        p.classList.remove('active', 'done');
+        if (idx === stepIndex) p.classList.add('active');
+        else if (idx < stepIndex) p.classList.add('done');
+    });
+}
+
+function setActivePassenger(fieldId, stepIndex) {
     currentPassengerField = fieldId;
-    // Highlight active passenger
-    document.querySelectorAll('.passenger-fieldset').forEach(f => f.classList.remove('active'));
-    const fs = document.getElementById('fieldset-' + fieldId);
+    currentStepIndex = stepIndex;
+
+    const panel = document.getElementById('step-panel-' + stepIndex);
+    panel.querySelectorAll('.passenger-fieldset').forEach(f => f.classList.remove('active'));
+    const fs = document.getElementById('fieldset-' + fieldId.replace('_seat_step' + stepIndex, '_s' + stepIndex));
     if (fs) fs.classList.add('active');
-    
-    // Update prompt
-    const name = fs?.querySelector('legend')?.textContent;
-    document.querySelector('.seatmap-prompt').textContent = 'Selecting seat for: ' + name;
+
+    const name = fs?.querySelector('legend')?.textContent?.trim();
+    const prompt = document.getElementById('prompt-' + stepIndex);
+    if (prompt) prompt.textContent = 'Selecting seat for: ' + (name || fieldId);
 }
 
 function selectSeat(btn) {
+    if (btn.getAttribute('aria-disabled') === 'true') return;
+
     if (!currentPassengerField) {
         alert('Please click "Select Seat" for a passenger first.');
         return;
     }
-    
+
+    const stepIndex = parseInt(btn.dataset.step);
+    if (stepIndex !== currentStepIndex) return;
+
     const seat = btn.dataset.seat;
 
-    // Check if another passenger already picked this seat
-    const allHidden = document.querySelectorAll('input[type=hidden][name*="_seat"]');
-    for (const input of allHidden) {
+    const stepInputs = document.querySelectorAll(`input[name*="_seat_step${stepIndex}"]`);
+    for (const input of stepInputs) {
         if (input.id !== currentPassengerField && input.value === seat) {
             alert('Seat ' + seat + ' is already selected by another passenger.');
             return;
         }
     }
 
-    // Remove previous selection highlight for THIS passenger
     const currentInput = document.getElementById(currentPassengerField);
-    if (currentInput.value) {
-        document.querySelector(`.seat[data-seat="${currentInput.value}"]`)?.classList.remove('selected');
+    if (currentInput && currentInput.value) {
+        const prev = document.querySelector(`#step-panel-${stepIndex} .seat[data-seat="${currentInput.value}"]`);
+        if (prev) prev.classList.remove('selected');
     }
 
-    // Apply new selection
     btn.classList.add('selected');
-    currentInput.value = seat;
-    document.getElementById(currentPassengerField + '_label').textContent = 'Selected: ' + seat;
+    if (currentInput) currentInput.value = seat;
+
+    const label = document.getElementById(currentPassengerField + '_label');
+    if (label) label.textContent = 'Selected: ' + seat;
+}
+
+function checkInputsForStep(stepIndex) {
+    const currentPanel = document.getElementById('step-panel-' + stepIndex);
+    if (!currentPanel) return true;
+
+    const inputs = currentPanel.querySelectorAll('input[required]');
+    for (let input of inputs) {
+        if (!input.value.trim()) {
+            if (input.type === 'text') {
+                input.style.borderColor = 'red';
+                alert('Please fill in all passenger details.');
+            } else if (input.type === 'hidden') {
+                alert('Please select seats for all passengers for this flight.');
+            }
+            return false;
+        } else {
+            if (input.type === 'text') input.style.borderColor = '';
+        }
+    }
+    return true;
+}
+
+function nextStep(stepIndex) {
+    if (!checkInputsForStep(stepIndex)) return;
+
+    document.getElementById('step-panel-' + stepIndex).style.display = 'none';
+    const nextPanel = document.getElementById('step-panel-' + (stepIndex + 1));
+    if (nextPanel) nextPanel.style.display = 'block';
+
+    currentPassengerField = null;
+    currentStepIndex = stepIndex + 1;
+
+    activatePill(stepIndex + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function submitBooking(stepIndex) {
+    if (!checkInputsForStep(stepIndex)) return;
+    document.getElementById('booking-form').submit();
 }
 </script>
 

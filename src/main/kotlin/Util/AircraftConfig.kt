@@ -38,8 +38,7 @@ object AircraftConfigs {
             exitRows = setOf(12, 13),
             bassinetRows = setOf(1),
             cabins = listOf(
-                CabinConfig("business", 1..4,   layout = listOf(listOf("A","C"), listOf("D","F"))), // 2-2
-                CabinConfig("economy",  5..30,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
+                CabinConfig("economy",  1..30,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),
 
@@ -48,8 +47,7 @@ object AircraftConfigs {
             exitRows = setOf(14, 15),
             bassinetRows = setOf(1),
             cabins = listOf(
-                CabinConfig("business", 1..5,   layout = listOf(listOf("A","B","C"), listOf("D","E","F"))), // 3-3
-                CabinConfig("economy",  6..35,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
+                CabinConfig("economy",  1..35,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),
 
@@ -58,8 +56,7 @@ object AircraftConfigs {
             exitRows = setOf(13, 14),
             bassinetRows = setOf(1),
             cabins = listOf(
-                CabinConfig("business", 1..4,   layout = listOf(listOf("A","B","C"), listOf("D","E","F"))), // 3-3
-                CabinConfig("economy",  5..32,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
+                CabinConfig("economy",  1..32,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),
 
@@ -78,8 +75,7 @@ object AircraftConfigs {
             exitRows = setOf(9, 10),
             bassinetRows = setOf(1),
             cabins = listOf(
-                CabinConfig("business", 1..3,   layout = listOf(listOf("A"), listOf("C"))), // 1-1
-                CabinConfig("economy",  4..20,  layout = listOf(listOf("A","B"), listOf("C","D")))  // 2-2
+                CabinConfig("economy",  1..20,  layout = listOf(listOf("A","B"), listOf("C","D")))  // 2-2
             )
         ))),
 
@@ -89,8 +85,7 @@ object AircraftConfigs {
             exitRows = setOf(15, 16, 30),
             bassinetRows = setOf(1, 6),
             cabins = listOf(
-                CabinConfig("first",    1..4,   layout = listOf(listOf("A","C"), listOf("G","K"))),               // 2-2
-                CabinConfig("business", 5..12,  layout = listOf(listOf("A","C"), listOf("D","G"), listOf("J","K"))), // 2-2-2
+                CabinConfig("business", 1..12,  layout = listOf(listOf("A","C"), listOf("D","G"), listOf("J","K"))), // 2-2-2
                 CabinConfig("economy",  13..40, layout = listOf(listOf("A","C"), listOf("D","E","F","G"), listOf("H","J"))) // 2-4-2
             )
         ))),
@@ -100,8 +95,7 @@ object AircraftConfigs {
             exitRows = setOf(16, 17, 28),
             bassinetRows = setOf(1, 5),
             cabins = listOf(
-                CabinConfig("first",    1..3,   layout = listOf(listOf("A","C"), listOf("G","K"))),               // 2-2
-                CabinConfig("business", 4..10,  layout = listOf(listOf("A","C"), listOf("D","G"), listOf("J","K"))), // 2-2-2
+                CabinConfig("business", 1..10,  layout = listOf(listOf("A","C"), listOf("D","G"), listOf("J","K"))), // 2-2-2
                 CabinConfig("economy",  11..38, layout = listOf(listOf("A","C"), listOf("D","E","F"), listOf("G","J"))) // 2-3-2
             )
         ))),
@@ -111,8 +105,7 @@ object AircraftConfigs {
             exitRows = setOf(15, 16, 28),
             bassinetRows = setOf(1, 4),
             cabins = listOf(
-                CabinConfig("first",    1..3,   layout = listOf(listOf("A","C"), listOf("G","K"))),               // 2-2
-                CabinConfig("business", 4..11,  layout = listOf(listOf("A","C"), listOf("D","G"), listOf("J","K"))), // 2-2-2
+                CabinConfig("business", 1..11,  layout = listOf(listOf("A","C"), listOf("D","G"), listOf("J","K"))), // 2-2-2
                 CabinConfig("economy",  12..38, layout = listOf(listOf("A","B","C"), listOf("D","E","F","G"), listOf("H","J","K"))) // 3-3-3
             )
         ))),
