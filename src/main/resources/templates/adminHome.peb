@@ -615,7 +615,21 @@
                                 </span>
                             </td>
                             <td>${{ f.price }}</td>
-                            <td><span style="color: var(--brand-secondary); font-size: 0.82rem; font-weight: 600;">Ready to Update</span></td>
+                            <td>
+                                <form action="/admin/update-flight-status" method="POST" style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="hidden" name="flightId" value="{{ f.flightId }}">
+                                    <input type="hidden" name="flightDate" value="{{ lastFlightDate }}">
+                                    <input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">
+                                    <select name="newStatus" class="filter-group select" style="padding: 5px 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.82rem; color: var(--text-primary); background: #fff;">
+                                        <option value="Scheduled" {% if f.status == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+                                        <option value="Delayed"   {% if f.status == 'Delayed'   %}selected{% endif %}>Delayed</option>
+                                        <option value="Cancelled" {% if f.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                        <option value="Departed"  {% if f.status == 'Departed'  %}selected{% endif %}>Departed</option>
+                                        <option value="Landed"    {% if f.status == 'Landed'    %}selected{% endif %}>Landed</option>
+                                    </select>
+                                    <button type="submit" class="btn-primary" style="padding: 5px 12px; font-size: 0.82rem;">Save</button>
+                                </form>
+                            </td>
                         </tr>
                         {% else %}
                         <tr><td colspan="6" class="td-empty">No flights matched your criteria.</td></tr>

@@ -1,5 +1,7 @@
 package com.flightbooking
 
+import io.ktor.server.request.*
+import io.ktor.http.*
 import io.ktor.http.ContentType
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -70,6 +72,33 @@ fun Application.configureRouting() {
                 }
             }
         }
+
+        post("/admin/update-flight-status") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respond(HttpStatusCode.Forbidden)
+                return@post
+            }
+            val params = call.receiveParameters()
+            val flightId = params["flightId"]?.toIntOrNull()
+            val newStatus = params["newStatus"]
+    
+            if (flightId == null || newStatus.isNullOrEmpty()) {
+                call.respond(HttpStatusCode.BadRequest)
+                return@post
+            }
+    
+            val success = AdminDAO.updateFlightStatus(flightId, newStatus)
+            if (success) {
+        
+                val flightDate = params["flightDate"] ?: ""
+                val flightNumber = params["flightNumber"] ?: ""
+                call.respondRedirect("/?flightDate=$flightDate&flightNumber=$flightNumber")
+            } else {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to update status")
+            }
+        }
+
 
         get("/") {
             val session = call.sessions.get<UserSession>()

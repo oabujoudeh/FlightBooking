@@ -506,6 +506,26 @@ object AdminDAO {
             e.printStackTrace()
             emptyList()
         }
+    }
+
+    fun updateFlightStatus(flightId: Int, newStatus: String): Boolean {
+    val allowedStatuses = setOf("Scheduled", "Delayed", "Cancelled", "Departed", "Landed")
+    if (newStatus !in allowedStatuses) return false
+
+    val sql = "UPDATE flights SET status = ? WHERE flight_id = ?"
+    return try {
+        Database.getConnection().use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, newStatus)
+                stmt.setInt(2, flightId)
+                stmt.executeUpdate() > 0
+            }
+        }
+    } catch (e: Exception) {
+        println("UpdateFlightStatus Error:")
+        e.printStackTrace()
+        false
+    }
 }
     
 }
