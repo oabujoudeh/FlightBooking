@@ -450,6 +450,62 @@ object AdminDAO {
         }
     }
 
-    
+    fun trackFlights(filterDate: String? = null, filterNumber: String? = null): List<Map<String, Any>> {
+        var sql = """
+            SELECT f.flight_id, 
+                f.flight_date, 
+                f.status, 
+                r.flight_number, 
+                dep.city AS dep_city, 
+                arr.city AS arr_city
+            FROM flights f
+            JOIN routes r ON f.route_id = r.route_id
+            JOIN airports dep ON r.departure_airport = dep.airport_id
+            JOIN airports arr ON r.arrival_airport = arr.airport_id
+            WHERE 1=1
+        """
+
+        if (!filterDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date = ?"
+        }
+        if (!filterNumber.isNullOrEmpty()) {
+            sql += " AND r.flight_number LIKE ?"
+        }
+
+        sql += " ORDER BY f.flight_date ASC, r.flight_number ASC"
+
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    var paramIndex = 1
+                    if (!filterDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, filterDate)
+                    }
+                    if (!filterNumber.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, "%$filterNumber%")
+                    }
+
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            val row = mutableMapOf<String, Any>()
+                            row["flightId"] = rs.getInt("flight_id")
+                            row["flightDate"] = rs.getString("flight_date") ?: ""
+                            row["status"] = rs.getString("status") ?: ""
+                            row["flightNumber"] = rs.getString("flight_number") ?: ""
+                            row["originCity"] = rs.getString("dep_city") ?: ""
+                            row["destCity"] = rs.getString("arr_city") ?: ""
+                            results.add(row)
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("TrackFlights Error:")
+            e.printStackTrace()
+            emptyList()
+        }
+}
     
 }

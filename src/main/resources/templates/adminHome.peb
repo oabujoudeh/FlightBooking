@@ -2,165 +2,757 @@
 
 {% block title %}Admin - EAJO Air{% endblock %}
 
+{% block head %}
+<style>
+    :root {
+        --brand-primary: #0f4c8a;
+        --brand-secondary: #1a6fc4;
+        --brand-light: #e8f1fb;
+        --brand-accent: #0d9488;
+
+        --bg-page: #f0f4f9;
+        --bg-card: #ffffff;
+        --bg-table-head: #f4f7fb;
+
+        --text-primary: #1a2535;
+        --text-secondary: #4a5568;
+        --text-muted: #94a3b8;
+
+        --border-color: #dde4ef;
+        --border-radius: 10px;
+
+        --status-confirmed-bg: #dcfce7;
+        --status-confirmed-text: #166534;
+        --status-cancelled-bg: #fee2e2;
+        --status-cancelled-text: #991b1b;
+        --status-delayed-bg: #fef9c3;
+        --status-delayed-text: #854d0e;
+
+        --shadow-sm: 0 1px 3px rgba(15, 76, 138, 0.07);
+        --shadow-md: 0 4px 12px rgba(15, 76, 138, 0.10);
+    }
+
+    .admin-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        background: var(--bg-page);
+        min-height: 100vh;
+    }
+
+    /* ── Page Header ── */
+    .admin-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 28px;
+    }
+    .admin-header h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--brand-primary);
+        letter-spacing: -0.02em;
+        margin: 0;
+    }
+    .admin-header .badge-total {
+        background: var(--brand-light);
+        color: var(--brand-primary);
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1px solid #c3d9f5;
+    }
+
+    /* ── Cards ── */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+        padding: 18px 22px 14px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .card-header h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+    .card-body {
+        padding: 20px 22px;
+    }
+
+    /* ── Charts Grid (3 equal columns) ── */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-bottom: 24px;
+    }
+    .chart-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .chart-card-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        padding: 12px 16px 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .chart-card img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* ── Section Labels ── */
+    .section-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--brand-secondary);
+        margin: 0 0 8px;
+    }
+
+    /* ── Tables ── */
+    .table-wrapper {
+        overflow-x: auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        color: var(--text-primary);
+    }
+    thead tr {
+        background: var(--bg-table-head);
+    }
+    thead th {
+        padding: 11px 14px;
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        border-bottom: 2px solid var(--border-color);
+        white-space: nowrap;
+    }
+    tbody tr {
+        transition: background 0.15s;
+    }
+    tbody tr:hover {
+        background: #f7faff;
+    }
+    tbody td {
+        padding: 11px 14px;
+        border-bottom: 1px solid #eef1f7;
+        color: var(--text-primary);
+    }
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .td-empty {
+        padding: 28px;
+        text-align: center;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    /* ── Status Badges ── */
+    .badge {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .badge-confirmed { background: var(--status-confirmed-bg); color: var(--status-confirmed-text); }
+    .badge-cancelled { background: var(--status-cancelled-bg); color: var(--status-cancelled-text); }
+    .badge-delayed   { background: var(--status-delayed-bg);   color: var(--status-delayed-text);   }
+    .badge-default   { background: var(--brand-light); color: var(--brand-primary); }
+
+    /* ── Filter Forms ── */
+    .filter-bar {
+        display: flex;
+        gap: 14px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .filter-group label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .filter-group input,
+    .filter-group select {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: var(--text-primary);
+        background: #fff;
+        transition: border-color 0.15s;
+    }
+    .filter-group input:focus,
+    .filter-group select:focus {
+        border-color: var(--brand-secondary);
+        outline: none;
+    }
+    .btn-primary {
+        padding: 9px 20px;
+        background: var(--brand-primary);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .btn-primary:hover { background: var(--brand-secondary); }
+    .btn-clear {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        padding-bottom: 9px;
+        transition: color 0.15s;
+    }
+    .btn-clear:hover { color: var(--brand-primary); }
+
+    /* ── Section spacing ── */
+    .admin-section {
+        margin-bottom: 24px;
+    }
+
+    /* ── Route cell ── */
+    .route-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+    }
+    .route-arrow {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    /* ── Collapsible Filter Panel ── */
+    .card-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .card-header-row .header-left { flex: 1; }
+    .btn-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 14px;
+        background: var(--brand-light);
+        color: var(--brand-primary);
+        border: 1px solid #c3d9f5;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .btn-toggle:hover {
+        background: #d6e8f8;
+    }
+    .btn-toggle .toggle-icon {
+        display: inline-block;
+        transition: transform 0.25s ease;
+        font-style: normal;
+        line-height: 1;
+    }
+    .btn-toggle.is-open .toggle-icon {
+        transform: rotate(180deg);
+    }
+    .filter-panel {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.25s ease;
+        padding: 0 22px;
+    }
+    .filter-panel.is-open {
+        max-height: 300px;
+        opacity: 1;
+        padding: 20px 22px;
+    }
+    /* ── Collapsible Results Panel ── */
+    .results-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 22px;
+        border-top: 1px solid var(--border-color);
+        background: var(--bg-table-head);
+    }
+    .results-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .results-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+    }
+    .results-count {
+        font-size: 0.78rem;
+        font-weight: 600;
+        background: var(--brand-light);
+        color: var(--brand-primary);
+        border: 1px solid #c3d9f5;
+        border-radius: 20px;
+        padding: 2px 9px;
+    }
+    .btn-toggle-results {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        white-space: nowrap;
+    }
+    .btn-toggle-results:hover {
+        background: var(--brand-light);
+        color: var(--brand-primary);
+        border-color: #c3d9f5;
+    }
+    .btn-toggle-results .toggle-icon {
+        display: inline-block;
+        transition: transform 0.25s ease;
+        font-style: normal;
+        line-height: 1;
+    }
+    .btn-toggle-results.is-open .toggle-icon {
+        transform: rotate(180deg);
+    }
+    .results-panel {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.35s ease, opacity 0.25s ease;
+    }
+    .results-panel.is-open {
+        max-height: 2000px;
+        opacity: 1;
+    }
+
+    /* When filter is active (has query params), show a subtle indicator on the header */
+    .filter-active-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--brand-secondary);
+        margin-left: 6px;
+        vertical-align: middle;
+    }
+
+    @media (max-width: 900px) {
+        .charts-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+        .admin-container { padding: 16px 12px; }
+        .filter-bar { flex-direction: column; align-items: stretch; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="admin-container">
-    <h1>Admin Dashboard</h1>
 
-    <div class="stats-row">
-        <div class="stat-card">
-            <h3>Total Registered Users</h3>
-            <div class="stat-value">{{ totalUsers }}</div>
-        </div>
+    <!-- ── Header ── -->
+    <div class="admin-header">
+        <h1>✈ Admin Dashboard</h1>
+        <span class="badge-total">{{ totalUsers }} Registered Users</span>
     </div>
 
-    <div class="charts-grid">
-        <div class="chart-card chart-full">
+    <!-- ── Charts (3 equal columns) ── -->
+    <div class="charts-grid admin-section">
+        <div class="chart-card">
+            <div class="chart-card-label">Bookings &amp; Revenue Over Time</div>
             <img src="/admin/chart/bookings-over-time" alt="Line chart showing bookings and revenue over time">
         </div>
         <div class="chart-card">
-            <img src="/admin/chart/booking-status" alt="Pie chart showing booking status breakdown by confirmed, cancelled, and pending">
+            <div class="chart-card-label">Booking Status Breakdown</div>
+            <img src="/admin/chart/booking-status" alt="Pie chart showing booking status breakdown">
         </div>
         <div class="chart-card">
+            <div class="chart-card-label">Busiest Routes</div>
             <img src="/admin/chart/busiest-routes" alt="Bar chart showing the busiest flight routes by booking count">
         </div>
     </div>
 
-    <section class="advanced-search" style="margin: 30px 0; padding: 20px; background: #f4f4f4; border-radius: 8px; border: 1px solid #ddd;">
-        <h2 style="margin-top: 0;">Global Reservation Tracker</h2>
-        <form action="/" method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-            <div>
-                <label style="display: block; font-size: 0.85em; margin-bottom: 5px;">Flight Date</label>
-                <input type="date" name="filterDate" value="{{ lastFilterDate }}" style="padding: 8px; border: 1px solid #ccc;">
+    <!-- ── Global Reservation Tracker ── -->
+    <div class="card admin-section">
+        <div class="card-header">
+            <div class="card-header-row">
+                <div class="header-left">
+                    <p class="section-label">Search &amp; Filter</p>
+                    <h2>
+                        Global Reservation Tracker
+                        {% if lastFilterDate or lastFilterUsername or lastFilterStatus %}
+                            <span class="filter-active-dot" title="Filters active"></span>
+                        {% endif %}
+                    </h2>
+                </div>
+                <button
+                    type="button"
+                    class="btn-toggle {% if lastFilterDate or lastFilterUsername or lastFilterStatus %}is-open{% endif %}"
+                    aria-expanded="{% if lastFilterDate or lastFilterUsername or lastFilterStatus %}true{% else %}false{% endif %}"
+                    aria-controls="res-filter-panel"
+                    onclick="toggleFilter('res-filter-panel', this)">
+                    <i class="toggle-icon">▾</i>
+                    <span class="toggle-label">{% if lastFilterDate or lastFilterUsername or lastFilterStatus %}Hide Filters{% else %}Show Filters{% endif %}</span>
+                </button>
             </div>
-            <div>
-                <label style="display: block; font-size: 0.85em; margin-bottom: 5px;">Passenger Name</label>
-                <input type="text" name="filterUsername" placeholder="Search name..." value="{{ lastFilterUsername }}" style="padding: 8px; border: 1px solid #ccc;">
-            </div>
-            <div>
-                <label style="display: block; font-size: 0.85em; margin-bottom: 5px;">Booking Status</label>
-                <select name="filterStatus" style="padding: 8px; border: 1px solid #ccc;">
-                    <option value="">All Statuses</option>
-                    <option value="Confirmed" {% if lastFilterStatus == "Confirmed" %}selected{% endif %}>Confirmed</option>
-                    <option value="Cancelled" {% if lastFilterStatus == "Cancelled" %}selected{% endif %}>Cancelled</option>
-                </select>
-            </div>
-            <button type="submit" style="padding: 8px 20px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Search Database</button>
-            <a href="/" style="font-size: 0.9em; color: #666; text-decoration: none; padding-bottom: 8px;">Clear Filters</a>
-        </form>
+        </div>
 
-        <div style="margin-top: 20px; background: #fff; padding: 10px; border-radius: 4px;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div id="res-filter-panel" class="filter-panel {% if lastFilterDate or lastFilterUsername or lastFilterStatus %}is-open{% endif %}">
+            <form action="/" method="GET" class="filter-bar">
+                <div class="filter-group">
+                    <label for="filterDate">Flight Date</label>
+                    <input type="date" id="filterDate" name="filterDate" value="{{ lastFilterDate }}">
+                </div>
+                <div class="filter-group">
+                    <label for="filterUsername">Passenger Name</label>
+                    <input type="text" id="filterUsername" name="filterUsername" placeholder="Search name…" value="{{ lastFilterUsername }}">
+                </div>
+                <div class="filter-group">
+                    <label for="filterStatus">Booking Status</label>
+                    <select id="filterStatus" name="filterStatus">
+                        <option value="">All Statuses</option>
+                        <option value="Confirmed" {% if lastFilterStatus == "Confirmed" %}selected{% endif %}>Confirmed</option>
+                        <option value="Cancelled" {% if lastFilterStatus == "Cancelled" %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Search Database</button>
+                <a href="/" class="btn-clear">Clear Filters</a>
+            </form>
+        </div>
+
+            {% if trackedReservations is not empty %}
+        <div class="results-header">
+            <div class="results-header-left">
+                <span class="results-label">Results</span>
+                <span class="results-count">{{ trackedReservations | length }} found</span>
+            </div>
+            <button type="button"
+                class="btn-toggle-results is-open"
+                aria-expanded="true"
+                aria-controls="res-results-panel"
+                onclick="toggleResults('res-results-panel', this)">
+                <i class="toggle-icon">▾</i>
+                <span class="toggle-label">Collapse</span>
+            </button>
+        </div>
+        <div id="res-results-panel" class="results-panel is-open">
+        {% else %}
+        <div id="res-results-panel" class="results-panel is-open">
+        {% endif %}
+            <div class="table-wrapper">
+                <table>
+                    <caption class="sr-only">Reservation search results</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Booked By</th>
+                            <th scope="col">Passengers</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Total Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in trackedReservations %}
+                        <tr>
+                            <td><strong>{{ res.bookingId }}</strong></td>
+                            <td>{{ res.bookedBy }}</td>
+                            <td>{{ res.passengers }}</td>
+                            <td>{{ res.bookingDate }}</td>
+                            <td>
+                                <span class="badge {% if res.status == 'Cancelled' %}badge-cancelled{% else %}badge-confirmed{% endif %}">
+                                    {{ res.status }}
+                                </span>
+                            </td>
+                            <td>${{ res.totalPrice }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="td-empty">Use the filters above to search all reservations.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Flight Availability & Changes ── -->
+    <div class="card admin-section">
+        <div class="card-header">
+            <div class="card-header-row">
+                <div class="header-left">
+                    <p class="section-label">Manage</p>
+                    <h2>
+                        Flight Availability &amp; Changes
+                        {% if lastFlightDate or lastFlightNumber %}
+                            <span class="filter-active-dot" title="Filters active"></span>
+                        {% endif %}
+                    </h2>
+                </div>
+                <button
+                    type="button"
+                    class="btn-toggle {% if lastFlightDate or lastFlightNumber %}is-open{% endif %}"
+                    aria-expanded="{% if lastFlightDate or lastFlightNumber %}true{% else %}false{% endif %}"
+                    aria-controls="flight-filter-panel"
+                    onclick="toggleFilter('flight-filter-panel', this)">
+                    <i class="toggle-icon">▾</i>
+                    <span class="toggle-label">{% if lastFlightDate or lastFlightNumber %}Hide Filters{% else %}Show Filters{% endif %}</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="flight-filter-panel" class="filter-panel {% if lastFlightDate or lastFlightNumber %}is-open{% endif %}">
+            <form action="/" method="GET" class="filter-bar">
+                <div class="filter-group">
+                    <label for="flightDate">Flight Date</label>
+                    <input type="date" id="flightDate" name="flightDate" value="{{ lastFlightDate }}">
+                </div>
+                <div class="filter-group">
+                    <label for="flightNumber">Flight Number</label>
+                    <input type="text" id="flightNumber" name="flightNumber" placeholder="e.g. EJ101" value="{{ lastFlightNumber }}">
+                </div>
+                <button type="submit" class="btn-primary">Filter Flights</button>
+                <a href="/" class="btn-clear">Clear</a>
+            </form>
+        </div>
+
+            {% if trackedFlights is not empty %}
+        <div class="results-header">
+            <div class="results-header-left">
+                <span class="results-label">Results</span>
+                <span class="results-count">{{ trackedFlights | length }} found</span>
+            </div>
+            <button type="button"
+                class="btn-toggle-results is-open"
+                aria-expanded="true"
+                aria-controls="flight-results-panel"
+                onclick="toggleResults('flight-results-panel', this)">
+                <i class="toggle-icon">▾</i>
+                <span class="toggle-label">Collapse</span>
+            </button>
+        </div>
+        <div id="flight-results-panel" class="results-panel is-open">
+        {% else %}
+        <div id="flight-results-panel" class="results-panel is-open">
+        {% endif %}
+            <div class="table-wrapper">
+                <table>
+                    <caption class="sr-only">Flight availability and status</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Flight #</th>
+                            <th scope="col">Route</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Price</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in trackedFlights %}
+                        <tr>
+                            <td><strong>{{ f.flightNumber }}</strong></td>
+                            <td>
+                                <span class="route-cell">
+                                    {{ f.originCity }}<span class="route-arrow">→</span>{{ f.destCity }}
+                                </span>
+                            </td>
+                            <td>{{ f.flightDate }}</td>
+                            <td>
+                                <span class="badge {% if f.status == 'Cancelled' %}badge-cancelled{% elseif f.status == 'Delayed' %}badge-delayed{% else %}badge-confirmed{% endif %}">
+                                    {{ f.status }}
+                                </span>
+                            </td>
+                            <td>${{ f.price }}</td>
+                            <td><span style="color: var(--brand-secondary); font-size: 0.82rem; font-weight: 600;">Ready to Update</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="td-empty">No flights matched your criteria.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Recent Bookings ── -->
+    <div class="card admin-section">
+        <div class="card-header">
+            <p class="section-label">Overview</p>
+            <h2>Recent Bookings</h2>
+        </div>
+        <div class="table-wrapper">
+            <table id="bookingsTable">
+                <caption class="sr-only">Recent bookings</caption>
                 <thead>
-                    <tr style="background: #eee; text-align: left;">
-                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">ID</th>
-                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Booked By</th>
-                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Passengers</th>
-                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Date</th>
-                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Status</th>
-                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Total Price</th>
+                    <tr>
+                        <th scope="col">Booking ID</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for res in trackedReservations %}
+                {% for booking in recentBookings %}
                     <tr>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.bookingId }}</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.bookedBy }}</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.passengers }}</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.bookingDate }}</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                            <span style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em; background: {% if res.status == 'Cancelled' %}#ffebee; color: #c62828{% else %}#e8f5e9; color: #2e7d32{% endif %};">
-                                {{ res.status }}
+                        <td><strong>{{ booking.bookingId }}</strong></td>
+                        <td>{{ booking.contactEmail }}</td>
+                        <td>{{ booking.bookingDate }}</td>
+                        <td>${{ booking.totalPrice }}</td>
+                        <td>
+                            <span class="badge {% if booking.status == 'Cancelled' %}badge-cancelled{% elseif booking.status == 'Confirmed' %}badge-confirmed{% else %}badge-default{% endif %}">
+                                {{ booking.status }}
                             </span>
                         </td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${{ res.totalPrice }}</td>
                     </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" style="padding: 20px; text-align: center; color: #999;">
-                            Use the filters above to search all reservations in the database.
-                        </td>
-                    </tr>
-                    {% endfor %}
+                {% endfor %}
                 </tbody>
             </table>
         </div>
-    </section>
+    </div>
 
-    <h2>Recent Bookings</h2>
-    
-    <table id="bookingsTable">
-        <caption class="sr-only">Recent bookings</caption>
-        <thead>
-            <tr>
-                <th scope="col">Booking ID</th>
-                <th scope="col">Email</th>
-                <th scope="col">Date</th>
-                <th scope="col">Price</th>
-                <th scope="col">Status</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for booking in recentBookings %}
-            <tr>
-                <td>{{ booking.bookingId }}</td>
-                <td>{{ booking.contactEmail }}</td>
-                <td>{{ booking.bookingDate }}</td>
-                <td>${{ booking.totalPrice }}</td>
-                <td>{{ booking.status }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <!-- ── Recent Cancellations ── -->
+    <div class="card admin-section">
+        <div class="card-header">
+            <p class="section-label">Attention Required</p>
+            <h2>Recent Cancellations</h2>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <caption class="sr-only">Recent cancellations</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Booking ID</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Revenue Lost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for booking in recentCancellations %}
+                    <tr>
+                        <td><strong>{{ booking.bookingId }}</strong></td>
+                        <td>{{ booking.contactEmail }}</td>
+                        <td>{{ booking.bookingDate }}</td>
+                        <td style="color: var(--status-cancelled-text); font-weight: 600;">${{ booking.totalPrice }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <h2>Recent Cancellations</h2>
-    <table>
-        <caption class="sr-only">Recent cancellations</caption>
-        <thead>
-            <tr>
-                <th scope="col">Booking ID</th>
-                <th scope="col">Email</th>
-                <th scope="col">Date</th>
-                <th scope="col">Price Lost</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for booking in recentCancellations %}
-            <tr>
-                <td>{{ booking.bookingId }}</td>
-                <td>{{ booking.contactEmail }}</td>
-                <td>{{ booking.bookingDate }}</td>
-                <td>${{ booking.totalPrice }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <!-- ── Upcoming Flights ── -->
+    <div class="card admin-section">
+        <div class="card-header">
+            <p class="section-label">Schedule</p>
+            <h2>Upcoming Flights</h2>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <caption class="sr-only">Upcoming flights</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Flight #</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Departure</th>
+                        <th scope="col">Route</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for flight in upcomingFlights %}
+                    <tr>
+                        <td><strong>{{ flight.flightNumber }}</strong></td>
+                        <td>{{ flight.flightDate }}</td>
+                        <td>{{ flight.departureTime }}</td>
+                        <td>
+                            <span class="route-cell">
+                                {{ flight.departureCity }}<span class="route-arrow">→</span>{{ flight.arrivalCity }}
+                            </span>
+                        </td>
+                        <td>${{ flight.price }}</td>
+                        <td>
+                            <span class="badge {% if flight.status == 'Cancelled' %}badge-cancelled{% elseif flight.status == 'Delayed' %}badge-delayed{% else %}badge-confirmed{% endif %}">
+                                {{ flight.status }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <h2>Upcoming Flights</h2>
-    <table>
-        <caption class="sr-only">Upcoming flights</caption>
-        <thead>
-            <tr>
-                <th scope="col">Flight #</th>
-                <th scope="col">Date</th>
-                <th scope="col">Departure</th>
-                <th scope="col">Route</th>
-                <th scope="col">Price</th>
-                <th scope="col">Status</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for flight in upcomingFlights %}
-            <tr>
-                <td>{{ flight.flightNumber }}</td>
-                <td>{{ flight.flightDate }}</td>
-                <td>{{ flight.departureTime }}</td>
-                <td>{{ flight.departureCity }} → {{ flight.arrivalCity }}</td>
-                <td>${{ flight.price }}</td>
-                <td>{{ flight.status }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
 </div>
 
+<script>
+function toggleFilter(panelId, btn) {
+    var panel = document.getElementById(panelId);
+    var isOpen = panel.classList.toggle('is-open');
+    btn.classList.toggle('is-open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen);
+    btn.querySelector('.toggle-label').textContent = isOpen ? 'Hide Filters' : 'Show Filters';
+}
+function toggleResults(panelId, btn) {
+    var panel = document.getElementById(panelId);
+    var isOpen = panel.classList.toggle('is-open');
+    btn.classList.toggle('is-open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen);
+    btn.querySelector('.toggle-label').textContent = isOpen ? 'Collapse' : 'Expand';
+}
+</script>
 {% endblock %}

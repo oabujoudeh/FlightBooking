@@ -91,11 +91,20 @@ fun Application.configureRouting() {
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
                 val totalUsers = AdminDAO.getTotalUsers()
 
+                val flightDate = call.request.queryParameters["flightDate"]
+                val flightNumber = call.request.queryParameters["flightNumber"]
+
+                val trackedFlights = AdminDAO.trackFlights(
+                    filterDate = if (flightDate.isNullOrEmpty()) null else flightDate,
+                    filterNumber = if (flightNumber.isNullOrEmpty()) null else flightNumber
+                )
+
                 call.respondTemplate(
                     "adminHome.peb",
                     call.nonNullSessionData() +
                         mapOf(
                             "trackedReservations" to trackedResults,
+                            "trackedFlights" to trackedFlights,
                             "lastFilterDate" to (filterDate ?: ""),
                             "lastFilterUsername" to (filterUsername ?: ""),
                             "lastFilterStatus" to (filterStatus ?: ""),
