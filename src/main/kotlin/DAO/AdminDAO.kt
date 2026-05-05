@@ -330,8 +330,8 @@ object AdminDAO {
     * @param limit the max number of routes to return, default is 10
     * @return a list of maps with the busiest route details, or an empty list if the query fails
     */
-    fun getBusiestRoutes(limit: Int = 10): List<Map<String, Any>> {
-        val sql = """
+    fun getBusiestRoutes(limit: Int = 10, startDate: String? = null, endDate: String? = null): List<Map<String, Any>> {
+        var sql = """
             SELECT dep.city as departure_city, arr.city as arrival_city,
                    r.flight_number, COUNT(*) as booking_count
             FROM booking_flights bf
@@ -339,14 +339,31 @@ object AdminDAO {
             JOIN routes r ON f.route_id = r.route_id
             JOIN airports dep ON r.departure_airport = dep.airport_id
             JOIN airports arr ON r.arrival_airport = arr.airport_id
+            WHERE 1=1
+        """
+        if (!startDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date >= ?"
+        }
+        if (!endDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date <= ?"
+        }
+        sql += """
             GROUP BY r.route_id
+            HAVING booking_count > 0
             ORDER BY booking_count DESC
             LIMIT ?
         """
         return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
-                    stmt.setInt(1, limit)
+                    var paramIndex = 1
+                    if (!startDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, startDate)
+                    }
+                    if (!endDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, endDate)
+                    }
+                    stmt.setInt(paramIndex, limit)
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
@@ -528,8 +545,8 @@ object AdminDAO {
         }
     }
     
-    fun getBookingsPerFlight(limit: Int = 20): List<Map<String, Any>> {
-        val sql = """
+    fun getBookingsPerFlight(limit: Int = 20, filterDate: String? = null): List<Map<String, Any>> {
+        var sql = """
             SELECT r.flight_number,
                 f.flight_date,
                 dep.city AS origin,
@@ -540,6 +557,12 @@ object AdminDAO {
             JOIN airports dep ON r.departure_airport = dep.airport_id
             JOIN airports arr ON r.arrival_airport = arr.airport_id
             LEFT JOIN booking_flights bf ON f.flight_id = bf.flight_id
+            WHERE 1=1
+        """
+        if (!filterDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date = ?"
+        }
+        sql += """
             GROUP BY f.flight_id, r.flight_number, f.flight_date, dep.city, arr.city
             ORDER BY f.flight_date DESC, booking_count DESC
             LIMIT ?
@@ -547,7 +570,11 @@ object AdminDAO {
         return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
-                    stmt.setInt(1, limit)
+                    var paramIndex = 1
+                    if (!filterDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, filterDate)
+                    }
+                    stmt.setInt(paramIndex, limit)
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {

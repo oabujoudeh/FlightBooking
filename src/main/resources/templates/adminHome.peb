@@ -389,6 +389,30 @@
         vertical-align: middle;
     }
 
+    /* ── Report Blocks (inside Reports card) ── */
+    .report-block {
+        display: flex;
+        flex-direction: column;
+    }
+    .report-block-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 4px;
+    }
+    .report-block-header-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .report-block-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
     @media (max-width: 900px) {
         .charts-grid { grid-template-columns: 1fr; }
     }
@@ -615,7 +639,31 @@
                                 </span>
                             </td>
                             <td>${{ f.price }}</td>
-                            <td><span style="color: var(--brand-secondary); font-size: 0.82rem; font-weight: 600;">Ready to Update</span></td>
+                            <td>
+                                <form action="/admin/update-flight-status" method="POST"
+                                      style="display:flex; gap:6px; align-items:center;">
+                                    <input type="hidden" name="flightId"    value="{{ f.flightId }}">
+                                    <input type="hidden" name="flightDate"  value="{{ lastFlightDate }}">
+                                    <input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">
+                                    <select name="newStatus" style="
+                                        padding: 5px 8px;
+                                        border: 1px solid var(--border-color);
+                                        border-radius: 6px;
+                                        font-size: 0.8rem;
+                                        color: var(--text-primary);
+                                        background: #fff;
+                                        cursor: pointer;">
+                                        <option value="Scheduled"  {% if f.status == 'Scheduled'  %}selected{% endif %}>Scheduled</option>
+                                        <option value="Delayed"    {% if f.status == 'Delayed'    %}selected{% endif %}>Delayed</option>
+                                        <option value="Cancelled"  {% if f.status == 'Cancelled'  %}selected{% endif %}>Cancelled</option>
+                                        <option value="Departed"   {% if f.status == 'Departed'   %}selected{% endif %}>Departed</option>
+                                        <option value="Landed"     {% if f.status == 'Landed'     %}selected{% endif %}>Landed</option>
+                                    </select>
+                                    <button type="submit" class="btn-primary" style="padding: 5px 12px; font-size: 0.8rem;">
+                                        Update
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                         {% else %}
                         <tr><td colspan="6" class="td-empty">No flights matched your criteria.</td></tr>
@@ -633,123 +681,232 @@
                     <p class="section-label">Analytics</p>
                     <h2>Reports</h2>
                 </div>
-                <button type="button" class="btn-toggle is-open"
-                    aria-expanded="true"
-                    aria-controls="reports-panel"
-                    onclick="toggleFilter('reports-panel', this)">
-                    <i class="toggle-icon">▾</i>
-                    <span class="toggle-label">Hide Filters</span>
-                </button>
             </div>
         </div>
 
-        <div id="reports-panel" class="filter-panel is-open" style="max-height: 9999px;">
+        <div style="padding: 24px 22px; display: flex; flex-direction: column; gap: 32px;">
 
             <!-- 1. Bookings Per Flight -->
-            <div style="margin-bottom: 32px;">
-                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 12px;">
-                    Bookings Per Flight
-                </h3>
-                <div class="table-wrapper">
-                    <table>
-                        <caption class="sr-only">Number of bookings per flight</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Flight #</th>
-                                <th scope="col">Date</th>
-                                <th scope="col">Route</th>
-                                <th scope="col">Bookings</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for row in bookingsPerFlight %}
-                            <tr>
-                                <td><strong>{{ row.flightNumber }}</strong></td>
-                                <td>{{ row.flightDate }}</td>
-                                <td>
-                                    <span class="route-cell">
-                                        {{ row.origin }}<span class="route-arrow">→</span>{{ row.dest }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge badge-default">{{ row.bookingCount }}</span>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr><td colspan="4" class="td-empty">No data available.</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="report-block">
+                <!-- Block Header -->
+                <div class="report-block-header">
+                    <div class="report-block-header-left">
+                        <h3 class="report-block-title">Bookings Per Flight</h3>
+                        {% if lastBpfDate %}
+                            <span class="filter-active-dot" title="Date filter active"></span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button type="button"
+                            class="btn-toggle {% if lastBpfDate %}is-open{% endif %}"
+                            aria-expanded="{% if lastBpfDate %}true{% else %}false{% endif %}"
+                            aria-controls="bpf-filter-panel"
+                            onclick="toggleFilter('bpf-filter-panel', this)">
+                            <i class="toggle-icon">▾</i>
+                            <span class="toggle-label">{% if lastBpfDate %}Hide Filter{% else %}Filter by Date{% endif %}</span>
+                        </button>
+                        <button type="button"
+                            class="btn-toggle-results is-open"
+                            aria-expanded="true"
+                            aria-controls="bpf-results-panel"
+                            onclick="toggleResults('bpf-results-panel', this)">
+                            <i class="toggle-icon">▾</i>
+                            <span class="toggle-label">Collapse</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Panel -->
+                <div id="bpf-filter-panel" class="filter-panel {% if lastBpfDate %}is-open{% endif %}" style="padding-left:0; padding-right:0;">
+                    <form action="/" method="GET" class="filter-bar" style="margin-bottom:0; padding: 14px 0 4px;">
+                        <!-- preserve other active query params -->
+                        {% if lastFilterDate %}<input type="hidden" name="filterDate" value="{{ lastFilterDate }}">{% endif %}
+                        {% if lastFilterUsername %}<input type="hidden" name="filterUsername" value="{{ lastFilterUsername }}">{% endif %}
+                        {% if lastFilterStatus %}<input type="hidden" name="filterStatus" value="{{ lastFilterStatus }}">{% endif %}
+                        {% if lastFlightDate %}<input type="hidden" name="flightDate" value="{{ lastFlightDate }}">{% endif %}
+                        {% if lastFlightNumber %}<input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">{% endif %}
+                        {% if lastRoutesStart %}<input type="hidden" name="routesStart" value="{{ lastRoutesStart }}">{% endif %}
+                        {% if lastRoutesEnd %}<input type="hidden" name="routesEnd" value="{{ lastRoutesEnd }}">{% endif %}
+                        <div class="filter-group">
+                            <label for="bpfDate">Flight Date</label>
+                            <input type="date" id="bpfDate" name="bpfDate" value="{{ lastBpfDate }}">
+                        </div>
+                        <button type="submit" class="btn-primary">Apply Filter</button>
+                        <a href="/" class="btn-clear">Clear</a>
+                    </form>
+                </div>
+
+                <!-- Results Panel -->
+                <div id="bpf-results-panel" class="results-panel is-open" style="margin-top: 12px;">
+                    <div class="table-wrapper">
+                        <table>
+                            <caption class="sr-only">Number of bookings per flight</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Flight #</th>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Route</th>
+                                    <th scope="col">Bookings</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in bookingsPerFlight %}
+                                <tr>
+                                    <td><strong>{{ row.flightNumber }}</strong></td>
+                                    <td>{{ row.flightDate }}</td>
+                                    <td>
+                                        <span class="route-cell">
+                                            {{ row.origin }}<span class="route-arrow">→</span>{{ row.dest }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-default">{{ row.bookingCount }}</span>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="td-empty">{% if lastBpfDate %}No flights found for this date.{% else %}No data available.{% endif %}</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
+            <!-- Divider -->
+            <hr style="border:none; border-top: 1px solid var(--border-color); margin:0;">
 
             <!-- 2. Most Popular Routes -->
-            <div style="margin-bottom: 32px;">
-                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 12px;">
-                    Most Popular Routes
-                </h3>
-                <div class="table-wrapper">
-                    <table>
-                        <caption class="sr-only">Most popular routes by booking count</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Rank</th>
-                                <th scope="col">Route</th>
-                                <th scope="col">Flight #</th>
-                                <th scope="col">Total Bookings</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for row in popularRoutes %}
-                            <tr>
-                                <td style="color: var(--text-muted); font-weight: 600;">{{ loop.index }}</td>
-                                <td>
-                                    <span class="route-cell">
-                                        {{ row.departureCity }}<span class="route-arrow">→</span>{{ row.arrivalCity }}
-                                    </span>
-                                </td>
-                                <td>{{ row.flightNumber }}</td>
-                                <td>
-                                    <span class="badge badge-default">{{ row.bookingCount }}</span>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr><td colspan="4" class="td-empty">No data available.</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="report-block">
+                <div class="report-block-header">
+                    <div class="report-block-header-left">
+                        <h3 class="report-block-title">Most Popular Routes</h3>
+                        {% if lastRoutesStart or lastRoutesEnd %}
+                            <span class="filter-active-dot" title="Date filter active"></span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button type="button"
+                            class="btn-toggle {% if lastRoutesStart or lastRoutesEnd %}is-open{% endif %}"
+                            aria-expanded="{% if lastRoutesStart or lastRoutesEnd %}true{% else %}false{% endif %}"
+                            aria-controls="routes-filter-panel"
+                            onclick="toggleFilter('routes-filter-panel', this)">
+                            <i class="toggle-icon">▾</i>
+                            <span class="toggle-label">{% if lastRoutesStart or lastRoutesEnd %}Hide Filter{% else %}Filter by Period{% endif %}</span>
+                        </button>
+                        <button type="button"
+                            class="btn-toggle-results is-open"
+                            aria-expanded="true"
+                            aria-controls="routes-results-panel"
+                            onclick="toggleResults('routes-results-panel', this)">
+                            <i class="toggle-icon">▾</i>
+                            <span class="toggle-label">Collapse</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Panel -->
+                <div id="routes-filter-panel" class="filter-panel {% if lastRoutesStart or lastRoutesEnd %}is-open{% endif %}" style="padding-left:0; padding-right:0;">
+                    <form action="/" method="GET" class="filter-bar" style="margin-bottom:0; padding: 14px 0 4px;">
+                        {% if lastFilterDate %}<input type="hidden" name="filterDate" value="{{ lastFilterDate }}">{% endif %}
+                        {% if lastFilterUsername %}<input type="hidden" name="filterUsername" value="{{ lastFilterUsername }}">{% endif %}
+                        {% if lastFilterStatus %}<input type="hidden" name="filterStatus" value="{{ lastFilterStatus }}">{% endif %}
+                        {% if lastFlightDate %}<input type="hidden" name="flightDate" value="{{ lastFlightDate }}">{% endif %}
+                        {% if lastFlightNumber %}<input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">{% endif %}
+                        {% if lastBpfDate %}<input type="hidden" name="bpfDate" value="{{ lastBpfDate }}">{% endif %}
+                        <div class="filter-group">
+                            <label for="routesStart">From Date</label>
+                            <input type="date" id="routesStart" name="routesStart" value="{{ lastRoutesStart }}">
+                        </div>
+                        <div class="filter-group">
+                            <label for="routesEnd">To Date</label>
+                            <input type="date" id="routesEnd" name="routesEnd" value="{{ lastRoutesEnd }}">
+                        </div>
+                        <button type="submit" class="btn-primary">Apply Filter</button>
+                        <a href="/" class="btn-clear">All Time</a>
+                    </form>
+                </div>
+
+                <!-- Results Panel -->
+                <div id="routes-results-panel" class="results-panel is-open" style="margin-top: 12px;">
+                    <div class="table-wrapper">
+                        <table>
+                            <caption class="sr-only">Most popular routes by booking count</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Rank</th>
+                                    <th scope="col">Route</th>
+                                    <th scope="col">Flight #</th>
+                                    <th scope="col">Total Bookings</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in popularRoutes %}
+                                <tr>
+                                    <td style="color: var(--text-muted); font-weight: 600;">{{ loop.index }}</td>
+                                    <td>
+                                        <span class="route-cell">
+                                            {{ row.departureCity }}<span class="route-arrow">→</span>{{ row.arrivalCity }}
+                                        </span>
+                                    </td>
+                                    <td>{{ row.flightNumber }}</td>
+                                    <td>
+                                        <span class="badge badge-default">{{ row.bookingCount }}</span>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="td-empty">No routes with bookings found for the selected period.</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
+            <!-- Divider -->
+            <hr style="border:none; border-top: 1px solid var(--border-color); margin:0;">
+
             <!-- 3. Peak Booking Times -->
-            <div>
-                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 12px;">
-                    Peak Booking Times
-                </h3>
-                <div class="table-wrapper">
-                    <table>
-                        <caption class="sr-only">Bookings and revenue grouped by date</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Date</th>
-                                <th scope="col">Bookings</th>
-                                <th scope="col">Revenue</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for row in peakBookingTimes %}
-                            <tr>
-                                <td>{{ row.date }}</td>
-                                <td>
-                                    <span class="badge badge-default">{{ row.count }}</span>
-                                </td>
-                                <td style="font-weight: 600;">${{ row.revenue }}</td>
-                            </tr>
-                        {% else %}
-                            <tr><td colspan="3" class="td-empty">No data available.</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="report-block">
+                <div class="report-block-header">
+                    <div class="report-block-header-left">
+                        <h3 class="report-block-title">Peak Booking Times</h3>
+                    </div>
+                    <button type="button"
+                        class="btn-toggle-results is-open"
+                        aria-expanded="true"
+                        aria-controls="peak-results-panel"
+                        onclick="toggleResults('peak-results-panel', this)">
+                        <i class="toggle-icon">▾</i>
+                        <span class="toggle-label">Collapse</span>
+                    </button>
+                </div>
+
+                <div id="peak-results-panel" class="results-panel is-open" style="margin-top: 12px;">
+                    <div class="table-wrapper">
+                        <table>
+                            <caption class="sr-only">Bookings and revenue grouped by date</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Bookings</th>
+                                    <th scope="col">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in peakBookingTimes %}
+                                <tr>
+                                    <td>{{ row.date }}</td>
+                                    <td>
+                                        <span class="badge badge-default">{{ row.count }}</span>
+                                    </td>
+                                    <td style="font-weight: 600;">${{ row.revenue }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="3" class="td-empty">No data available.</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 

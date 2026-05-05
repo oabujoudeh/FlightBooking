@@ -120,8 +120,17 @@ fun Application.configureRouting() {
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
                 val totalUsers = AdminDAO.getTotalUsers()
 
-                val bookingsPerFlight = AdminDAO.getBookingsPerFlight()
-                val popularRoutes = AdminDAO.getBusiestRoutes()
+                val bookingsPerFlightDate = call.request.queryParameters["bpfDate"]
+                val routesStartDate = call.request.queryParameters["routesStart"]
+                val routesEndDate = call.request.queryParameters["routesEnd"]
+
+                val bookingsPerFlight = AdminDAO.getBookingsPerFlight(
+                    filterDate = if (bookingsPerFlightDate.isNullOrEmpty()) null else bookingsPerFlightDate
+                )
+                val popularRoutes = AdminDAO.getBusiestRoutes(
+                    startDate = if (routesStartDate.isNullOrEmpty()) null else routesStartDate,
+                    endDate = if (routesEndDate.isNullOrEmpty()) null else routesEndDate
+                )
                 val peakBookingTimes = AdminDAO.getAllBookingsGroupedByDate()
 
                 val flightDate = call.request.queryParameters["flightDate"]
@@ -148,7 +157,10 @@ fun Application.configureRouting() {
                             "totalUsers" to totalUsers,
                             "bookingsPerFlight" to bookingsPerFlight,
                             "popularRoutes" to popularRoutes,
-                            "peakBookingTimes" to peakBookingTimes
+                            "peakBookingTimes" to peakBookingTimes,
+                            "lastBpfDate" to (bookingsPerFlightDate ?: ""),
+                            "lastRoutesStart" to (routesStartDate ?: ""),
+                            "lastRoutesEnd" to (routesEndDate ?: "")
                         )
                 )
             } else {
