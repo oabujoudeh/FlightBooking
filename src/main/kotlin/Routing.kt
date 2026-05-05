@@ -120,6 +120,10 @@ fun Application.configureRouting() {
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
                 val totalUsers = AdminDAO.getTotalUsers()
 
+                val bookingsPerFlight = AdminDAO.getBookingsPerFlight()
+                val popularRoutes = AdminDAO.getBusiestRoutes()
+                val peakBookingTimes = AdminDAO.getAllBookingsGroupedByDate()
+
                 val flightDate = call.request.queryParameters["flightDate"]
                 val flightNumber = call.request.queryParameters["flightNumber"]
 
@@ -141,7 +145,10 @@ fun Application.configureRouting() {
                             "recentBookings" to recentBookings,
                             "recentCancellations" to recentCancellations,
                             "upcomingFlights" to upcomingFlights,
-                            "totalUsers" to totalUsers
+                            "totalUsers" to totalUsers,
+                            "bookingsPerFlight" to bookingsPerFlight,
+                            "popularRoutes" to popularRoutes,
+                            "peakBookingTimes" to peakBookingTimes
                         )
                 )
             } else {

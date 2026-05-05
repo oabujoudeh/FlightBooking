@@ -615,21 +615,7 @@
                                 </span>
                             </td>
                             <td>${{ f.price }}</td>
-                            <td>
-                                <form action="/admin/update-flight-status" method="POST" style="display: flex; gap: 8px; align-items: center;">
-                                    <input type="hidden" name="flightId" value="{{ f.flightId }}">
-                                    <input type="hidden" name="flightDate" value="{{ lastFlightDate }}">
-                                    <input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">
-                                    <select name="newStatus" class="filter-group select" style="padding: 5px 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.82rem; color: var(--text-primary); background: #fff;">
-                                        <option value="Scheduled" {% if f.status == 'Scheduled' %}selected{% endif %}>Scheduled</option>
-                                        <option value="Delayed"   {% if f.status == 'Delayed'   %}selected{% endif %}>Delayed</option>
-                                        <option value="Cancelled" {% if f.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
-                                        <option value="Departed"  {% if f.status == 'Departed'  %}selected{% endif %}>Departed</option>
-                                        <option value="Landed"    {% if f.status == 'Landed'    %}selected{% endif %}>Landed</option>
-                                    </select>
-                                    <button type="submit" class="btn-primary" style="padding: 5px 12px; font-size: 0.82rem;">Save</button>
-                                </form>
-                            </td>
+                            <td><span style="color: var(--brand-secondary); font-size: 0.82rem; font-weight: 600;">Ready to Update</span></td>
                         </tr>
                         {% else %}
                         <tr><td colspan="6" class="td-empty">No flights matched your criteria.</td></tr>
@@ -640,114 +626,133 @@
         </div>
     </div>
 
-    <!-- ── Recent Bookings ── -->
     <div class="card admin-section">
         <div class="card-header">
-            <p class="section-label">Overview</p>
-            <h2>Recent Bookings</h2>
+            <div class="card-header-row">
+                <div class="header-left">
+                    <p class="section-label">Analytics</p>
+                    <h2>Reports</h2>
+                </div>
+                <button type="button" class="btn-toggle is-open"
+                    aria-expanded="true"
+                    aria-controls="reports-panel"
+                    onclick="toggleFilter('reports-panel', this)">
+                    <i class="toggle-icon">▾</i>
+                    <span class="toggle-label">Hide Filters</span>
+                </button>
+            </div>
         </div>
-        <div class="table-wrapper">
-            <table id="bookingsTable">
-                <caption class="sr-only">Recent bookings</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Booking ID</th>
-                        <th scope="col">Email</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Price</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for booking in recentBookings %}
-                    <tr>
-                        <td><strong>{{ booking.bookingId }}</strong></td>
-                        <td>{{ booking.contactEmail }}</td>
-                        <td>{{ booking.bookingDate }}</td>
-                        <td>${{ booking.totalPrice }}</td>
-                        <td>
-                            <span class="badge {% if booking.status == 'Cancelled' %}badge-cancelled{% elseif booking.status == 'Confirmed' %}badge-confirmed{% else %}badge-default{% endif %}">
-                                {{ booking.status }}
-                            </span>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- ── Recent Cancellations ── -->
-    <div class="card admin-section">
-        <div class="card-header">
-            <p class="section-label">Attention Required</p>
-            <h2>Recent Cancellations</h2>
-        </div>
-        <div class="table-wrapper">
-            <table>
-                <caption class="sr-only">Recent cancellations</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Booking ID</th>
-                        <th scope="col">Email</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Revenue Lost</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for booking in recentCancellations %}
-                    <tr>
-                        <td><strong>{{ booking.bookingId }}</strong></td>
-                        <td>{{ booking.contactEmail }}</td>
-                        <td>{{ booking.bookingDate }}</td>
-                        <td style="color: var(--status-cancelled-text); font-weight: 600;">${{ booking.totalPrice }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <div id="reports-panel" class="filter-panel is-open" style="max-height: 9999px;">
 
-    <!-- ── Upcoming Flights ── -->
-    <div class="card admin-section">
-        <div class="card-header">
-            <p class="section-label">Schedule</p>
-            <h2>Upcoming Flights</h2>
-        </div>
-        <div class="table-wrapper">
-            <table>
-                <caption class="sr-only">Upcoming flights</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Flight #</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Departure</th>
-                        <th scope="col">Route</th>
-                        <th scope="col">Price</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for flight in upcomingFlights %}
-                    <tr>
-                        <td><strong>{{ flight.flightNumber }}</strong></td>
-                        <td>{{ flight.flightDate }}</td>
-                        <td>{{ flight.departureTime }}</td>
-                        <td>
-                            <span class="route-cell">
-                                {{ flight.departureCity }}<span class="route-arrow">→</span>{{ flight.arrivalCity }}
-                            </span>
-                        </td>
-                        <td>${{ flight.price }}</td>
-                        <td>
-                            <span class="badge {% if flight.status == 'Cancelled' %}badge-cancelled{% elseif flight.status == 'Delayed' %}badge-delayed{% else %}badge-confirmed{% endif %}">
-                                {{ flight.status }}
-                            </span>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+            <!-- 1. Bookings Per Flight -->
+            <div style="margin-bottom: 32px;">
+                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 12px;">
+                    Bookings Per Flight
+                </h3>
+                <div class="table-wrapper">
+                    <table>
+                        <caption class="sr-only">Number of bookings per flight</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Flight #</th>
+                                <th scope="col">Date</th>
+                                <th scope="col">Route</th>
+                                <th scope="col">Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in bookingsPerFlight %}
+                            <tr>
+                                <td><strong>{{ row.flightNumber }}</strong></td>
+                                <td>{{ row.flightDate }}</td>
+                                <td>
+                                    <span class="route-cell">
+                                        {{ row.origin }}<span class="route-arrow">→</span>{{ row.dest }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-default">{{ row.bookingCount }}</span>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="td-empty">No data available.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. Most Popular Routes -->
+            <div style="margin-bottom: 32px;">
+                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 12px;">
+                    Most Popular Routes
+                </h3>
+                <div class="table-wrapper">
+                    <table>
+                        <caption class="sr-only">Most popular routes by booking count</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Rank</th>
+                                <th scope="col">Route</th>
+                                <th scope="col">Flight #</th>
+                                <th scope="col">Total Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in popularRoutes %}
+                            <tr>
+                                <td style="color: var(--text-muted); font-weight: 600;">{{ loop.index }}</td>
+                                <td>
+                                    <span class="route-cell">
+                                        {{ row.departureCity }}<span class="route-arrow">→</span>{{ row.arrivalCity }}
+                                    </span>
+                                </td>
+                                <td>{{ row.flightNumber }}</td>
+                                <td>
+                                    <span class="badge badge-default">{{ row.bookingCount }}</span>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="td-empty">No data available.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. Peak Booking Times -->
+            <div>
+                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 12px;">
+                    Peak Booking Times
+                </h3>
+                <div class="table-wrapper">
+                    <table>
+                        <caption class="sr-only">Bookings and revenue grouped by date</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col">Bookings</th>
+                                <th scope="col">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in peakBookingTimes %}
+                            <tr>
+                                <td>{{ row.date }}</td>
+                                <td>
+                                    <span class="badge badge-default">{{ row.count }}</span>
+                                </td>
+                                <td style="font-weight: 600;">${{ row.revenue }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="3" class="td-empty">No data available.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 

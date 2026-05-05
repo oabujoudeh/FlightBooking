@@ -509,23 +509,65 @@ object AdminDAO {
     }
 
     fun updateFlightStatus(flightId: Int, newStatus: String): Boolean {
-    val allowedStatuses = setOf("Scheduled", "Delayed", "Cancelled", "Departed", "Landed")
-    if (newStatus !in allowedStatuses) return false
+        val allowedStatuses = setOf("Scheduled", "Delayed", "Cancelled", "Departed", "Landed")
+        if (newStatus !in allowedStatuses) return false
 
-    val sql = "UPDATE flights SET status = ? WHERE flight_id = ?"
-    return try {
-        Database.getConnection().use { conn ->
-            conn.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, newStatus)
-                stmt.setInt(2, flightId)
-                stmt.executeUpdate() > 0
+        val sql = "UPDATE flights SET status = ? WHERE flight_id = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, newStatus)
+                    stmt.setInt(2, flightId)
+                    stmt.executeUpdate() > 0
+                }
             }
+        } catch (e: Exception) {
+            println("UpdateFlightStatus Error:")
+            e.printStackTrace()
+            false
         }
-    } catch (e: Exception) {
-        println("UpdateFlightStatus Error:")
-        e.printStackTrace()
-        false
     }
-}
     
+    fun getBookingsPerFlight(limit: Int = 20): List<Map<String, Any>> {
+        val sql = """
+            SELECT r.flight_number,
+                f.flight_date,
+                dep.city AS origin,
+                arr.city AS dest,
+                COUNT(bf.booking_id) AS booking_count
+            FROM flights f
+            JOIN routes r ON f.route_id = r.route_id
+            JOIN airports dep ON r.departure_airport = dep.airport_id
+            JOIN airports arr ON r.arrival_airport = arr.airport_id
+            LEFT JOIN booking_flights bf ON f.flight_id = bf.flight_id
+            GROUP BY f.flight_id, r.flight_number, f.flight_date, dep.city, arr.city
+            ORDER BY f.flight_date DESC, booking_count DESC
+            LIMIT ?
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, limit)
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            results.add(mapOf(
+                                "flightNumber" to (rs.getString("flight_number") ?: ""),
+                                "flightDate"   to (rs.getString("flight_date") ?: ""),
+                                "origin"       to (rs.getString("origin") ?: ""),
+                                "dest"         to (rs.getString("dest") ?: ""),
+                                "bookingCount" to rs.getInt("booking_count")
+                            ))
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("GetBookingsPerFlight Error:")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
 }
