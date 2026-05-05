@@ -7,7 +7,8 @@
 <div class="payment-success-wrapper">
 <div class="payment-success-card">
 
-    <h1>Payment</h1>
+    <h2>Payment</h2>
+   <p>Total price: £{{ totalPrice }}</p>
     <p>Enter your payment details</p>
 
     <form method="post" action="/payment">

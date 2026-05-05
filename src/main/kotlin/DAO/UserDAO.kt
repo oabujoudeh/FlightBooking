@@ -153,18 +153,17 @@ object UserDAO{
         if(!emailExists(inputEmail)){
             return false
         }
-        return try{
+        return try {
             // email found, generate OTC and send email
             val generatedCode = OTC.generateAndSave(inputEmail)
 
             EmailService.sendEmail(
                 to = inputEmail,
                 subject = "Your One-Time Code for Password Reset",
-                body = "Your one-time code is: $generatedCode. It will expire in 5 minutes."
+                body = "Your one-time code is: $generatedCode. It will expire in 5 minutes.",
             )
             true
-        }
-        catch(e:Exception){
+        } catch (e: Exception) {
             false
         }
     }
@@ -183,30 +182,30 @@ object UserDAO{
     */
     fun confirmResetPassword(inputEmail: String, inputOTC: String, newPassword: String):Boolean{
         // check if OTC is valid and expired
-        if(!OTC.verify(inputEmail, inputOTC)){
+        if (!OTC.verify(inputEmail, inputOTC)) {
             return false
         }
 
         // if OTC is valid, check new password validation
-        if(!Security.isPasswordValid(newPassword)){
+        if (!Security.isPasswordValid(newPassword)) {
             return false
         }
 
         // if valid, hash the new password and update to database
         val hashedNewPassword = Security.hashPassword(newPassword)
         val sql = "UPDATE users SET password_hash = ? WHERE email = ?"
-        return try{
+        return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     stmt.setString(1, hashedNewPassword)
                     stmt.setString(2, inputEmail)
-                
+
                     val rowsAffected = stmt.executeUpdate()
-                
+
                     rowsAffected > 0
                 }
             }
-        }catch(e: Exception){
+        } catch (e: Exception) {
             false
         }
     }
@@ -328,6 +327,7 @@ object UserDAO{
 
                             // add this flight to the booking's flight list
                             val booking = seenBookingIds[bookingId]!!
+
                             @Suppress("UNCHECKED_CAST")
                             val flightList = booking["flights"] as MutableList<Map<String, Any>>
                             flightList.add(getFlightInfoFromRow(result))
@@ -386,8 +386,8 @@ object UserDAO{
                         val flights = mutableListOf<Map<String, Any>>()
                         var found = false
 
-                        while(result.next()){
-                            if(!found){
+                        while (result.next()) {
+                            if (!found) {
                                 booking["bookingId"] = result.getInt("booking_id")
                                 booking["bookingDate"] = result.getString("booking_date") ?: ""
                                 booking["totalPrice"] = result.getDouble("total_price")
@@ -398,7 +398,7 @@ object UserDAO{
                             flights.add(getFlightInfoFromRow(result))
                         }
 
-                        if(!found) return@use null
+                        if (!found) return@use null
                         booking["flights"] = flights
                     }
                 }
@@ -408,13 +408,15 @@ object UserDAO{
                     stmt.setInt(1, bookingId)
                     stmt.executeQuery().use { result ->
                         val passengers = mutableListOf<Map<String, Any>>()
-                        while(result.next()){
-                            passengers.add(mapOf(
-                                "fullName" to result.getString("full_name"),
-                                "idNumber" to result.getString("id_number"),
-                                "type" to result.getString("type"),
-                                "seat" to result.getString("seat_id")
-                            ))
+                        while (result.next()) {
+                            passengers.add(
+                                mapOf(
+                                    "fullName" to result.getString("full_name"),
+                                    "idNumber" to result.getString("id_number"),
+                                    "type" to result.getString("type"),
+                                    "seat" to result.getString("seat_id"),
+                                ),
+                            )
                         }
                         booking["passengers"] = passengers
                     }
@@ -422,7 +424,7 @@ object UserDAO{
 
                 booking
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
             null
         }
     }
@@ -444,7 +446,7 @@ object UserDAO{
                     stmt.executeUpdate() > 0
                 }
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
             false
         }
     }  
@@ -469,7 +471,7 @@ object UserDAO{
                     stmt.setInt(1, bookingId)
                     stmt.setInt(2, userID)
                     stmt.executeQuery().use { result ->
-                        if(!result.next() || result.getInt(1) == 0) return false
+                        if (!result.next() || result.getInt(1) == 0) return false
                     }
                 }
 
@@ -483,7 +485,7 @@ object UserDAO{
 
                 val insertSql = "INSERT INTO booking_passengers(booking_id, full_name, id_number, type, seat_id) VALUES(?, ?, ?, ?, ?)"
                 conn.prepareStatement(insertSql).use { stmt ->
-                    for(p in passengers){
+                    for (p in passengers) {
                         stmt.setInt(1, bookingId)
                         stmt.setString(2, p["fullName"] ?: "")
                         stmt.setString(3, p["idNumber"] ?: "")
@@ -497,7 +499,7 @@ object UserDAO{
                 conn.commit()
                 true
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
             false
         }
     }
@@ -522,7 +524,18 @@ object UserDAO{
                 conn.autoCommit = false
 
                 // insert booking
-                val bookingSql = "INSERT INTO bookings(user_id, booking_date, total_price, status, contact_email, contact_phone) VALUES(?, datetime('now'), ?, 'confirmed', ?, 0)"
+                val bookingSql =
+                    """
+                    INSERT INTO bookings(
+                        user_id,
+                        booking_date,
+                        total_price,
+                        status,
+                        contact_email,
+                        contact_phone
+                    )
+                    VALUES (?, datetime('now'), ?, 'confirmed', ?, 0)
+                    """.trimIndent()
                 val bookingStmt = conn.prepareStatement(bookingSql, java.sql.Statement.RETURN_GENERATED_KEYS)
                 bookingStmt.setInt(1, userID)
                 bookingStmt.setDouble(2, totalPrice)
@@ -530,7 +543,7 @@ object UserDAO{
                 bookingStmt.executeUpdate()
 
                 val keys = bookingStmt.generatedKeys
-                if(!keys.next()){
+                if (!keys.next()) {
                     conn.rollback()
                     return false
                 }
@@ -539,7 +552,7 @@ object UserDAO{
                 // insert booking flights
                 val flightSql = "INSERT INTO booking_flights(booking_id, flight_id, flight_sequence) VALUES(?, ?, ?)"
                 val flightStmt = conn.prepareStatement(flightSql)
-                for((index, flightId) in flightIds.withIndex()){
+                for ((index, flightId) in flightIds.withIndex()) {
                     flightStmt.setInt(1, bookingId)
                     flightStmt.setInt(2, flightId)
                     flightStmt.setInt(3, index + 1)
@@ -550,7 +563,7 @@ object UserDAO{
                 // insert passengers
                 val passengerSql = "INSERT INTO booking_passengers(booking_id, full_name, id_number, type, seat_id) VALUES(?, ?, ?, ?, ?)"
                 val passengerStmt = conn.prepareStatement(passengerSql)
-                for(p in passengers){
+                for (p in passengers) {
                     passengerStmt.setInt(1, bookingId)
                     passengerStmt.setString(2, p["fullName"] ?: "")
                     passengerStmt.setString(3, p["idNumber"] ?: "")
@@ -563,8 +576,8 @@ object UserDAO{
                 // mark seats as occupied
                 val seatSql = "UPDATE seats SET is_occupied = 1 WHERE flight_id = ? AND seat_number = ?"
                 val seatStmt = conn.prepareStatement(seatSql)
-                for(p in passengers){
-                    for(flightId in flightIds){
+                for (p in passengers) {
+                    for (flightId in flightIds) {
                         seatStmt.setInt(1, flightId)
                         seatStmt.setString(2, p["seat"] ?: "")
                         seatStmt.addBatch()
@@ -575,8 +588,42 @@ object UserDAO{
                 conn.commit()
                 true
             }
-        } catch(e: Exception){
+        } catch (e: Exception) {
+             e.printStackTrace()
             false
         }
     }
-}
+
+    fun getLoyaltyPoints(userID: Int): Int {
+        val sql = 
+            """
+            SELECT COALESCE(SUM(total_price), 0) AS points
+            FROM bookings
+            WHERE user_id = ?
+            AND status = 'confirmed'
+            """.trimIndent()
+
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userID)
+                    
+                    stmt.executeQuery().use { result ->
+                        if (result.next()) {
+                            result.getDouble("points").toInt()
+                        } else {
+                            0
+                        }
+
+                    }
+                }
+            }
+
+        } catch (e: Exception){
+            e.printStackTrace()
+            0
+        }
+        }   
+
+    }
+

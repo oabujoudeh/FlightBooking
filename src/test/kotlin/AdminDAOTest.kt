@@ -1,9 +1,8 @@
 package com.flightbooking
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
-
+import kotlin.test.assertTrue
 
 /* testing all the admin dashboard queries
    these pull data for charts and tables on the admin home page */

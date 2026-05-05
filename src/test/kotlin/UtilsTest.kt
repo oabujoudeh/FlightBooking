@@ -5,7 +5,6 @@ import java.time.LocalTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-
 class UtilsTest {
 
     /**
@@ -59,7 +58,7 @@ class UtilsTest {
         priceBusiness: Double? = 499.99,
         priceFirst: Double? = null,
         durationMinutes: Int = 120,
-        arrivalDayOffset: Int = 0
+        arrivalDayOffset: Int = 0,
     ) = Flight(
         flightId = flightId,
         flightNumber = flightNumber,
@@ -77,18 +76,29 @@ class UtilsTest {
         durationMinutes = durationMinutes,
         priceEconomy = priceEconomy,
         priceBusiness = priceBusiness,
-        priceFirst = priceFirst
+        priceFirst = priceFirst,
     )
 
     @Test
     fun testFlightToMapContainsAllKeys() {
         val map = Utils.flightToMap(makeFlight())
-        val expectedKeys = listOf(
-            "flightNumber", "departureAirport", "arrivalAirport",
-            "departureTerminal", "arrivalTerminal", "departureTime",
-            "arrivalTime", "duration", "priceEconomy", "priceBusiness", 
-            "priceFirst", "date", "flightId", "arrivalDayOffset"
-        )
+        val expectedKeys =
+            listOf(
+                "flightNumber",
+                "departureAirport",
+                "arrivalAirport",
+                "departureTerminal",
+                "arrivalTerminal",
+                "departureTime",
+                "arrivalTime",
+                "duration",
+                "priceEconomy",
+                "priceBusiness",
+                "priceFirst",
+                "date",
+                "flightId",
+                "arrivalDayOffset",
+            )
         for (key in expectedKeys) {
             assert(map.containsKey(key)) { "should have '$key' in the map" }
         }
@@ -126,48 +136,61 @@ class UtilsTest {
     */
     @Test
     fun testConnectingFlightToMapContainsAllKeys() {
-        val cf = ConnectingFlight(
-            leg1 = makeFlight(flightId = 1, flightNumber = "EJ101"),
-            leg2 = makeFlight(flightId = 2, flightNumber = "EJ202"),
-            totalDurationMinutes = 300,
-            layoverMinutes = 60,
-            totalPrice = 399.99
-        )
+        val cf =
+            ConnectingFlight(
+                leg1 = makeFlight(flightId = 1, flightNumber = "EJ101"),
+                leg2 = makeFlight(flightId = 2, flightNumber = "EJ202"),
+                totalDurationMinutes = 300,
+                layoverMinutes = 60,
+                totalPrice = 399.99,
+            )
         val map = Utils.connectingFlightToMap(cf)
 
-        val expectedKeys = listOf(
-            "leg1DepartureTime", "leg1ArrivalTime", "leg1DepartureAirport",
-            "leg1ArrivalAirport", "leg2DepartureTime", "leg2ArrivalTime",
-            "leg2ArrivalAirport", "layoverMinutes", "totalDuration", 
-            "priceEconomy", "priceBusiness", "priceFirst",
-            "leg1FlightId", "leg2FlightId", "leg2ArrivalDayOffset"
-        )
+        val expectedKeys =
+            listOf(
+                "leg1DepartureTime",
+                "leg1ArrivalTime",
+                "leg1DepartureAirport",
+                "leg1ArrivalAirport",
+                "leg2DepartureTime",
+                "leg2ArrivalTime",
+                "leg2ArrivalAirport",
+                "layoverMinutes",
+                "totalDuration",
+                "priceEconomy",
+                "priceBusiness",
+                "priceFirst",
+                "leg1FlightId",
+                "leg2FlightId",
+                "leg2ArrivalDayOffset",
+            )
         for (key in expectedKeys) {
             assert(map.containsKey(key)) { "connecting flight map should have '$key'" }
         }
     }
 
     @Test
-    fun testConnectingFlightToMapValues() { 
+    fun testConnectingFlightToMapValues() {
         val leg1 = makeFlight(priceEconomy = 100.0, priceBusiness = 200.0, priceFirst = null)
         val leg2 = makeFlight(priceEconomy = 50.0, priceBusiness = null, priceFirst = 500.0)
-        
-        val cf = ConnectingFlight(
-            leg1 = leg1,
-            leg2 = leg2,
-            totalDurationMinutes = 300,
-            layoverMinutes = 60,
-            totalPrice = 150.0
-        )
+
+        val cf =
+            ConnectingFlight(
+                leg1 = leg1,
+                leg2 = leg2,
+                totalDurationMinutes = 300,
+                layoverMinutes = 60,
+                totalPrice = 150.0,
+            )
         val map = Utils.connectingFlightToMap(cf)
-        
+
         // 100 + 50 = 150
         assertEquals(150.0, map["priceEconomy"])
-        
+
         // If any is null, the result should be null
         assertEquals(null, map["priceBusiness"])
         assertEquals(null, map["priceFirst"])
-        
+
         assertEquals("5h", map["totalDuration"])
         assertEquals(60, map["layoverMinutes"])
     }

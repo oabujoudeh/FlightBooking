@@ -8,7 +8,7 @@ data class Seat(
     val flightId: Int,
     val seatNumber: String,
     val seatClass: String,
-    val isOccupied: Boolean
+    val isOccupied: Boolean,
 ) {
     /**
     * Gets the row number from the seat number.

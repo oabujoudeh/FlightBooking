@@ -1,16 +1,14 @@
 package com.flightbooking
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
-
+import kotlin.test.assertTrue
 
 /* testing the password hashing and validation stuff
    making sure bcrypt is working and our password rules are right */
 
 class SecurityTest {
-
 
     /**
     * Tests for password hashing.

@@ -1,11 +1,8 @@
 package com.flightbooking
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
-
+import kotlin.test.assertTrue
 
 class UserDAOTest {
 
@@ -111,26 +108,28 @@ class UserDAOTest {
     */
     @Test
     fun testRegisterWithDuplicateEmail() {
-        val user = User(
-            firstName = "Test",
-            lastName = "User",
-            email = "tnvn3422@leeds.ac.uk",
-            middleName = "",
-            passwordHash = ""
-        )
+        val user =
+            User(
+                firstName = "Test",
+                lastName = "User",
+                email = "tnvn3422@leeds.ac.uk",
+                middleName = "",
+                passwordHash = "",
+            )
         val result = UserDAO.register(user, "Test", "", "User", "tnvn3422@leeds.ac.uk", "StrongPass1")
         assertFalse(result, "shouldnt be able to register with an email thats already taken")
     }
 
     @Test
     fun testRegisterWithWeakPassword() {
-        val user = User(
-            firstName = "Test",
-            lastName = "User",
-            email = "newuser_weak@test.com",
-            middleName = "",
-            passwordHash = ""
-        )
+        val user =
+            User(
+                firstName = "Test",
+                lastName = "User",
+                email = "newuser_weak@test.com",
+                middleName = "",
+                passwordHash = "",
+            )
         val result = UserDAO.register(user, "Test", "", "User", "newuser_weak@test.com", "weak")
         assertFalse(result, "weak password should get rejected")
     }

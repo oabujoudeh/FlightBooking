@@ -1,14 +1,13 @@
 package com.flightbooking
 
 import java.sql.ResultSet
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.Duration
 
 object FlightDAO {
-
     /**
     * gets all available flights for a given journey and date.
     *
@@ -25,7 +24,7 @@ object FlightDAO {
     fun getAvailableFlights(dep: String, arr: String, date: LocalDate): List<FlightDisplayDTO> {
         val direct = searchFlights(dep, arr, date).map { it.toDisplayDTO() }
         val connecting = searchConnectingFlights(dep, arr, date).map { it.toDisplayDTO() }
-        
+
         return (direct + connecting).sortedBy { it.departureTime }
     }
 
@@ -51,32 +50,32 @@ object FlightDAO {
 
         val departureTime = LocalTime.parse(result.getString("planned_departure"))
         val departureDate = LocalDate.parse(result.getString("flight_date"))
-        
+
         val departureZdt = ZonedDateTime.of(departureDate, departureTime, depZone)
         val arrivalZdt = departureZdt.plusMinutes(durationMinutes.toLong()).withZoneSameInstant(arrZone)
-        
+
         val arrivalTime = arrivalZdt.toLocalTime()
         val arrivalDate = arrivalZdt.toLocalDate()
         val arrivalDayOffset = (arrivalDate.toEpochDay() - departureDate.toEpochDay()).toInt()
 
         return Flight(
-            flightId             = result.getInt("flight_id"),
-            flightNumber         = result.getString("flight_number"),
-            aircraftType         = result.getString("aircraft_type") ?: "",
-            departureCity        = result.getString("departure_city"),
-            arrivalCity          = result.getString("arrival_city"),
+            flightId = result.getInt("flight_id"),
+            flightNumber = result.getString("flight_number"),
+            aircraftType = result.getString("aircraft_type") ?: "",
+            departureCity = result.getString("departure_city"),
+            arrivalCity = result.getString("arrival_city"),
             departureAirportName = result.getString("departure_airport_name") ?: "",
-            arrivalAirportName   = result.getString("arrival_airport_name") ?: "",
-            departureTerminal    = result.getString("departure_terminal") ?: "",
-            arrivalTerminal      = result.getString("arrival_terminal") ?: "",
-            departureDate        = departureDate,
-            departureTime        = departureTime,
-            arrivalTime          = arrivalTime,
-            arrivalDayOffset     = arrivalDayOffset,
-            durationMinutes      = durationMinutes,
+            arrivalAirportName = result.getString("arrival_airport_name") ?: "",
+            departureTerminal = result.getString("departure_terminal") ?: "",
+            arrivalTerminal = result.getString("arrival_terminal") ?: "",
+            departureDate = departureDate,
+            departureTime = departureTime,
+            arrivalTime = arrivalTime,
+            arrivalDayOffset = arrivalDayOffset,
+            durationMinutes = durationMinutes,
             priceEconomy = result.getObject("price_economy") as? Double,
             priceBusiness = result.getObject("price_business") as? Double,
-            priceFirst = result.getObject("price_first") as? Double
+            priceFirst = result.getObject("price_first") as? Double,
         )
     }
 
@@ -115,8 +114,10 @@ object FlightDAO {
         """
         Database.getConnection().use { conn ->
             val stmt = conn.prepareStatement(sql)
-            stmt.setString(1, departure); stmt.setString(2, departure)
-            stmt.setString(3, arrival); stmt.setString(4, arrival)
+            stmt.setString(1, departure)
+            stmt.setString(2, departure)
+            stmt.setString(3, arrival)
+            stmt.setString(4, arrival)
             stmt.setString(5, date.toString())
             val result = stmt.executeQuery()
             val flights = mutableListOf<Flight>()
@@ -168,39 +169,44 @@ object FlightDAO {
         Database.getConnection().use { conn ->
             val outbound = mutableListOf<Pair<Flight, String>>()
             conn.prepareStatement(outboundSql).use { stmt ->
-                stmt.setString(1, departure); stmt.setString(2, departure); stmt.setString(3, date.toString())
+                stmt.setString(1, departure)
+                stmt.setString(2, departure)
+                stmt.setString(3, date.toString())
                 val rs = stmt.executeQuery()
                 while (rs.next()) outbound.add(mapResultToFlight(rs) to rs.getString("arrival_airport_id"))
             }
 
             val inbound = mutableListOf<Pair<Flight, String>>()
             conn.prepareStatement(inboundSql).use { stmt ->
-                stmt.setString(1, arrival); stmt.setString(2, arrival); stmt.setString(3, date.toString())
+                stmt.setString(1, arrival)
+                stmt.setString(2, arrival)
+                stmt.setString(3, date.toString())
                 val rs = stmt.executeQuery()
                 while (rs.next()) inbound.add(mapResultToFlight(rs) to rs.getString("departure_airport_id"))
             }
 
             val connections = mutableListOf<ConnectingFlight>()
-                for ((leg1, midId1) in outbound) {
-                    for ((leg2, midId2) in inbound) {
-                        if (midId1 != midId2) continue
-                        val layover = Duration.between(leg1.arrivalTime, leg2.departureTime).toMinutes()
-                        if (layover in minLayover..maxLayover) {
-                            
-                            // Fix: null check
-                            // Use economy as the base totalPrice for the ConnectingFlight object
-                            val basePrice = (leg1.priceEconomy ?: 0.0) + (leg2.priceEconomy ?: 0.0)
-                            
-                            connections.add(ConnectingFlight(
-                                leg1 = leg1, 
+            for ((leg1, midId1) in outbound) {
+                for ((leg2, midId2) in inbound) {
+                    if (midId1 != midId2) continue
+                    val layover = Duration.between(leg1.arrivalTime, leg2.departureTime).toMinutes()
+                    if (layover in minLayover..maxLayover) {
+                        // Fix: null check
+                        // Use economy as the base totalPrice for the ConnectingFlight object
+                        val basePrice = (leg1.priceEconomy ?: 0.0) + (leg2.priceEconomy ?: 0.0)
+
+                        connections.add(
+                            ConnectingFlight(
+                                leg1 = leg1,
                                 leg2 = leg2,
                                 totalDurationMinutes = leg1.durationMinutes + layover.toInt() + leg2.durationMinutes,
                                 layoverMinutes = layover.toInt(),
-                                totalPrice = basePrice 
-                            ))
-                        }
+                                totalPrice = basePrice,
+                            ),
+                        )
                     }
                 }
+            }
             return connections.sortedBy { it.leg1.departureTime }
         }
     }

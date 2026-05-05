@@ -1,70 +1,65 @@
 {% extends "base.peb" %}
 
-{% block title %}Edit Booking - EAJO Air{% endblock %}
+{% block title %}Cancel Booking - EAJO Air{% endblock %}
 
 {% block content %}
 
 <div class="edit-booking-page">
+    <div class="auth-container">
+        <div class="auth-card">
 
-<div class="auth-container">
-<div class="auth-card">
+            <h2>Booking #{{ booking.bookingId }}</h2>
 
-    <h1>Booking #{{ booking.bookingId }}</h1>
+            <div class="booking-meta">
+                <p><strong>Booking Date:</strong> {{ booking.bookingDate }}</p>
+                <p><strong>Status:</strong> {{ booking.status }}</p>
+                <p><strong>Contact Email:</strong> {{ booking.email }}</p>
+                <p><strong>Total Price:</strong> £{{ booking.totalPrice }}</p>
+            </div>
 
-    <div class="booking-meta">
-        <p><strong>Booking Date:</strong> {{ booking.bookingDate }}</p>
-        <p><strong>Status:</strong> {{ booking.status }}</p>
-        <p><strong>Contact Email:</strong> {{ booking.email }}</p>
-        <p><strong>Total Price:</strong> £{{ booking.totalPrice }}</p>
-    </div>
+            <hr>
 
-    <hr>
+            <h3>Flights</h3>
 
-    <h2>Flights</h2>
+            {% for flight in booking.flights %}
+                <div class="flight-card">
+                    <p><strong>{{ flight.flightNumber }}</strong></p>
+                    <p>{{ flight.departureCity }} → {{ flight.arrivalCity }}</p>
+                    <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }}</p>
+                    <p>{{ flight.duration }}</p>
+                    <p>Terminal {{ flight.departureTerminal }} → Terminal {{ flight.arrivalTerminal }}</p>
+                </div>
+            {% endfor %}
 
-    {% for flight in booking.flights %}
-    <div class="flight-card">
-        <p><strong>{{ flight.flightNumber }}</strong></p>
-        <p>{{ flight.departureCity }} → {{ flight.arrivalCity }}</p>
-        <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }}</p>
-        <p>{{ flight.duration }}</p>
-        <p>Terminal {{ flight.departureTerminal }} → Terminal {{ flight.arrivalTerminal }}</p>
-    </div>
-    {% endfor %}
+            <hr>
 
-    <hr>
+            <h3>Passengers</h3>
 
-    <h2>Passengers</h2>
+            {% for passenger in booking.passengers %}
+                <div class="passenger-card">
+                    <p><strong>Full Name:</strong> {{ passenger.fullName }}</p>
+                    <p><strong>ID Number:</strong> {{ passenger.idNumber }}</p>
+                    <p><strong>Type:</strong> {{ passenger.type }}</p>
+                    <p><strong>Seat:</strong> {{ passenger.seat }}</p>
+                </div>
+            {% endfor %}
 
-    <form method="post" action="/edit-booking">
+            <form method="post" action="/cancel-booking">
+                <input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
 
-        {% for passenger in booking.passengers %}
-        <div class="passenger-card">
+                <button
+                    type="submit"
+                    class="danger-btn"
+                    onclick="return confirm('Are you sure you want to cancel this booking?')"
+                >
+                    Cancel Booking
+                </button>
+            </form>
 
-            <label for="name_{{ loop.index }}">Full Name</label>
-            <input type="text" id="name_{{ loop.index }}" name="name_{{ loop.index }}" value="{{ passenger.name }}">
-
-            <label for="id_{{ loop.index }}">ID Number</label>
-            <input type="text" id="id_{{ loop.index }}" name="id_{{ loop.index }}" value="{{ passenger.id }}">
-
-            <p><strong>Type:</strong> {{ passenger.type }}</p>
-            <p><strong>Seat:</strong> {{ passenger.seat }}</p>
+            <a href="/profile" class="back-link">← Back to Profile</a>
 
         </div>
-        {% endfor %}
-
-        <div class="edit-actions">
-            <button type="submit" class="primary-btn">Save Changes</button>
-            <a href="/cancel-booking?id={{ booking.bookingId }}" class="danger-btn">Cancel Booking</a>
-        </div>
-
-    </form>
-
-    <a href="/profile" class="back-link">← Back to Profile</a>
-
-</div>
-</div>
-
+    </div>
 </div>
 
 {% endblock %}

@@ -10,5 +10,5 @@ data class User(
     val lastName: String,
     val email: String,
     val passwordHash: String,
-    val createdAt: String? = null
+    val createdAt: String? = null,
 )

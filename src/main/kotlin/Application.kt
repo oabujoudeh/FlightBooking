@@ -10,7 +10,8 @@ import io.ktor.serialization.kotlinx.json.*
  * @param args command line arguments
  */
 fun main(args: Array<String>) {
-    io.ktor.server.netty.EngineMain.main(args)
+    io.ktor.server.netty.EngineMain
+        .main(args)
 }
 
 /**

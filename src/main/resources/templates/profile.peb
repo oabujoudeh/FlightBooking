@@ -43,9 +43,9 @@
                 </div>
 
                 <div class="profile-box loyalty-box">
-                    <h2>Loyalty Points</h2>
-                    <p><strong>Air Miles:</strong> 0</p>
-                    <p>Your loyalty points section will appear here.</p>
+                    <h3>EAJO Air Miles </h3>
+                    <p><strong>Air Miles:</strong> {{ loyaltyPoints }} points</p>
+                    <p>Earn 1 point for every £1 spent on confirmed bookings.</p>
                 </div>
 
             </div>
