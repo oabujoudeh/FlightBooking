@@ -521,7 +521,7 @@ fun Application.configureRouting() {
                 "returnFlightIdsRaw" to returnFlightIds.joinToString(","),
                 "returnCabinVal" to (returnCabin ?: ""),
                 // Preview price shown on the confirmation page before final booking
-                "totalPrice" to previewTotalPrice
+                "totalPrice" to "%.2f".format(previewTotalPrice)
             )
 
             // Pass leg 2 flight info and layover duration for connecting flights (for summary display)
@@ -560,7 +560,7 @@ fun Application.configureRouting() {
                 }
             }
 
-            call.respondTemplate("confirmBooking.peb", templateData)
+            call.respondTemplate("confirmBooking.peb", call.nonNullSessionData() + templateData)
         }
 
         get("/admin/chart/booking-status") {
@@ -677,11 +677,12 @@ fun Application.configureRouting() {
                 ))
             }
 
+            val totalPriceFormatted = "%.2f".format(totalPrice)
             val userID = UserDAO.getUserID(session.username)
             val isSuccess = UserDAO.createBooking(userID, session.username, allFlightIds, totalPrice, passengers)
 
             if (isSuccess) {
-                call.respondRedirect("/profile")
+                call.respondRedirect("/payment?totalPrice=$totalPriceFormatted")
             } else {
                 call.respondRedirect("/")
             }

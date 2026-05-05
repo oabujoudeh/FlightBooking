@@ -159,12 +159,15 @@
     </div>
     {% endif %}
 
-    <div class="pax-summary">
-        <span>{{ adults }} Adult{% if adults > 1 %}s{% endif %}</span>
-        {% if children > 0 %}
-        <span>{{ children }} Child{% if children > 1 %}ren{% endif %}</span>
-        {% endif %}
+    <div class="price-summary-block">
+        <div class="price-summary-row">
+            <span class="price-summary-pax">{{ adults }} Adult{% if adults > 1 %}s{% endif %}{% if children > 0 %} + {{ children }} Child{% if children > 1 %}ren{% endif %}{% endif %}</span>
+            <span class="price-summary-total">£{{ totalPrice }}</span>
+        </div>
+        <div class="price-summary-label">Total price · all passengers · all flights</div>
     </div>
+
+    <input type="hidden" name="totalPrice" value="{{ totalPrice }}">
 </div>
 
 <style>
@@ -279,6 +282,37 @@
         font-weight: 600;
         color: var(--navy);
         font-size: 0.85rem;
+    }
+    .price-summary-block {
+        margin-top: 16px;
+        padding: 16px 20px;
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #e8e8e8;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .price-summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+    .price-summary-total {
+        font-size: 1.6rem;
+        font-weight: bold;
+        color: var(--navy);
+    }
+    .price-summary-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--navy);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .price-summary-pax {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--navy);
     }
 </style>
 
@@ -458,6 +492,7 @@
     .seat[aria-disabled="true"] {
         opacity: 0.35;
         cursor: not-allowed;
+        pointer-events: none;
     }
     .seat.selected {
         outline: 3px solid var(--gold);
