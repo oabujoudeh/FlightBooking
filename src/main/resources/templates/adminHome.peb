@@ -25,9 +25,69 @@
         </div>
     </div>
 
+    <section class="advanced-search" style="margin: 30px 0; padding: 20px; background: #f4f4f4; border-radius: 8px; border: 1px solid #ddd;">
+        <h2 style="margin-top: 0;">Global Reservation Tracker</h2>
+        <form action="/" method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+            <div>
+                <label style="display: block; font-size: 0.85em; margin-bottom: 5px;">Flight Date</label>
+                <input type="date" name="filterDate" value="{{ lastFilterDate }}" style="padding: 8px; border: 1px solid #ccc;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.85em; margin-bottom: 5px;">Passenger Name</label>
+                <input type="text" name="filterUsername" placeholder="Search name..." value="{{ lastFilterUsername }}" style="padding: 8px; border: 1px solid #ccc;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.85em; margin-bottom: 5px;">Booking Status</label>
+                <select name="filterStatus" style="padding: 8px; border: 1px solid #ccc;">
+                    <option value="">All Statuses</option>
+                    <option value="Confirmed" {% if lastFilterStatus == "Confirmed" %}selected{% endif %}>Confirmed</option>
+                    <option value="Cancelled" {% if lastFilterStatus == "Cancelled" %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <button type="submit" style="padding: 8px 20px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Search Database</button>
+            <a href="/" style="font-size: 0.9em; color: #666; text-decoration: none; padding-bottom: 8px;">Clear Filters</a>
+        </form>
+
+        <div style="margin-top: 20px; background: #fff; padding: 10px; border-radius: 4px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #eee; text-align: left;">
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">ID</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Booked By</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Passengers</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Date</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Status</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Total Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in trackedReservations %}
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.bookingId }}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.bookedBy }}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.passengers }}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ res.bookingDate }}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                            <span style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em; background: {% if res.status == 'Cancelled' %}#ffebee; color: #c62828{% else %}#e8f5e9; color: #2e7d32{% endif %};">
+                                {{ res.status }}
+                            </span>
+                        </td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${{ res.totalPrice }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="padding: 20px; text-align: center; color: #999;">
+                            Use the filters above to search all reservations in the database.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <h2>Recent Bookings</h2>
-    <label for="bookingSearch" class="sr-only">Search bookings</label>
-    <input type="text" id="bookingSearch" placeholder="Search by email, ID, or status..." oninput="filterBookings()" aria-label="Search bookings table">
+    
     <table id="bookingsTable">
         <caption class="sr-only">Recent bookings</caption>
         <thead>
@@ -103,14 +163,4 @@
     </table>
 </div>
 
-<script>
-function filterBookings() {
-    var query = document.getElementById('bookingSearch').value.toLowerCase();
-    var rows = document.querySelectorAll('#bookingsTable tbody tr');
-    rows.forEach(function(row) {
-        var text = row.textContent.toLowerCase();
-        row.style.display = text.includes(query) ? '' : 'none';
-    });
-}
-</script>
 {% endblock %}

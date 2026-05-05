@@ -75,19 +75,36 @@ fun Application.configureRouting() {
             val session = call.sessions.get<UserSession>()
 
             if (session != null && session.isAdmin) {
+
+                val filterDate = call.request.queryParameters["filterDate"]
+                val filterUsername = call.request.queryParameters["filterUsername"]
+                val filterStatus = call.request.queryParameters["filterStatus"]
+
+                val trackedResults = AdminDAO.trackReservations(
+                    filterDate = if (filterDate.isNullOrEmpty()) null else filterDate,
+                    filterUsername = if (filterUsername.isNullOrEmpty()) null else filterUsername,
+                    filterStatus = if (filterStatus.isNullOrEmpty()) null else filterStatus
+                )
+
                 val recentBookings = AdminDAO.getRecentBookings()
                 val recentCancellations = AdminDAO.getRecentCancellations()
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
                 val totalUsers = AdminDAO.getTotalUsers()
+
                 call.respondTemplate(
                     "adminHome.peb",
                     call.nonNullSessionData() +
                         mapOf(
+                            "trackedReservations" to trackedResults,
+                            "lastFilterDate" to (filterDate ?: ""),
+                            "lastFilterUsername" to (filterUsername ?: ""),
+                            "lastFilterStatus" to (filterStatus ?: ""),
+                            //original - joe 
                             "recentBookings" to recentBookings,
                             "recentCancellations" to recentCancellations,
                             "upcomingFlights" to upcomingFlights,
-                            "totalUsers" to totalUsers,
-                        ),
+                            "totalUsers" to totalUsers
+                        )
                 )
             } else {
                 // use non‑nullable version of the map

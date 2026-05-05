@@ -367,4 +367,89 @@ object AdminDAO {
             emptyList()
         }
     }
+
+    fun trackReservations(filterDate: String? = null, filterUsername: String? = null, filterStatus: String? = null): List<Map<String, Any>> {
+        
+        var sql = """
+            SELECT b.booking_id,
+                   b.booking_date,
+                   b.total_price,
+                   b.status,
+                   b.contact_email,
+                   u.first_name,
+                   u.last_name,
+                   (SELECT GROUP_CONCAT(p.full_name)
+                    FROM booking_passengers p
+                    WHERE p.booking_id = b.booking_id) AS passenger_names
+            FROM bookings b
+            JOIN users u ON b.user_id = u.user_id 
+            WHERE 1=1
+        """
+
+        if (filterDate != null && filterDate.isNotEmpty()) {
+            sql += " AND strftime('%Y-%m-%d', b.booking_date) = ?"
+        }
+
+        if (filterUsername != null && filterUsername.isNotEmpty()) {
+            sql += """ AND(
+                u.first_name LIKE ?
+                OR u.last_name LIKE ?
+                OR EXISTS (SELECT 1 FROM booking_passengers bp WHERE bp.booking_id = b.booking_id AND bp.full_name LIKE ?)
+            )"""
+        }
+
+        if (filterStatus != null && filterStatus.isNotEmpty()) {
+            sql += " AND b.status = ?"
+        }
+
+        sql += " ORDER BY b.booking_date DESC"
+
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    var paramIndex = 1
+
+                    if (filterDate != null && filterDate.isNotEmpty()) {
+                        stmt.setString(paramIndex++, filterDate)
+                    }
+
+                    if (filterUsername != null && filterUsername.isNotEmpty()) {
+                        val searchPattern = "%$filterUsername%"
+                        stmt.setString(paramIndex++, searchPattern) 
+                        stmt.setString(paramIndex++, searchPattern) 
+                    }
+
+                    if (filterStatus != null && filterStatus.isNotEmpty()) {
+                        stmt.setString(paramIndex++, filterStatus)
+                    }
+
+                    println("Debug: SQL query is $sql")
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            val row = mutableMapOf<String, Any>()
+                            
+                            row["bookingId"] = rs.getInt("booking_id")
+                            row["bookingDate"] = rs.getString("booking_date") ?: ""
+                            row["totalPrice"] = rs.getDouble("total_price")
+                            row["status"] = rs.getString("status") ?: ""
+                            row["contactEmail"] = rs.getString("contact_email") ?: ""
+                            row["bookedBy"] = (rs.getString("first_name") ?: "") + " " + (rs.getString("last_name") ?: "")
+                            row["passengers"] = rs.getString("passenger_names") ?: "N/A"
+
+                            results.add(row)
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Search Error:")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    
+    
 }
