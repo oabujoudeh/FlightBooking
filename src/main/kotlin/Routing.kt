@@ -1,5 +1,7 @@
 package com.flightbooking
 
+import io.ktor.server.request.*
+import io.ktor.http.*
 import io.ktor.http.ContentType
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -126,23 +128,95 @@ fun Application.configureRouting() {
             }
         }
 
+        post("/admin/update-flight-status") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respond(HttpStatusCode.Forbidden)
+                return@post
+            }
+            val params = call.receiveParameters()
+            val flightId = params["flightId"]?.toIntOrNull()
+            val newStatus = params["newStatus"]
+    
+            if (flightId == null || newStatus.isNullOrEmpty()) {
+                call.respond(HttpStatusCode.BadRequest)
+                return@post
+            }
+    
+            val success = AdminDAO.updateFlightStatus(flightId, newStatus)
+            if (success) {
+        
+                val flightDate = params["flightDate"] ?: ""
+                val flightNumber = params["flightNumber"] ?: ""
+                call.respondRedirect("/?flightDate=$flightDate&flightNumber=$flightNumber")
+            } else {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to update status")
+            }
+        }
+
+
         get("/") {
             val session = call.sessions.get<UserSession>()
 
             if (session != null && session.isAdmin) {
+
+                val filterDate = call.request.queryParameters["filterDate"]
+                val filterUsername = call.request.queryParameters["filterUsername"]
+                val filterStatus = call.request.queryParameters["filterStatus"]
+
+                val trackedResults = AdminDAO.trackReservations(
+                    filterDate = if (filterDate.isNullOrEmpty()) null else filterDate,
+                    filterUsername = if (filterUsername.isNullOrEmpty()) null else filterUsername,
+                    filterStatus = if (filterStatus.isNullOrEmpty()) null else filterStatus
+                )
+
                 val recentBookings = AdminDAO.getRecentBookings()
                 val recentCancellations = AdminDAO.getRecentCancellations()
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
                 val totalUsers = AdminDAO.getTotalUsers()
+
+                val bookingsPerFlightDate = call.request.queryParameters["bpfDate"]
+                val routesStartDate = call.request.queryParameters["routesStart"]
+                val routesEndDate = call.request.queryParameters["routesEnd"]
+
+                val bookingsPerFlight = AdminDAO.getBookingsPerFlight(
+                    filterDate = if (bookingsPerFlightDate.isNullOrEmpty()) null else bookingsPerFlightDate
+                )
+                val popularRoutes = AdminDAO.getBusiestRoutes(
+                    startDate = if (routesStartDate.isNullOrEmpty()) null else routesStartDate,
+                    endDate = if (routesEndDate.isNullOrEmpty()) null else routesEndDate
+                )
+                val peakBookingTimes = AdminDAO.getAllBookingsGroupedByDate()
+
+                val flightDate = call.request.queryParameters["flightDate"]
+                val flightNumber = call.request.queryParameters["flightNumber"]
+
+                val trackedFlights = AdminDAO.trackFlights(
+                    filterDate = if (flightDate.isNullOrEmpty()) null else flightDate,
+                    filterNumber = if (flightNumber.isNullOrEmpty()) null else flightNumber
+                )
+
                 call.respondTemplate(
                     "adminHome.peb",
                     call.nonNullSessionData() +
                         mapOf(
+                            "trackedReservations" to trackedResults,
+                            "trackedFlights" to trackedFlights,
+                            "lastFilterDate" to (filterDate ?: ""),
+                            "lastFilterUsername" to (filterUsername ?: ""),
+                            "lastFilterStatus" to (filterStatus ?: ""),
+                            //original - joe 
                             "recentBookings" to recentBookings,
                             "recentCancellations" to recentCancellations,
                             "upcomingFlights" to upcomingFlights,
                             "totalUsers" to totalUsers,
-                        ),
+                            "bookingsPerFlight" to bookingsPerFlight,
+                            "popularRoutes" to popularRoutes,
+                            "peakBookingTimes" to peakBookingTimes,
+                            "lastBpfDate" to (bookingsPerFlightDate ?: ""),
+                            "lastRoutesStart" to (routesStartDate ?: ""),
+                            "lastRoutesEnd" to (routesEndDate ?: "")
+                        )
                 )
             } else {
                 call.respondTemplate("searchFlight.peb", call.nonNullSessionData())

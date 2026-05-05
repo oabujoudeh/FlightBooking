@@ -330,8 +330,8 @@ object AdminDAO {
     * @param limit the max number of routes to return, default is 10
     * @return a list of maps with the busiest route details, or an empty list if the query fails
     */
-    fun getBusiestRoutes(limit: Int = 10): List<Map<String, Any>> {
-        val sql = """
+    fun getBusiestRoutes(limit: Int = 10, startDate: String? = null, endDate: String? = null): List<Map<String, Any>> {
+        var sql = """
             SELECT dep.city as departure_city, arr.city as arrival_city,
                    r.flight_number, COUNT(*) as booking_count
             FROM booking_flights bf
@@ -339,14 +339,31 @@ object AdminDAO {
             JOIN routes r ON f.route_id = r.route_id
             JOIN airports dep ON r.departure_airport = dep.airport_id
             JOIN airports arr ON r.arrival_airport = arr.airport_id
+            WHERE 1=1
+        """
+        if (!startDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date >= ?"
+        }
+        if (!endDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date <= ?"
+        }
+        sql += """
             GROUP BY r.route_id
+            HAVING booking_count > 0
             ORDER BY booking_count DESC
             LIMIT ?
         """
         return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
-                    stmt.setInt(1, limit)
+                    var paramIndex = 1
+                    if (!startDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, startDate)
+                    }
+                    if (!endDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, endDate)
+                    }
+                    stmt.setInt(paramIndex, limit)
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
@@ -367,4 +384,217 @@ object AdminDAO {
             emptyList()
         }
     }
+
+    fun trackReservations(filterDate: String? = null, filterUsername: String? = null, filterStatus: String? = null): List<Map<String, Any>> {
+        
+        var sql = """
+            SELECT b.booking_id,
+                   b.booking_date,
+                   b.total_price,
+                   b.status,
+                   b.contact_email,
+                   u.first_name,
+                   u.last_name,
+                   (SELECT GROUP_CONCAT(p.full_name)
+                    FROM booking_passengers p
+                    WHERE p.booking_id = b.booking_id) AS passenger_names
+            FROM bookings b
+            JOIN users u ON b.user_id = u.user_id 
+            WHERE 1=1
+        """
+
+        if (filterDate != null && filterDate.isNotEmpty()) {
+            sql += " AND strftime('%Y-%m-%d', b.booking_date) = ?"
+        }
+
+        if (filterUsername != null && filterUsername.isNotEmpty()) {
+            sql += """ AND(
+                u.first_name LIKE ?
+                OR u.last_name LIKE ?
+                OR EXISTS (SELECT 1 FROM booking_passengers bp WHERE bp.booking_id = b.booking_id AND bp.full_name LIKE ?)
+            )"""
+        }
+
+        if (filterStatus != null && filterStatus.isNotEmpty()) {
+            sql += " AND b.status = ?"
+        }
+
+        sql += " ORDER BY b.booking_date DESC"
+
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    var paramIndex = 1
+
+                    if (filterDate != null && filterDate.isNotEmpty()) {
+                        stmt.setString(paramIndex++, filterDate)
+                    }
+
+                    if (filterUsername != null && filterUsername.isNotEmpty()) {
+                        val searchPattern = "%$filterUsername%"
+                        stmt.setString(paramIndex++, searchPattern) 
+                        stmt.setString(paramIndex++, searchPattern) 
+                    }
+
+                    if (filterStatus != null && filterStatus.isNotEmpty()) {
+                        stmt.setString(paramIndex++, filterStatus)
+                    }
+
+                    println("Debug: SQL query is $sql")
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            val row = mutableMapOf<String, Any>()
+                            
+                            row["bookingId"] = rs.getInt("booking_id")
+                            row["bookingDate"] = rs.getString("booking_date") ?: ""
+                            row["totalPrice"] = rs.getDouble("total_price")
+                            row["status"] = rs.getString("status") ?: ""
+                            row["contactEmail"] = rs.getString("contact_email") ?: ""
+                            row["bookedBy"] = (rs.getString("first_name") ?: "") + " " + (rs.getString("last_name") ?: "")
+                            row["passengers"] = rs.getString("passenger_names") ?: "N/A"
+
+                            results.add(row)
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Search Error:")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    fun trackFlights(filterDate: String? = null, filterNumber: String? = null): List<Map<String, Any>> {
+        var sql = """
+            SELECT f.flight_id, 
+                f.flight_date, 
+                f.status, 
+                r.flight_number, 
+                dep.city AS dep_city, 
+                arr.city AS arr_city
+            FROM flights f
+            JOIN routes r ON f.route_id = r.route_id
+            JOIN airports dep ON r.departure_airport = dep.airport_id
+            JOIN airports arr ON r.arrival_airport = arr.airport_id
+            WHERE 1=1
+        """
+
+        if (!filterDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date = ?"
+        }
+        if (!filterNumber.isNullOrEmpty()) {
+            sql += " AND r.flight_number LIKE ?"
+        }
+
+        sql += " ORDER BY f.flight_date ASC, r.flight_number ASC"
+
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    var paramIndex = 1
+                    if (!filterDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, filterDate)
+                    }
+                    if (!filterNumber.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, "%$filterNumber%")
+                    }
+
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            val row = mutableMapOf<String, Any>()
+                            row["flightId"] = rs.getInt("flight_id")
+                            row["flightDate"] = rs.getString("flight_date") ?: ""
+                            row["status"] = rs.getString("status") ?: ""
+                            row["flightNumber"] = rs.getString("flight_number") ?: ""
+                            row["originCity"] = rs.getString("dep_city") ?: ""
+                            row["destCity"] = rs.getString("arr_city") ?: ""
+                            results.add(row)
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("TrackFlights Error:")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    fun updateFlightStatus(flightId: Int, newStatus: String): Boolean {
+        val allowedStatuses = setOf("Scheduled", "Delayed", "Cancelled", "Departed", "Landed")
+        if (newStatus !in allowedStatuses) return false
+
+        val sql = "UPDATE flights SET status = ? WHERE flight_id = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, newStatus)
+                    stmt.setInt(2, flightId)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) {
+            println("UpdateFlightStatus Error:")
+            e.printStackTrace()
+            false
+        }
+    }
+    
+    fun getBookingsPerFlight(limit: Int = 20, filterDate: String? = null): List<Map<String, Any>> {
+        var sql = """
+            SELECT r.flight_number,
+                f.flight_date,
+                dep.city AS origin,
+                arr.city AS dest,
+                COUNT(bf.booking_id) AS booking_count
+            FROM flights f
+            JOIN routes r ON f.route_id = r.route_id
+            JOIN airports dep ON r.departure_airport = dep.airport_id
+            JOIN airports arr ON r.arrival_airport = arr.airport_id
+            LEFT JOIN booking_flights bf ON f.flight_id = bf.flight_id
+            WHERE 1=1
+        """
+        if (!filterDate.isNullOrEmpty()) {
+            sql += " AND f.flight_date = ?"
+        }
+        sql += """
+            GROUP BY f.flight_id, r.flight_number, f.flight_date, dep.city, arr.city
+            ORDER BY f.flight_date DESC, booking_count DESC
+            LIMIT ?
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    var paramIndex = 1
+                    if (!filterDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, filterDate)
+                    }
+                    stmt.setInt(paramIndex, limit)
+                    stmt.executeQuery().use { rs ->
+                        val results = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            results.add(mapOf(
+                                "flightNumber" to (rs.getString("flight_number") ?: ""),
+                                "flightDate"   to (rs.getString("flight_date") ?: ""),
+                                "origin"       to (rs.getString("origin") ?: ""),
+                                "dest"         to (rs.getString("dest") ?: ""),
+                                "bookingCount" to rs.getInt("booking_count")
+                            ))
+                        }
+                        results
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("GetBookingsPerFlight Error:")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
 }
