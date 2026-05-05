@@ -21,18 +21,17 @@ object EmailService {
     * @param subject the subject of the email
     * @param body the main email text
     */
-    fun sendEmail(to: String, subject: String, body: String) {
-        val props = Properties().apply {
-            put("mail.smtp.auth", "true")
-            put("mail.smtp.starttls.enable", "true")
-
-            put("mail.smtp.host", "sandbox.smtp.mailtrap.io")
-            put("mail.smtp.port", "2525")
-        }
-
-        val session = Session.getInstance(props, object : Authenticator() {
-            override fun getPasswordAuthentication(): PasswordAuthentication {
-                return PasswordAuthentication(USERNAME, PASSWORD)
+    fun sendEmail(
+        to: String,
+        subject: String,
+        body: String,
+    ) {
+        val props =
+            Properties().apply {
+                put("mail.smtp.auth", "true")
+                put("mail.smtp.starttls.enable", "true")
+                put("mail.smtp.host", "sandbox.smtp.mailtrap.io")
+                put("mail.smtp.port", "2525")
             }
 
         val session =

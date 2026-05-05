@@ -243,8 +243,6 @@ fun Application.configureRouting() {
                 val bookings = UserDAO.getBookings(userID)
                 val loyaltyPoints = UserDAO.getLoyaltyPoints(userID)
 
-                val loyaltyPoints = UserDAO.getLoyaltyPoints(userID)
-
                 call.respondTemplate(
                     "profile.peb",
                     call.nonNullSessionData() +
@@ -727,3 +725,4 @@ fun Application.configureRouting() {
             )
         }
     }
+}
