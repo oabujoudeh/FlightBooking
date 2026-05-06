@@ -597,4 +597,137 @@ object AdminDAO {
         }
     }
 
+    fun getPendingChangeRequests(): List<Map<String, Any>> {
+        val sql = """
+            SELECT 
+                change_requests.user_id, 
+                change_requests.change_to, 
+                change_requests.change_type, 
+                users.email AS username 
+            FROM change_requests 
+            LEFT JOIN users ON change_requests.user_id = users.user_id 
+            WHERE change_requests.status = 'pending'
+        """
+    
+        val requests = mutableListOf<Map<String, Any>>()
+    
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    val rs = stmt.executeQuery()
+                    while (rs.next()) {
+                        try {
+                            val row = mutableMapOf<String, Any>()
+                            row["userId"] = rs.getInt("user_id")
+                            row["changeTo"] = rs.getString("change_to") ?: ""
+                            row["type"] = rs.getString("change_type") ?: ""
+                            row["username"] = rs.getString("username") ?: "Unknown Email"
+                        
+                            requests.add(row)
+                        } catch (rowError: Exception) {
+                            println("DEBUG: Row parsing error: ${rowError.message}")
+                        }
+                    }
+                }
+            }
+            println("DEBUG: Successfully fetched ${requests.size} requests from DB")
+            requests
+        } catch (e: Exception) {
+            println("DEBUG: SQL Error: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    fun updateRequestStatus(userId: Int, newStatus: String): Boolean {
+        val sql = "UPDATE change_requests SET status = ? WHERE user_id = ? AND status = 'pending'"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, newStatus)
+                    stmt.setInt(2, userId)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) { false }
+    }
+
+    fun approveChangeRequest(userId: Int): Boolean {
+        val pendingData = getPendingDataByUserId(userId) ?: return false
+   
+        val parts = pendingData.trim().split(Regex("\\s+"))
+        if (parts.size < 2) return false
+    
+        val newFullName = parts[0]
+        val newIdNumber = parts[1]
+
+        val sqlUpdatePassenger = """
+            UPDATE booking_passengers 
+            SET full_name = ?, id_number = ? 
+            WHERE booking_id IN (SELECT booking_id FROM bookings WHERE user_id = ?)
+        """
+    
+        val sqlUpdateStatus = "UPDATE change_requests SET status = 'accepted' WHERE user_id = ? AND status = 'pending'"
+
+        return try {
+            Database.getConnection().use { conn ->
+                conn.autoCommit = false
+                try {
+                    conn.prepareStatement(sqlUpdatePassenger).use { stmt ->
+                        stmt.setString(1, newFullName)
+                        stmt.setString(2, newIdNumber)
+                        stmt.setInt(3, userId)
+                        stmt.executeUpdate()
+                    }
+
+                    conn.prepareStatement(sqlUpdateStatus).use { stmt ->
+                        stmt.setInt(1, userId)
+                        stmt.executeUpdate()
+                    }
+
+                    conn.commit()
+                    true
+                } catch (e: Exception) {
+                    conn.rollback()
+                    throw e
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+    
+    private fun getPendingDataByUserId(userId: Int): String? {
+        val sql = "SELECT change_to FROM change_requests WHERE user_id = ? AND status = 'pending'"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userId)
+                    val rs = stmt.executeQuery()
+                    if (rs.next()) rs.getString("change_to") else null
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun rejectChangeRequest(userId: Int): Boolean {
+        val sql = "UPDATE change_requests SET status = 'rejected' WHERE user_id = ? AND status = 'pending'"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userId)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+
 }

@@ -768,5 +768,35 @@ object UserDAO{
         }
         return ids
     }
+
+    fun updateUserEmail(userId: Int, newEmail: String): Boolean {
+        val sql = "UPDATE users SET email = ? WHERE user_id = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, newEmail)
+                    stmt.setInt(2, userId)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) { false }
+    }
+
+    fun insertChangeRequest(userId: Int, changeTo: String, type: String): Boolean {
+        val sql = "INSERT INTO change_requests (user_id, change_to, change_type, status) VALUES (?, ?, ?, 'pending')"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userId)
+                    stmt.setString(2, changeTo)
+                    stmt.setString(3, type)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) { 
+            e.printStackTrace()
+            false 
+        }
+    }
         
 }

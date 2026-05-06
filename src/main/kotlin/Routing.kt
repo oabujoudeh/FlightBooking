@@ -838,5 +838,62 @@ fun Application.configureRouting() {
             }
         }
 
+        get("/update-passenger-info") {
+            val session = call.sessions.get<UserSession>() ?: return@get call.respondRedirect("/login")
+            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull() ?: return@get call.respondRedirect("/profile")
+   
+            val userId = UserDAO.getUserID(session.username)
+    
+            val booking = UserDAO.getBookingById(bookingId, userId)
+    
+            if (booking != null) {
+                call.respondTemplate("update_info.peb", mapOf("booking" to booking))
+            } else {
+                call.respondRedirect("/profile")
+            }
+        }
+
+        post("/submit-info-request") {
+            val session = call.sessions.get<UserSession>() ?: return@post call.respondRedirect("/login")
+            val userId = UserDAO.getUserID(session.username)
+            val params = call.receiveParameters()
+    
+            val newName = params["newName"]?.trim() ?: ""
+            val newId = params["newId"]?.trim() ?: ""
+    
+            val combinedContent = "$newName $newId"
+    
+            val success = UserDAO.insertChangeRequest(userId, combinedContent, "personal_info")
+    
+            if (success) {
+                call.respondRedirect("/profile?requestSuccess=true")
+            } else {
+                call.respondText("Error: Could not submit request.")
+            }
+        }
+
+        // 1. 管理员审批主页
+get("/admin/pending-requests") {
+    // 权限检查 (假设你已经有检查 admin 的逻辑)
+    val requests = AdminDAO.getPendingChangeRequests()
+    call.respondTemplate("admin_requests.peb", mapOf("requests" to requests))
+}
+
+// 2. 处理审批动作
+post("/admin/handle-request") {
+    val params = call.receiveParameters()
+    val userId = params["userId"]?.toIntOrNull() ?: return@post call.respondRedirect("/admin/pending-requests")
+    val action = params["action"]
+
+    if (action == "approve") {
+        AdminDAO.approveChangeRequest(userId)
+    } else if (action == "reject") {
+        AdminDAO.rejectChangeRequest(userId)
+    }
+    
+    call.respondRedirect("/admin/pending-requests")
+}
+
+
     }
 }
