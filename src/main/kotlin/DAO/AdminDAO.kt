@@ -272,7 +272,7 @@ object AdminDAO {
         val sql = """
             SELECT f.flight_id, f.flight_date, f.status, f.price,
                    r.flight_number, r.planned_departure,
-                   dep.city as departure_city, arr.city as arrival_city
+                   dep.name as departure_city, arr.name as arrival_city
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
             JOIN airports dep ON r.departure_airport = dep.airport_id
@@ -332,7 +332,7 @@ object AdminDAO {
     */
     fun getBusiestRoutes(limit: Int = 10, startDate: String? = null, endDate: String? = null): List<Map<String, Any>> {
         var sql = """
-            SELECT dep.city as departure_city, arr.city as arrival_city,
+            SELECT dep.name as departure_city, arr.name as arrival_city,
                    r.flight_number, COUNT(*) as booking_count
             FROM booking_flights bf
             JOIN flights f ON bf.flight_id = f.flight_id
@@ -468,36 +468,41 @@ object AdminDAO {
     }
 
     fun trackFlights(filterDate: String? = null, filterNumber: String? = null): List<Map<String, Any>> {
+        // Default to today if no date is provided — avoids loading all 10000+ flights at once
+        val effectiveDate = if (filterDate.isNullOrEmpty()) {
+            java.time.LocalDate.now().toString()
+        } else {
+            filterDate
+        }
+
         var sql = """
             SELECT f.flight_id, 
                 f.flight_date, 
                 f.status, 
                 r.flight_number, 
-                dep.city AS dep_city, 
-                arr.city AS arr_city
+                f.departure_localtime,
+                f.arrival_localtime,
+                f.overnight,
+                dep.name AS dep_name,
+                arr.name AS arr_name
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
             JOIN airports dep ON r.departure_airport = dep.airport_id
             JOIN airports arr ON r.arrival_airport = arr.airport_id
-            WHERE 1=1
+            WHERE f.flight_date = ?
         """
 
-        if (!filterDate.isNullOrEmpty()) {
-            sql += " AND f.flight_date = ?"
-        }
         if (!filterNumber.isNullOrEmpty()) {
             sql += " AND r.flight_number LIKE ?"
         }
 
-        sql += " ORDER BY f.flight_date ASC, r.flight_number ASC"
+        sql += " ORDER BY f.departure_localtime ASC"
 
         return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     var paramIndex = 1
-                    if (!filterDate.isNullOrEmpty()) {
-                        stmt.setString(paramIndex++, filterDate)
-                    }
+                    stmt.setString(paramIndex++, effectiveDate)
                     if (!filterNumber.isNullOrEmpty()) {
                         stmt.setString(paramIndex++, "%$filterNumber%")
                     }
@@ -510,8 +515,11 @@ object AdminDAO {
                             row["flightDate"] = rs.getString("flight_date") ?: ""
                             row["status"] = rs.getString("status") ?: ""
                             row["flightNumber"] = rs.getString("flight_number") ?: ""
-                            row["originCity"] = rs.getString("dep_city") ?: ""
-                            row["destCity"] = rs.getString("arr_city") ?: ""
+                            row["originCity"] = rs.getString("dep_name") ?: ""
+                            row["destCity"] = rs.getString("arr_name") ?: ""
+                            row["depTime"] = rs.getString("departure_localtime") ?: ""
+                            row["arrTime"] = rs.getString("arrival_localtime") ?: ""
+                            row["overnight"] = rs.getInt("overnight") == 1
                             results.add(row)
                         }
                         results
@@ -525,8 +533,24 @@ object AdminDAO {
         }
     }
 
+    /**
+     * Returns the previous and next date relative to the given date string (yyyy-MM-dd).
+     * Used for day-by-day flight navigation in the admin dashboard.
+     */
+    fun getAdjacentFlightDates(currentDate: String): Map<String, String> {
+        val date = try {
+            java.time.LocalDate.parse(currentDate)
+        } catch (e: Exception) {
+            java.time.LocalDate.now()
+        }
+        return mapOf(
+            "prevDate" to date.minusDays(1).toString(),
+            "nextDate" to date.plusDays(1).toString()
+        )
+    }
+
     fun updateFlightStatus(flightId: Int, newStatus: String): Boolean {
-        val allowedStatuses = setOf("Scheduled", "Delayed", "Cancelled", "Departed", "Landed")
+        val allowedStatuses = setOf("Scheduled", "Delayed", "Cancelled", "Departed", "Arrived")
         if (newStatus !in allowedStatuses) return false
 
         val sql = "UPDATE flights SET status = ? WHERE flight_id = ?"
@@ -549,8 +573,8 @@ object AdminDAO {
         var sql = """
             SELECT r.flight_number,
                 f.flight_date,
-                dep.city AS origin,
-                arr.city AS dest,
+                dep.name AS origin,
+                arr.name AS dest,
                 COUNT(bf.booking_id) AS booking_count
             FROM flights f
             JOIN routes r ON f.route_id = r.route_id
@@ -563,7 +587,7 @@ object AdminDAO {
             sql += " AND f.flight_date = ?"
         }
         sql += """
-            GROUP BY f.flight_id, r.flight_number, f.flight_date, dep.city, arr.city
+            GROUP BY f.flight_id, r.flight_number, f.flight_date, dep.name, arr.name
             ORDER BY f.flight_date DESC, booking_count DESC
             LIMIT ?
         """
