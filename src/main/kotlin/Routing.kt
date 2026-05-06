@@ -13,6 +13,7 @@ import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondRedirect
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -155,6 +156,48 @@ fun Application.configureRouting() {
         }
 
 
+        // AJAX endpoint: returns flight data as JSON for the flight table (no full page reload)
+        get("/admin/flights-fragment") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respond(HttpStatusCode.Forbidden)
+                return@get
+            }
+            val flightDateRaw = call.request.queryParameters["flightDate"]
+            val flightNumber  = call.request.queryParameters["flightNumber"]
+            val flightDate    = if (flightDateRaw.isNullOrEmpty()) LocalDate.now().toString() else flightDateRaw
+
+            val trackedFlights = AdminDAO.trackFlights(
+                filterDate = flightDate,
+                filterNumber = if (flightNumber.isNullOrEmpty()) null else flightNumber
+            )
+            val adjacentDates = AdminDAO.getAdjacentFlightDates(flightDate)
+
+            fun esc(v: Any?): String = (v as? String ?: "")
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+
+            val parts = mutableListOf<String>()
+            trackedFlights.forEach { f ->
+                val flightId = f["flightId"] ?: 0
+                val flightNum = esc(f["flightNumber"])
+                val origin = esc(f["originCity"])
+                val dest = esc(f["destCity"])
+                val status = esc(f["status"])
+                val depTime = esc(f["depTime"])
+                val arrTime = esc(f["arrTime"])
+                val overnight = f["overnight"] as? Boolean ?: false
+                parts.add("""{"flightId":$flightId,"flightNumber":"$flightNum","originCity":"$origin","destCity":"$dest","status":"$status","depTime":"$depTime","arrTime":"$arrTime","overnight":$overnight}""")
+            }
+
+            val prev = adjacentDates["prevDate"] ?: ""
+            val next = adjacentDates["nextDate"] ?: ""
+            val json = "{\"date\":\"$flightDate\",\"prevDate\":\"$prev\",\"nextDate\":\"$next\"" +
+                       ",\"count\":${trackedFlights.size},\"flights\":[${parts.joinToString(",")}]}"
+
+            call.respondText(json, io.ktor.http.ContentType.Application.Json)
+        }
+
         get("/") {
             val session = call.sessions.get<UserSession>()
 
@@ -188,13 +231,18 @@ fun Application.configureRouting() {
                 )
                 val peakBookingTimes = AdminDAO.getAllBookingsGroupedByDate()
 
-                val flightDate = call.request.queryParameters["flightDate"]
+                val flightDateRaw = call.request.queryParameters["flightDate"]
                 val flightNumber = call.request.queryParameters["flightNumber"]
 
+                // Default to today if no date supplied — avoids loading all flights at once
+                val flightDate = if (flightDateRaw.isNullOrEmpty()) LocalDate.now().toString() else flightDateRaw
+
                 val trackedFlights = AdminDAO.trackFlights(
-                    filterDate = if (flightDate.isNullOrEmpty()) null else flightDate,
+                    filterDate = flightDate,
                     filterNumber = if (flightNumber.isNullOrEmpty()) null else flightNumber
                 )
+
+                val adjacentDates = AdminDAO.getAdjacentFlightDates(flightDate)
 
                 call.respondTemplate(
                     "adminHome.peb",
@@ -205,6 +253,10 @@ fun Application.configureRouting() {
                             "lastFilterDate" to (filterDate ?: ""),
                             "lastFilterUsername" to (filterUsername ?: ""),
                             "lastFilterStatus" to (filterStatus ?: ""),
+                            "lastFlightDate" to flightDate,
+                            "lastFlightNumber" to (flightNumber ?: ""),
+                            "flightPrevDate" to (adjacentDates["prevDate"] ?: ""),
+                            "flightNextDate" to (adjacentDates["nextDate"] ?: ""),
                             //original - joe 
                             "recentBookings" to recentBookings,
                             "recentCancellations" to recentCancellations,
