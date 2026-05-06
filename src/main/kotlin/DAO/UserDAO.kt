@@ -451,6 +451,7 @@ object UserDAO{
         }
     }  
 
+
     /**
     * Updates the passengers for a booking.
     *
@@ -634,5 +635,5 @@ object UserDAO{
             0
         }
         }   
-
-    }
+        
+}
