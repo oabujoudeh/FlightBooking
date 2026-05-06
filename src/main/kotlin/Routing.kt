@@ -330,6 +330,8 @@ fun Application.configureRouting() {
                 val userID = UserDAO.getUserID(username)
                 val bookings = UserDAO.getBookings(userID)
                 val loyaltyPoints = UserDAO.getLoyaltyPoints(userID)
+                val userDetails = UserDAO.getUserDetails(userID)
+
 
                 call.respondTemplate(
                     "profile.peb",
@@ -337,6 +339,9 @@ fun Application.configureRouting() {
                         mapOf(
                             "bookings" to bookings,
                             "loyaltyPoints" to loyaltyPoints,
+                            "firstName" to (userDetails?.firstName ?: ""),
+                            "lastName" to (userDetails?.lastName ?: ""),
+                            "email" to (userDetails?.email ?: "")
                         ),
                 )        
             } else {

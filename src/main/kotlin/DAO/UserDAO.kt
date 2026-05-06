@@ -7,6 +7,26 @@ import java.time.ZonedDateTime
 
 object UserDAO{
 
+    fun getUserDetails(userId: Int): User? {
+        val sql = "SELECT first_name, last_name, email FROM users WHERE user_id = ?"
+        return Database.getConnection().use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setInt(1, userId)
+                val rs = stmt.executeQuery()
+                if (rs.next()){
+                    User(
+                        firstName = rs.getString("first_name"),
+                        lastName = rs.getString("last_name"),
+                        email = rs.getString("email"),
+                        passwordHash = ""
+                    )
+                }else null
+
+            }
+
+        }
+    }
+
     /**
     * Checks if an email is already in the users table.
     *

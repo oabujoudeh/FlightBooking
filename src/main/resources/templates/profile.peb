@@ -5,66 +5,447 @@
 {% block content %}
 
 {% if loggedIn %}
+<style>
+    /* ── Layout ── */
+    .profile-container {
+        display: flex;
+        min-height: calc(100vh - 60px);
+        background-color: #f0f4f8;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-<div class="profile-page">
+    /* ── Sidebar ── */
+    .profile-sidebar {
+        width: 240px;
+        background: linear-gradient(180deg, #0a1628 0%, #0d2045 100%);
+        color: white;
+        padding: 0;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 3px 0 12px rgba(0,0,0,0.18);
+    }
 
-    <div class="auth-container">
-        <div class="auth-card">
+    .sidebar-header {
+        padding: 28px 20px 24px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: rgba(0,0,0,0.15);
+    }
 
-            <h1>Your Profile</h1>
-            <p><strong>Username:</strong> {{ username }}</p>
+    .sidebar-avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f5a623 0%, #f7c948 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 800;
+        color: #0a1628;
+        margin: 0 auto 12px;
+        letter-spacing: 0;
+    }
 
-            <div class="profile-sections">
+    .sidebar-username {
+        font-size: 15px;
+        font-weight: 600;
+        color: #e8edf5;
+        margin: 0;
+    }
 
-                <div class="profile-box">
-                    <h2>Your Bookings</h2>
+    .sidebar-tag {
+        font-size: 11px;
+        color: #f5a623;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-top: 4px;
+    }
 
-                    {% if bookings is empty %}
-                        <p>You have no bookings yet.</p>
-                    {% else %}
-                        {% for booking in bookings %}
-                        <div class="booking-card">
+    /* ── Nav items ── */
+    .sidebar-nav {
+        margin-top: 12px;
+        flex-grow: 1;
+        padding: 0 12px;
+    }
 
-                            <p><strong>Booking #{{ booking.bookingId }}</strong></p>
-                            <p>Date: {{ booking.bookingDate }}</p>
-                            <p>Status: {{ booking.status }}</p>
-                            <p>Total Price: £{{ booking.totalPrice }}</p>
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: background 0.2s, color 0.2s;
+        cursor: pointer;
+        margin-bottom: 4px;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+    }
 
-                            {% for flight in booking.flights %}
-                                <p>{{ flight.flightNumber }}: {{ flight.departureCity }} → {{ flight.arrivalCity }}</p>
-                                <p>{{ flight.departureDate }} | {{ flight.departureTime }} → {{ flight.arrivalTime }} | {{ flight.duration }}</p>
-                            {% endfor %}
+    .nav-item .nav-icon {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+    }
 
-                            <a href="/edit-booking?id={{ booking.bookingId }}" class="primary-btn">Edit Booking</a>
-                            <a href="/reschedule/start?bookingId={{ booking.bookingId }}" 
-                                class="primary-btn" 
-                                style="background-color: #2563eb;">
-                                Reschedule Flight
+    .nav-item:hover {
+        background-color: rgba(255,255,255,0.07);
+        color: #e2e8f0;
+    }
+
+    .nav-item.active {
+        background-color: rgba(245,166,35,0.15);
+        color: #f5a623;
+        font-weight: 600;
+    }
+
+    .nav-item.active .nav-icon {
+        color: #f5a623;
+    }
+
+    .sidebar-divider {
+        height: 1px;
+        background: rgba(255,255,255,0.07);
+        margin: 12px 12px;
+    }
+
+    .sidebar-bottom {
+        padding: 12px;
+        border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .nav-item-danger {
+        color: #f87171;
+    }
+
+    .nav-item-danger:hover {
+        background-color: rgba(248,113,113,0.1);
+        color: #fca5a5;
+    }
+
+    /* ── Main content ── */
+    .profile-main {
+        flex-grow: 1;
+        padding: 36px 40px;
+        overflow-y: auto;
+    }
+
+    .section-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0d2045;
+        margin: 0 0 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .content-section {
+        display: none;
+    }
+
+    .content-section.active {
+        display: block;
+    }
+
+    /* ── Cards ── */
+    .info-card, .booking-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin-bottom: 16px;
+        border: 1px solid #e8edf5;
+    }
+
+    .booking-card {
+        transition: box-shadow 0.2s;
+    }
+
+    .booking-card:hover {
+        box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    }
+
+    .booking-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .booking-id {
+        font-weight: 700;
+        font-size: 15px;
+        color: #0d2045;
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #dcfce7;
+        color: #15803d;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .flight-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 0;
+        border-bottom: 1px dashed #e8edf5;
+    }
+
+    .flight-row:last-of-type {
+        border-bottom: none;
+    }
+
+    .flight-num {
+        font-weight: 700;
+        color: #005fcc;
+        font-size: 13px;
+        width: 70px;
+        flex-shrink: 0;
+    }
+
+    .flight-route {
+        flex-grow: 1;
+        font-size: 14px;
+        color: #1e293b;
+    }
+
+    .flight-meta {
+        font-size: 12px;
+        color: #94a3b8;
+        text-align: right;
+    }
+
+    .action-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    /* ── Yellow Edit button ── */
+    .btn-manage {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 20px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 13px;
+        background: linear-gradient(135deg, #f5a623 0%, #f7c948 100%);
+        color: #0a1628;
+        box-shadow: 0 2px 8px rgba(245,166,35,0.35);
+        transition: transform 0.15s, box-shadow 0.15s;
+        letter-spacing: 0.01em;
+    }
+
+    .btn-manage:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(245,166,35,0.5);
+    }
+
+    /* ── Personal Info ── */
+    .info-row {
+        display: flex;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid #f0f4f8;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        width: 160px;
+        font-weight: 600;
+        color: #64748b;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .info-value {
+        color: #1e293b;
+        font-size: 15px;
+    }
+
+    /* ── Miles section ── */
+    .miles-display {
+        text-align: center;
+        padding: 48px 40px;
+        background: linear-gradient(135deg, #0a1628 0%, #0d2045 60%, #1a3a6e 100%);
+        color: white;
+        border-radius: 16px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(10,22,40,0.3);
+    }
+
+    .miles-display::before {
+        content: '✈';
+        position: absolute;
+        font-size: 180px;
+        opacity: 0.04;
+        right: -20px;
+        top: -20px;
+        transform: rotate(15deg);
+    }
+
+    .miles-label-top {
+        font-size: 12px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        margin-bottom: 10px;
+    }
+
+    .miles-value {
+        font-size: 60px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #f5a623, #f7c948);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+    }
+
+    .miles-unit {
+        font-size: 16px;
+        color: #94a3b8;
+        margin-top: 8px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94a3b8;
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+</style>
+
+<div class="profile-container">
+    <aside class="profile-sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-avatar">{{ username | slice(0, 2) | upper }}</div>
+            <p class="sidebar-username">{{ username }}</p>
+            <p class="sidebar-tag">✈ EAJO Member</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a onclick="showSection('bookings')" id="link-bookings" class="nav-item active">
+                <span class="nav-icon">🗂</span> My Bookings
+            </a>
+            <a onclick="showSection('personal')" id="link-personal" class="nav-item">
+                <span class="nav-icon">👤</span> Personal Info
+            </a>
+            <a onclick="showSection('miles')" id="link-miles" class="nav-item">
+                <span class="nav-icon">⭐</span> EAJO Miles
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="sidebar-divider"></div>
+            <a href="/" class="nav-item">
+                <span class="nav-icon">🏠</span> Return Home
+            </a>
+            <a href="/logout" class="nav-item nav-item-danger">
+                <span class="nav-icon">🚪</span> Logout
+            </a>
+        </div>
+    </aside>
+
+    <main class="profile-main">
+
+        <!-- Bookings -->
+        <div id="section-bookings" class="content-section active">
+            <h2 class="section-title">My Bookings</h2>
+            {% if bookings is empty %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">✈️</div>
+                    <p>You have no bookings yet.</p>
+                </div>
+            {% else %}
+                {% for booking in bookings %}
+                    <div class="booking-card">
+                        <div class="booking-header">
+                            <span class="booking-id">Booking #{{ booking.bookingId }}</span>
+                            <span class="status-badge">{{ booking.status }}</span>
+                        </div>
+                        {% for flight in booking.flights %}
+                            <div class="flight-row">
+                                <span class="flight-num">{{ flight.flightNumber }}</span>
+                                <span class="flight-route">{{ flight.departureCity }} → {{ flight.arrivalCity }}</span>
+                                <span class="flight-meta">{{ flight.departureDate }}<br>{{ flight.departureTime }}</span>
+                            </div>
+                        {% endfor %}
+                        <div class="action-group">
+                            <a href="/edit-booking?id={{ booking.bookingId }}" class="btn-manage">
+                                ✏️ Edit Flight
                             </a>
                         </div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                <div class="profile-box loyalty-box">
-                    <h3>EAJO Air Miles </h3>
-                    <p><strong>Air Miles:</strong> {{ loyaltyPoints }} points</p>
-                    <p>Earn 1 point for every £1 spent on confirmed bookings.</p>
-                </div>
-
-            </div>
-
-            <hr>
-
-            <div class="profile-actions">
-                <a href="/" class="secondary-btn">Return to Home Page</a>
-                <a href="/logout" class="primary-btn">Logout</a>
-            </div>
-
+                    </div>
+                {% endfor %}
+            {% endif %}
         </div>
-    </div>
 
+        <!-- Personal Info -->
+        <div id="section-personal" class="content-section">
+            <h2 class="section-title">Personal Information</h2>
+            <div class="info-card">
+                <div class="info-row">
+                    <div class="info-label">Full Name</div>
+                    <div class="info-value">{{ firstName }} {{ lastName }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ email }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Username</div>
+                    <div class="info-value">{{ username }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Miles -->
+        <div id="section-miles" class="content-section">
+            <h2 class="section-title">Travel Milestones</h2>
+            <div class="miles-display">
+                <p class="miles-label-top">Your Balance</p>
+                <div class="miles-value">{{ loyaltyPoints }}</div>
+                <p class="miles-unit">Available EAJO Miles</p>
+            </div>
+        </div>
+
+    </main>
 </div>
+
+<script>
+    function showSection(sectionId) {
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('section-' + sectionId).classList.add('active');
+        document.getElementById('link-' + sectionId).classList.add('active');
+    }
+</script>
 
 {% endif %}
 
