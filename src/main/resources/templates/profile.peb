@@ -36,7 +36,11 @@
                             {% endfor %}
 
                             <a href="/edit-booking?id={{ booking.bookingId }}" class="primary-btn">Edit Booking</a>
-
+                            <a href="/reschedule/start?bookingId={{ booking.bookingId }}" 
+                                class="primary-btn" 
+                                style="background-color: #2563eb;">
+                                Reschedule Flight
+                            </a>
                         </div>
                         {% endfor %}
                     {% endif %}

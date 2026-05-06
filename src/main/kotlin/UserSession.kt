@@ -18,6 +18,7 @@ data class UserSession(
     val loggedIn: Boolean = false,
     val message: String = "",
     val isAdmin: Boolean = false,
+    val rescheduleBookingId: Int? = null
 )
 
 /**

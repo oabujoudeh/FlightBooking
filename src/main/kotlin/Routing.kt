@@ -1,6 +1,7 @@
 package com.flightbooking
 
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.http.*
 import io.ktor.http.ContentType
 import io.ktor.server.application.Application
@@ -219,7 +220,20 @@ fun Application.configureRouting() {
                         )
                 )
             } else {
-                call.respondTemplate("searchFlight.peb", call.nonNullSessionData())
+                val dep = call.request.queryParameters["departure"] ?: ""
+                val dest = call.request.queryParameters["destination"] ?: ""
+                val depLabel = call.request.queryParameters["departureLabel"] ?: ""
+                val destLabel = call.request.queryParameters["destinationLabel"] ?: ""
+                
+                call.respondTemplate(
+                    "searchFlight.peb", 
+                    call.nonNullSessionData() + mapOf(
+                        "departure" to dep,
+                        "destination" to dest,
+                        "departureLabel" to depLabel,
+                        "destinationLabel" to destLabel
+                    )
+                )
             }
 
             if (session != null && session.message.isNotEmpty()) {
@@ -693,12 +707,10 @@ fun Application.configureRouting() {
             val params = call.receiveParameters()
 
             val outboundCabin = params["outboundCabin"] ?: "economy"
-            val returnCabin = params["returnCabin"] ?: "economy"
             val adults = params["adults"]?.toIntOrNull() ?: 1
             val children = params["children"]?.toIntOrNull() ?: 0
             val totalPassengers = adults + children
 
-            // Parse all flight IDs (comma-separated)
             val outboundFlightIds = params["outboundFlightIdsRaw"]
                 ?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
             val returnFlightIds = params["returnFlightIdsRaw"]
@@ -709,66 +721,63 @@ fun Application.configureRouting() {
                 return@post
             }
 
-            // Calculate total price:
-            // Each leg's per-person price × total passengers (adults + children, no discount)
             var totalPrice = 0.0
             val allFlightIds = mutableListOf<Int>()
-
-            for (id in outboundFlightIds) {
+            for (id in (outboundFlightIds + (params["returnFlightIdsRaw"]?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()))) {
                 val flight = FlightDAO.getFlightOverview(id) ?: continue
                 totalPrice += getPriceByCabin(flight, outboundCabin) * totalPassengers
                 allFlightIds.add(id)
             }
 
-            for (id in returnFlightIds) {
-                val flight = FlightDAO.getFlightOverview(id) ?: continue
-                totalPrice += getPriceByCabin(flight, returnCabin) * totalPassengers
-                allFlightIds.add(id)
-            }
-
-            // Collect passenger info
-            // Seats are stored per step: adult_0_seat_step1, adult_0_seat_step2, etc.
-            // For the booking record we store seats as comma-separated per passenger across all steps
-            val totalSteps = outboundFlightIds.size + returnFlightIds.size
-
             val passengers = mutableListOf<Map<String, String>>()
+            val rescheduleSeatMap = mutableMapOf<Int, Int>()
+            val rescheduleId = session.rescheduleBookingId
+            
+            val oldPassengerIds = if (rescheduleId != null) {
+                UserDAO.getPassengerIdsByBooking(rescheduleId)
+            } else emptyList()
 
             for (i in 0 until adults) {
-                val seats = (1..totalSteps).map { step ->
-                    params["adult_${i}_seat_step${step}"] ?: ""
-                }.filter { it.isNotEmpty() }.joinToString(",")
+                val seatIdStr = params["adult_${i}_seat_step1"] ?: ""
+                val seatId = seatIdStr.toIntOrNull() ?: 0
+                
+                if (rescheduleId != null && i < oldPassengerIds.size) {
+                    rescheduleSeatMap[oldPassengerIds[i]] = seatId
+                }
 
                 passengers.add(mapOf(
                     "fullName" to (params["adult_${i}_fullName"] ?: ""),
                     "idNumber" to (params["adult_${i}_ID"] ?: ""),
                     "type" to "adult",
-                    "seat" to seats,
+                    "seat" to seatIdStr,
                     "cabin" to outboundCabin
                 ))
             }
 
-            for (i in 0 until children) {
-                val seats = (1..totalSteps).map { step ->
-                    params["child_${i}_seat_step${step}"] ?: ""
-                }.filter { it.isNotEmpty() }.joinToString(",")
-
-                passengers.add(mapOf(
-                    "fullName" to (params["child_${i}_fullName"] ?: ""),
-                    "idNumber" to (params["child_${i}_ID"] ?: ""),
-                    "type" to "child",
-                    "seat" to seats,
-                    "cabin" to outboundCabin
-                ))
-            }
-
-            val totalPriceFormatted = "%.2f".format(totalPrice)
-            val userID = UserDAO.getUserID(session.username)
-            val isSuccess = UserDAO.createBooking(userID, session.username, allFlightIds, totalPrice, passengers)
-
-            if (isSuccess) {
-                call.respondRedirect("/payment?totalPrice=$totalPriceFormatted")
+            if (rescheduleId != null) {
+                val success = UserDAO.executeReschedule(
+                    bookingId = rescheduleId,
+                    newFlightId = allFlightIds.first(),
+                    newTotalPrice = totalPrice,
+                    passengerSeatSelections = rescheduleSeatMap
+                )
+                
+                if (success) {
+                    call.sessions.set(session.copy(rescheduleBookingId = null))
+                    call.respondRedirect("/profile?message=Reschedule%20Successful")
+                } else {
+                    call.respondRedirect("/profile?message=Reschedule%20Failed")
+                }
             } else {
-                call.respondRedirect("/")
+                val userID = UserDAO.getUserID(session.username)
+                val isSuccess = UserDAO.createBooking(userID, session.username, allFlightIds, totalPrice, passengers)
+                
+                if (isSuccess) {
+                    val totalPriceFormatted = "%.2f".format(totalPrice)
+                    call.respondRedirect("/payment?totalPrice=$totalPriceFormatted")
+                } else {
+                    call.respondRedirect("/?error=ProcessFailed")
+                }
             }
         }
 
@@ -798,5 +807,31 @@ fun Application.configureRouting() {
                 ),
             )
         }
+
+        get("/reschedule/start") {
+            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull()
+            if (bookingId == null) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val oldBooking = UserDAO.getBookingForReschedule(bookingId) 
+    
+            if (oldBooking != null) {
+                val currentSession = call.sessions.get<UserSession>()
+                if (currentSession != null) {
+                    call.sessions.set(currentSession.copy(rescheduleBookingId = bookingId))
+                }
+
+                val depId = oldBooking["origin"]
+                val destId = oldBooking["destination"]
+        
+                call.respondRedirect("/?departure=$depId&destination=$destId&departureLabel=$depId&destinationLabel=$destId")
+            } else {
+                println("DEBUG: Could not find booking #$bookingId for reschedule.")
+                call.respondRedirect("/")
+            }
+        }
+
     }
 }
