@@ -226,9 +226,11 @@ fun Application.configureRouting() {
 
         get("/") {
             val session = call.sessions.get<UserSession>()
+            val userId = session?.let { UserDAO.getUserID(it.username) } ?: -1
+    
+            val userNotifications = if (userId != -1) UserDAO.getUserNotifications(userId) else emptyList()
 
             if (session != null && session.isAdmin) {
-
                 val filterDate = call.request.queryParameters["filterDate"]
                 val filterUsername = call.request.queryParameters["filterUsername"]
                 val filterStatus = call.request.queryParameters["filterStatus"]
@@ -242,7 +244,9 @@ fun Application.configureRouting() {
                 val recentBookings = AdminDAO.getRecentBookings()
                 val recentCancellations = AdminDAO.getRecentCancellations()
                 val upcomingFlights = AdminDAO.getUpcomingFlights()
-                val totalUsers = AdminDAO.getTotalUsers()
+        
+                val totalUsersCount = AdminDAO.getTotalUsers() 
+                val pendingRequests = AdminDAO.getPendingChangeRequests()
 
                 val bookingsPerFlightDate = call.request.queryParameters["bpfDate"]
                 val routesStartDate = call.request.queryParameters["routesStart"]
@@ -264,8 +268,6 @@ fun Application.configureRouting() {
 
                 val flightDateRaw = call.request.queryParameters["flightDate"]
                 val flightNumber = call.request.queryParameters["flightNumber"]
-
-                // Default to today if no date supplied — avoids loading all flights at once
                 val flightDate = if (flightDateRaw.isNullOrEmpty()) LocalDate.now().toString() else flightDateRaw
 
                 val trackedFlights = AdminDAO.trackFlights(
@@ -277,52 +279,53 @@ fun Application.configureRouting() {
 
                 call.respondTemplate(
                     "adminHome.peb",
-                    call.nonNullSessionData() +
-                        mapOf(
-                            "trackedReservations" to trackedResults,
-                            "trackedFlights" to trackedFlights,
-                            "lastFilterDate" to (filterDate ?: ""),
-                            "lastFilterUsername" to (filterUsername ?: ""),
-                            "lastFilterStatus" to (filterStatus ?: ""),
-                            "lastFlightDate" to flightDate,
-                            "lastFlightNumber" to (flightNumber ?: ""),
-                            "flightPrevDate" to (adjacentDates["prevDate"] ?: ""),
-                            "flightNextDate" to (adjacentDates["nextDate"] ?: ""),
-                            //original - joe 
-                            "recentBookings" to recentBookings,
-                            "recentCancellations" to recentCancellations,
-                            "upcomingFlights" to upcomingFlights,
-                            "totalUsers" to totalUsers,
-                            "bookingsPerFlight" to bookingsPerFlight,
-                            "popularRoutes" to popularRoutes,
-                            "peakBookingTimes" to peakBookingTimes,
-                            "lastBpfDate" to (bookingsPerFlightDate ?: ""),
-                            "lastRoutesStart" to (routesStartDate ?: ""),
-                            "lastRoutesEnd" to (routesEndDate ?: ""),
+                    call.nonNullSessionData() + mapOf(
+                        "trackedReservations" to trackedResults,
+                        "trackedFlights" to trackedFlights,
+                        "lastFilterDate" to (filterDate ?: ""),
+                        "lastFilterUsername" to (filterUsername ?: ""),
+                        "lastFilterStatus" to (filterStatus ?: ""),
+                        "lastFlightDate" to flightDate,
+                        "lastFlightNumber" to (flightNumber ?: ""),
+                        "flightPrevDate" to (adjacentDates["prevDate"] ?: ""),
+                        "flightNextDate" to (adjacentDates["nextDate"] ?: ""),
+                        "recentBookings" to recentBookings,
+                        "recentCancellations" to recentCancellations,
+                        "upcomingFlights" to upcomingFlights,
+                        "totalUsers" to totalUsersCount,
+                        "pendingRequests" to pendingRequests,
+                        "bookingsPerFlight" to bookingsPerFlight,
+                        "popularRoutes" to popularRoutes,
+                        "peakBookingTimes" to peakBookingTimes,
+                        "lastBpfDate" to (bookingsPerFlightDate ?: ""),
+                        "lastRoutesStart" to (routesStartDate ?: ""),
+                        "lastRoutesEnd" to (routesEndDate ?: ""),
+                        "notifications" to userNotifications,
                             "lastFilterSeason" to (filterSeason ?: "")
-                        )
+                    )
                 )
             } else {
                 val dep = call.request.queryParameters["departure"] ?: ""
                 val dest = call.request.queryParameters["destination"] ?: ""
                 val depLabel = call.request.queryParameters["departureLabel"] ?: ""
                 val destLabel = call.request.queryParameters["destinationLabel"] ?: ""
-                
+        
                 call.respondTemplate(
                     "searchFlight.peb", 
                     call.nonNullSessionData() + mapOf(
                         "departure" to dep,
                         "destination" to dest,
                         "departureLabel" to depLabel,
-                        "destinationLabel" to destLabel
+                        "destinationLabel" to destLabel,
+                        "notifications" to userNotifications
                     )
                 )
             }
 
-            if (session != null && session.message.isNotEmpty()) {
-                call.sessions.set(session.copy(message = ""))
-            }
-        }
+    if (session != null && session.message.isNotEmpty()) {
+        call.sessions.set(session.copy(message = ""))
+    }
+}
 
         get("/login") {
             // get Referer, if empty then go to home page

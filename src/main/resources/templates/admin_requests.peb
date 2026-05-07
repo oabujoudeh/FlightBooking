@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="admin-container" style="padding: 40px; max-width: 1000px; margin: 0 auto;">
-    <h1 style="margin-bottom: 30px;">✈️ Passenger Info Change Requests</h1>
+    <h1 style="margin-bottom: 30px;">Passenger Info Change Requests</h1>
 
     <div class="table-container" style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -49,7 +49,7 @@
                 {% else %}
                 <tr>
                     <td colspan="4" style="padding: 40px; text-align: center; color: #6b7280;">
-                        🎉 No pending requests. All caught up!
+                        No pending requests. All caught up!
                     </td>
                 </tr>
                 {% endfor %}

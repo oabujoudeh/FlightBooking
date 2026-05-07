@@ -1003,5 +1003,32 @@ object UserDAO{
             false 
         }
     }
+
+    fun getUserNotifications(userId: Int): List<Map<String, Any>> {
+        val sql = """
+            SELECT change_to, change_type, status 
+            FROM change_requests 
+            WHERE user_id = ? AND status != 'pending'
+        """
+        val notifications = mutableListOf<Map<String, Any>>()
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userId)
+                    val rs = stmt.executeQuery()
+                    while (rs.next()) {
+                        notifications.add(mapOf(
+                            "content" to rs.getString("change_to"),
+                            "type" to rs.getString("change_type"),
+                            "status" to rs.getString("status")
+                        ))
+                    }
+                }
+            }
+         notifications
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
         
 }
