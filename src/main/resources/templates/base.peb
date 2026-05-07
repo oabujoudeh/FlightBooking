@@ -75,26 +75,67 @@ function toggleNoti() {
     var box = document.getElementById('noti-box');
     if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
 }
+
 window.onclick = function(event) {
     if (!event.target.closest('.navbar')) {
         var box = document.getElementById('noti-box');
         if (box) box.style.display = 'none';
     }
 }
+
+
 function markRead(index) {
-    document.getElementById('noti-item-' + index).style.opacity = '0.4';
-    var btn = document.getElementById('read-btn-' + index);
-    btn.textContent = '✓';
-    btn.disabled = true;
-    if (document.querySelectorAll('[id^="read-btn-"]:not(:disabled)').length === 0) {
-        document.getElementById('noti-dot').style.display = 'none';
+    const item = document.getElementById('noti-item-' + index);
+    if (!item) return;
+
+
+    const content = item.querySelector('span').innerText;
+
+
+    let dismissed = JSON.parse(localStorage.getItem('dismissed_notis') || '[]');
+    if (!dismissed.includes(content)) {
+        dismissed.push(content);
+        localStorage.setItem('dismissed_notis', JSON.stringify(dismissed));
+    }
+
+
+    item.remove();
+
+
+    updateUIState();
+}
+
+
+function updateUIState() {
+    const dismissed = JSON.parse(localStorage.getItem('dismissed_notis') || '[]');
+    const items = document.querySelectorAll('[id^="noti-item-"]');
+    
+
+    items.forEach(item => {
+        const content = item.querySelector('span').innerText;
+        if (dismissed.includes(content)) {
+            item.remove();
+        }
+    });
+
+
+    const remaining = document.querySelectorAll('[id^="noti-item-"]');
+    const dot = document.getElementById('noti-dot');
+    
+    if (remaining.length > 0) {
+        if (dot) dot.style.display = 'block';
+    } else {
+        if (dot) dot.style.display = 'none';
+
+        const container = document.querySelector('#noti-box > div');
+        if (container && !container.querySelector('p')) {
+            container.innerHTML = '<p style="color: #94a3b8; font-size: 13px; text-align: center; margin: 16px 0;">No notifications</p>';
+        }
     }
 }
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.querySelectorAll('[id^="noti-item-"]').length > 0) {
-        document.getElementById('noti-dot').style.display = 'block';
-    }
-});
+
+
+document.addEventListener('DOMContentLoaded', updateUIState);
 </script>
 <main id="main-content">
     {% block content %}{% endblock %}
