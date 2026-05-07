@@ -761,8 +761,6 @@ fun Application.configureRouting() {
                 return@post
             }
 
-            // Calculate total price:
-            // Each leg's per-person price × total passengers (adults + children, no discount)
             var totalPrice = 0.0
             val allFlightIds = mutableListOf<Int>()
 
