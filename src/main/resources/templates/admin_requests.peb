@@ -58,7 +58,7 @@
     </div>
     
     <div style="margin-top: 20px;">
-        <a href="/admin/dashboard" style="text-decoration: none; color: #4b5563;">← Back to Dashboard</a>
+        <a href="/" style="text-decoration: none; color: #4b5563;">← Back to Dashboard</a>
     </div>
 </div>
 {% endblock %}
