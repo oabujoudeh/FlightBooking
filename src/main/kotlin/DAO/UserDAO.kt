@@ -7,6 +7,26 @@ import java.time.ZonedDateTime
 
 object UserDAO{
 
+    fun getUserDetails(userId: Int): User? {
+        val sql = "SELECT first_name, last_name, email FROM users WHERE user_id = ?"
+        return Database.getConnection().use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setInt(1, userId)
+                val rs = stmt.executeQuery()
+                if (rs.next()){
+                    User(
+                        firstName = rs.getString("first_name"),
+                        lastName = rs.getString("last_name"),
+                        email = rs.getString("email"),
+                        passwordHash = ""
+                    )
+                }else null
+
+            }
+
+        }
+    }
+
     /**
     * Checks if an email is already in the users table.
     *
@@ -71,6 +91,8 @@ object UserDAO{
             false
         }
     }
+
+
 
 
     /**
@@ -643,6 +665,147 @@ object UserDAO{
             e.printStackTrace()
             0
         }
-        }   
+        }  
+
+    fun getBookingForReschedule(bookingId: Int): Map<String, Any>? {
+        val sql = """
+            SELECT r.departure_airport, r.arrival_airport, b.total_price, 
+                (SELECT COUNT(*) FROM booking_passengers WHERE booking_id = b.booking_id) as passenger_count
+            FROM bookings b
+            JOIN booking_flights bf ON b.booking_id = bf.booking_id
+            JOIN flights f ON bf.flight_id = f.flight_id
+            JOIN routes r ON f.route_id = r.route_id
+            WHERE b.booking_id = ?
+            LIMIT 1
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, bookingId)
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) {
+                            mapOf(
+                                "origin" to rs.getString("departure_airport"),
+                                "destination" to rs.getString("arrival_airport"),
+                                "oldPrice" to rs.getDouble("total_price"),
+                                "passengerCount" to rs.getInt("passenger_count")
+                            )
+                        } else null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun executeReschedule(
+        bookingId: Int, 
+        newFlightId: Int, 
+        newTotalPrice: Double, 
+        passengerSeatSelections: Map<Int, Int> 
+        ): Boolean {
+            val conn = Database.getConnection()
+            return try {
+                conn.setAutoCommit(false) 
+
+                val releaseOldSeats = """
+                    UPDATE seats SET is_occupied = 0 
+                    WHERE seat_id IN (SELECT seat_id FROM booking_passengers WHERE booking_id = ?)
+                """
+                conn.prepareStatement(releaseOldSeats).use { stmt ->
+                    stmt.setInt(1, bookingId)
+                    stmt.executeUpdate()
+                }
+
+                val updateBooking = "UPDATE bookings SET total_price = ?, status = 'confirmed' WHERE booking_id = ?"
+                conn.prepareStatement(updateBooking).use { stmt ->
+                    stmt.setDouble(1, newTotalPrice)
+                    stmt.setInt(2, bookingId)
+                    stmt.executeUpdate()
+                }
+
+                val updateFlight = "UPDATE booking_flights SET flight_id = ? WHERE booking_id = ?"
+                conn.prepareStatement(updateFlight).use { stmt ->
+                    stmt.setInt(1, newFlightId)
+                    stmt.setInt(2, bookingId)
+                    stmt.executeUpdate()
+                }
+
+                val updatePassengerSeat = "UPDATE booking_passengers SET seat_id = ? WHERE booking_id = ? AND passenger_id = ?"
+                val lockNewSeat = "UPDATE seats SET is_occupied = 1 WHERE seat_id = ?"
+        
+                passengerSeatSelections.forEach { (passengerId, newSeatId) ->
+
+                    conn.prepareStatement(updatePassengerSeat).use { stmt ->
+                        stmt.setInt(1, newSeatId)
+                        stmt.setInt(2, bookingId)
+                        stmt.setInt(3, passengerId)
+                        stmt.executeUpdate()
+                    }
+
+                    conn.prepareStatement(lockNewSeat).use { stmt ->
+                        stmt.setInt(1, newSeatId)
+                        stmt.executeUpdate()
+                    }
+                }
+
+                conn.commit()
+                true
+            } catch (e: Exception) {
+                conn.rollback()
+                println("ExecuteReschedule Error:")
+                e.printStackTrace()
+                false
+            } finally {
+                conn.setAutoCommit(true)
+                conn.close()
+            }
+    }
+
+    fun getPassengerIdsByBooking(bookingId: Int): List<Int> {
+        val ids = mutableListOf<Int>()
+        val sql = "SELECT passenger_id FROM booking_passengers WHERE booking_id = ? ORDER BY passenger_id"
+        Database.getConnection().use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setInt(1, bookingId)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) { ids.add(rs.getInt("passenger_id")) }
+                }
+            }
+        }
+        return ids
+    }
+
+    fun updateUserEmail(userId: Int, newEmail: String): Boolean {
+        val sql = "UPDATE users SET email = ? WHERE user_id = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, newEmail)
+                    stmt.setInt(2, userId)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) { false }
+    }
+
+    fun insertChangeRequest(userId: Int, changeTo: String, type: String): Boolean {
+        val sql = "INSERT INTO change_requests (user_id, change_to, change_type, status) VALUES (?, ?, ?, 'pending')"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, userId)
+                    stmt.setString(2, changeTo)
+                    stmt.setString(3, type)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) { 
+            e.printStackTrace()
+            false 
+        }
+    }
         
 }

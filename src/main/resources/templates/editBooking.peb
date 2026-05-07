@@ -44,6 +44,18 @@
                 </div>
             {% endfor %}
 
+            <a href="/update-passenger-info?bookingId={{ booking.bookingId }}" 
+            class="primary-btn" 
+            style="display: block; text-align: center; text-decoration: none; background-color: #10b981; color: white; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px;">
+                Update Passenger Info
+            </a>
+
+            <a href="/reschedule/start?bookingId={{ booking.bookingId }}" 
+               class="primary-btn" 
+               style="display: block; text-align: center; text-decoration: none; background-color: #2563eb; color: white; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px;">
+                Reschedule Flight
+            </a>
+
             <form method="post" action="/cancel-booking">
                 <input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
 

@@ -1,6 +1,7 @@
 package com.flightbooking
 
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.http.*
 import io.ktor.http.ContentType
 import io.ktor.server.application.Application
@@ -277,7 +278,20 @@ fun Application.configureRouting() {
                         )
                 )
             } else {
-                call.respondTemplate("searchFlight.peb", call.nonNullSessionData())
+                val dep = call.request.queryParameters["departure"] ?: ""
+                val dest = call.request.queryParameters["destination"] ?: ""
+                val depLabel = call.request.queryParameters["departureLabel"] ?: ""
+                val destLabel = call.request.queryParameters["destinationLabel"] ?: ""
+                
+                call.respondTemplate(
+                    "searchFlight.peb", 
+                    call.nonNullSessionData() + mapOf(
+                        "departure" to dep,
+                        "destination" to dest,
+                        "departureLabel" to depLabel,
+                        "destinationLabel" to destLabel
+                    )
+                )
             }
 
             if (session != null && session.message.isNotEmpty()) {
@@ -374,6 +388,8 @@ fun Application.configureRouting() {
                 val userID = UserDAO.getUserID(username)
                 val bookings = UserDAO.getBookings(userID)
                 val loyaltyPoints = UserDAO.getLoyaltyPoints(userID)
+                val userDetails = UserDAO.getUserDetails(userID)
+
 
                 call.respondTemplate(
                     "profile.peb",
@@ -381,6 +397,9 @@ fun Application.configureRouting() {
                         mapOf(
                             "bookings" to bookings,
                             "loyaltyPoints" to loyaltyPoints,
+                            "firstName" to (userDetails?.firstName ?: ""),
+                            "lastName" to (userDetails?.lastName ?: ""),
+                            "email" to (userDetails?.email ?: "")
                         ),
                 )        
             } else {
@@ -773,8 +792,7 @@ fun Application.configureRouting() {
             // Each leg's per-person price × total passengers (adults + children, no discount)
             var totalPrice = 0.0
             val allFlightIds = mutableListOf<Int>()
-
-            for (id in outboundFlightIds) {
+            for (id in (outboundFlightIds + (params["returnFlightIdsRaw"]?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()))) {
                 val flight = FlightDAO.getFlightOverview(id) ?: continue
                 totalPrice += getPriceByCabin(flight, outboundCabin) * totalPassengers
                 allFlightIds.add(id)
@@ -787,6 +805,12 @@ fun Application.configureRouting() {
 
             val totalSteps = outboundFlightIds.size + returnFlightIds.size
             val passengers = mutableListOf<Map<String, String>>()
+            val rescheduleSeatMap = mutableMapOf<Int, Int>()
+            val rescheduleId = session.rescheduleBookingId
+            
+            val oldPassengerIds = if (rescheduleId != null) {
+                UserDAO.getPassengerIdsByBooking(rescheduleId)
+            } else emptyList()
 
             for (i in 0 until adults) {
                 val seats = (1..totalSteps).map { step ->
@@ -885,5 +909,88 @@ fun Application.configureRouting() {
                 ),
             )
         }
+
+        get("/reschedule/start") {
+            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull()
+            if (bookingId == null) {
+                call.respondRedirect("/")
+                return@get
+            }
+
+            val oldBooking = UserDAO.getBookingForReschedule(bookingId) 
+    
+            if (oldBooking != null) {
+                val currentSession = call.sessions.get<UserSession>()
+                if (currentSession != null) {
+                    call.sessions.set(currentSession.copy(rescheduleBookingId = bookingId))
+                }
+
+                val depId = oldBooking["origin"]
+                val destId = oldBooking["destination"]
+        
+                call.respondRedirect("/?departure=$depId&destination=$destId&departureLabel=$depId&destinationLabel=$destId")
+            } else {
+                println("DEBUG: Could not find booking #$bookingId for reschedule.")
+                call.respondRedirect("/")
+            }
+        }
+
+        get("/update-passenger-info") {
+            val session = call.sessions.get<UserSession>() ?: return@get call.respondRedirect("/login")
+            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull() ?: return@get call.respondRedirect("/profile")
+   
+            val userId = UserDAO.getUserID(session.username)
+    
+            val booking = UserDAO.getBookingById(bookingId, userId)
+    
+            if (booking != null) {
+                call.respondTemplate("update_info.peb", mapOf("booking" to booking))
+            } else {
+                call.respondRedirect("/profile")
+            }
+        }
+
+        post("/submit-info-request") {
+            val session = call.sessions.get<UserSession>() ?: return@post call.respondRedirect("/login")
+            val userId = UserDAO.getUserID(session.username)
+            val params = call.receiveParameters()
+    
+            val newName = params["newName"]?.trim() ?: ""
+            val newId = params["newId"]?.trim() ?: ""
+    
+            val combinedContent = "$newName $newId"
+    
+            val success = UserDAO.insertChangeRequest(userId, combinedContent, "personal_info")
+    
+            if (success) {
+                call.respondRedirect("/profile?requestSuccess=true")
+            } else {
+                call.respondText("Error: Could not submit request.")
+            }
+        }
+
+        // 1. 管理员审批主页
+get("/admin/pending-requests") {
+    // 权限检查 (假设你已经有检查 admin 的逻辑)
+    val requests = AdminDAO.getPendingChangeRequests()
+    call.respondTemplate("admin_requests.peb", mapOf("requests" to requests))
+}
+
+// 2. 处理审批动作
+post("/admin/handle-request") {
+    val params = call.receiveParameters()
+    val userId = params["userId"]?.toIntOrNull() ?: return@post call.respondRedirect("/admin/pending-requests")
+    val action = params["action"]
+
+    if (action == "approve") {
+        AdminDAO.approveChangeRequest(userId)
+    } else if (action == "reject") {
+        AdminDAO.rejectChangeRequest(userId)
+    }
+    
+    call.respondRedirect("/admin/pending-requests")
+}
+
+
     }
 }

@@ -501,7 +501,13 @@
     <!-- ── Header ── -->
     <div class="admin-header">
         <h1>✈ Admin Dashboard</h1>
-        <span class="badge-total">{{ totalUsers }} Registered Users</span>
+
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="/admin/pending-requests" class="btn-toggle" style="text-decoration: none; background: var(--brand-accent); color: white; border: none;">
+                <i style="font-style: normal; margin-right: 5px;">📋</i> Pending Requests
+            </a>
+            <span class="badge-total">{{ totalUsers }} Registered Users</span>
+        </div>
     </div>
 
     <!-- ── Charts (3 equal columns) ── -->
