@@ -24,6 +24,7 @@ import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import java.time.LocalDate
+import java.time.LocalTime
 
 
 /**
@@ -87,6 +88,30 @@ private fun getPriceByCabin(flight: Flight, cabin: String): Double {
     } ?: 0.0
 }
 
+
+/**
+ * Filters out flights that have already departed if the date is today.
+ */
+/**
+ * Filters out flights that have already departed, using the client's local time.
+ * clientTimeStr: "HH:mm" sent from the browser, or null to skip filtering.
+ */
+private fun filterDepartedFlights(
+    flights: List<FlightDisplayDTO>,
+    date: LocalDate,
+    clientTimeStr: String?
+): List<FlightDisplayDTO> {
+    if (clientTimeStr.isNullOrEmpty()) return flights
+    return try {
+        val clientDate = LocalDate.now() // server date as proxy; same-day check done client-side
+        val clientTime = LocalTime.parse(clientTimeStr)
+        // Only filter if the searched date is today (client already sends time only for today)
+        if (date != LocalDate.now()) return flights
+        flights.filter { it.departureTime > clientTime }
+    } catch (e: Exception) {
+        flights // if parsing fails, show all flights
+    }
+}
 
 /**
 * Sets up the main routes for the app.
@@ -504,11 +529,18 @@ fun Application.configureRouting() {
 
             val depLocalDate = LocalDate.parse(departureDate)
 
-            val combinedFlights = FlightDAO.getAvailableFlights(departure, destination, depLocalDate)
+            val clientTime = params["clientTime"]
+
+            val combinedFlights = filterDepartedFlights(
+                FlightDAO.getAvailableFlights(departure, destination, depLocalDate), depLocalDate, clientTime
+            )
 
             var returnFlightsList = emptyList<FlightDisplayDTO>()
             if (tripType != "oneway" && returnDate != null) {
-                returnFlightsList = FlightDAO.getAvailableFlights(destination, departure, LocalDate.parse(returnDate))
+                val retDate = LocalDate.parse(returnDate)
+                returnFlightsList = filterDepartedFlights(
+                    FlightDAO.getAvailableFlights(destination, departure, retDate), retDate, clientTime
+                )
             }
 
             // Prepare Template Data
@@ -552,6 +584,7 @@ fun Application.configureRouting() {
             val adults = params["adults"]?.toIntOrNull() ?: 1
             val children = params["children"]?.toIntOrNull() ?: 0
             val totalPassengers = adults + children
+            val tripType = if (params["returnFlight"].isNullOrEmpty()) "oneway" else "return"
 
             if (outboundRaw.isEmpty()) {
                 call.respondRedirect("/")
@@ -681,6 +714,7 @@ fun Application.configureRouting() {
                 "outboundFlightIdsRaw" to outboundFlightIds.joinToString(","),
                 "returnFlightIdsRaw" to returnFlightIds.joinToString(","),
                 "returnCabinVal" to (returnCabin ?: ""),
+                "tripType" to tripType,
                 // Preview price shown on the confirmation page before final booking
                 "totalPrice" to "%.2f".format(previewTotalPrice)
             )
@@ -774,6 +808,7 @@ fun Application.configureRouting() {
             val adults        = params["adults"]?.toIntOrNull()   ?: 1
             val children      = params["children"]?.toIntOrNull() ?: 0
             val totalPassengers = adults + children
+            val tripType      = params["tripType"] ?: "oneway"
 
             // Read contact details
             val contactEmail = params["contactEmail"] ?: ""
@@ -792,7 +827,8 @@ fun Application.configureRouting() {
             // Each leg's per-person price × total passengers (adults + children, no discount)
             var totalPrice = 0.0
             val allFlightIds = mutableListOf<Int>()
-            for (id in (outboundFlightIds + (params["returnFlightIdsRaw"]?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()))) {
+
+            for (id in outboundFlightIds) {
                 val flight = FlightDAO.getFlightOverview(id) ?: continue
                 totalPrice += getPriceByCabin(flight, outboundCabin) * totalPassengers
                 allFlightIds.add(id)
@@ -847,6 +883,7 @@ fun Application.configureRouting() {
                     passengers   = passengers,
                     contactEmail = contactEmail,
                     contactPhone = contactPhone,
+                    tripType     = tripType,
                 )
             ))
 
@@ -874,6 +911,29 @@ fun Application.configureRouting() {
                 return@post
             }
 
+            // Check if this is a reschedule payment
+            val pendingReschedule = session.pendingReschedule
+            if (pendingReschedule != null) {
+                val success = UserDAO.executeReschedule(
+                    bookingId               = pendingReschedule.bookingId,
+                    newFlightIds            = pendingReschedule.newFlightIds,
+                    newTotalPrice           = pendingReschedule.newTotalPrice,
+                    passengerSeatSelections = pendingReschedule.passengerSeatSelections
+                )
+                // Clear both reschedule session fields
+                call.sessions.set(session.copy(
+                    pendingReschedule    = null,
+                    rescheduleBookingId  = null
+                ))
+                if (success) {
+                    call.respondRedirect("/edit-booking?id=${pendingReschedule.bookingId}&rescheduled=true")
+                } else {
+                    call.respondRedirect("/")
+                }
+                return@post
+            }
+
+            // Normal booking payment
             val pending = session.pendingBooking
             if (pending == null) {
                 call.respondRedirect("/")
@@ -889,6 +949,7 @@ fun Application.configureRouting() {
                 pending.passengers,
                 pending.contactEmail,
                 pending.contactPhone,
+                pending.tripType,
             )
 
             // Clear pending booking from session regardless of outcome
@@ -910,28 +971,312 @@ fun Application.configureRouting() {
             )
         }
 
-        get("/reschedule/start") {
-            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull()
-            if (bookingId == null) {
-                call.respondRedirect("/")
+        // Step 1: Modal date picker submits here → search flights with reschedule flags
+        get("/reschedule/flights") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
                 return@get
             }
 
-            val oldBooking = UserDAO.getBookingForReschedule(bookingId) 
-    
-            if (oldBooking != null) {
-                val currentSession = call.sessions.get<UserSession>()
-                if (currentSession != null) {
-                    call.sessions.set(currentSession.copy(rescheduleBookingId = bookingId))
-                }
+            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull()
+            if (bookingId == null) {
+                call.respondRedirect("/profile")
+                return@get
+            }
 
-                val depId = oldBooking["origin"]
-                val destId = oldBooking["destination"]
-        
-                call.respondRedirect("/?departure=$depId&destination=$destId&departureLabel=$depId&destinationLabel=$destId")
+            val departureDate = call.request.queryParameters["departureDate"]
+            if (departureDate == null) {
+                call.respondRedirect("/profile")
+                return@get
+            }
+
+            val returnDate = call.request.queryParameters["returnDate"] // null for oneway
+
+            val oldBooking = UserDAO.getBookingForReschedule(bookingId)
+            if (oldBooking == null) {
+                call.respondRedirect("/profile")
+                return@get
+            }
+
+            // Save reschedule booking ID in session
+            call.sessions.set(session.copy(rescheduleBookingId = bookingId))
+
+            val origin         = oldBooking["origin"] as String
+            val destination    = oldBooking["destination"] as String
+            val oldPrice       = oldBooking["oldPrice"] as Double
+            val passengerCount = oldBooking["passengerCount"] as Int
+            val outboundCabin  = oldBooking["outboundCabin"] as? String ?: "economy"
+            val returnCabin    = oldBooking["returnCabin"] as? String ?: outboundCabin
+
+            // Get original flight IDs to exclude them from results
+            val originalFlightIds = UserDAO.getFlightIdsForBooking(bookingId)
+
+            val clientTime = call.request.queryParameters["clientTime"]
+
+            val depLocalDate = LocalDate.parse(departureDate)
+            val combinedFlights = filterDepartedFlights(
+                FlightDAO.getAvailableFlights(origin, destination, depLocalDate), depLocalDate, clientTime
+            ).filter { flight ->
+                flight.flightId.split("_").mapNotNull { it.toIntOrNull() }.none { it in originalFlightIds }
+            }
+
+            val returnFlights = if (returnDate != null) {
+                val retDate = LocalDate.parse(returnDate)
+                filterDepartedFlights(
+                    FlightDAO.getAvailableFlights(destination, origin, retDate), retDate, clientTime
+                ).filter { flight ->
+                    flight.flightId.split("_").mapNotNull { it.toIntOrNull() }.none { it in originalFlightIds }
+                }
+            } else combinedFlights.take(0)
+
+            val tripType = if (returnDate != null) "return" else "oneway"
+
+            call.respondTemplate(
+                "flights.peb",
+                call.nonNullSessionData() + mapOf(
+                    "departure"      to origin,
+                    "destination"    to destination,
+                    "departureDate"  to departureDate,
+                    "returnDate"     to (returnDate ?: ""),
+                    "tripType"       to tripType,
+                    "adults"         to passengerCount,
+                    "children"       to 0,
+                    "combinedFlights" to combinedFlights,
+                    "returnFlights"  to returnFlights,
+                    // Reschedule-specific flags passed through to the form
+                    "reschedule"          to true,
+                    "bookingId"           to bookingId,
+                    "oldPrice"            to oldPrice,
+                    "passengerCount"      to passengerCount,
+                    "rescheduleCabin"     to outboundCabin,
+                    "rescheduleReturnCabin" to returnCabin
+                )
+            )
+        }
+
+        // Step 2: Flight selected → build seat selection page with price diff
+        post("/reschedule/select-seats") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
+                return@post
+            }
+
+            val params = call.receiveParameters()
+            val bookingId      = params["bookingId"]?.toIntOrNull()      ?: return@post call.respondRedirect("/profile")
+            val oldPrice       = params["oldPrice"]?.toDoubleOrNull()    ?: 0.0
+            val passengerCount = params["passengerCount"]?.toIntOrNull() ?: 1
+
+            // Parse outbound selection: "flightId_cabin" or "flightId1_flightId2_cabin"
+            val outboundRaw    = params["outboundFlight"]                ?: return@post call.respondRedirect("/profile")
+            val outboundParts  = outboundRaw.split("_")
+            val outboundCabin  = outboundParts.last()
+            val outboundFlightIds = outboundParts.dropLast(1).mapNotNull { it.toIntOrNull() }
+
+            if (outboundFlightIds.isEmpty()) {
+                call.respondRedirect("/profile")
+                return@post
+            }
+
+            // Parse optional return selection
+            val returnRaw     = params["returnFlight"]
+            val returnParts   = returnRaw?.split("_")
+            val returnCabin   = returnParts?.last()
+            val returnFlightIds = returnParts?.dropLast(1)?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+
+            // Calculate new total price across all legs × passengers
+            var newTotalPrice = 0.0
+            for (id in outboundFlightIds) {
+                val flight = FlightDAO.getFlightOverview(id) ?: continue
+                newTotalPrice += getPriceByCabin(flight, outboundCabin) * passengerCount
+            }
+            for (id in returnFlightIds) {
+                val flight = FlightDAO.getFlightOverview(id) ?: continue
+                newTotalPrice += getPriceByCabin(flight, returnCabin ?: "economy") * passengerCount
+            }
+
+            val priceDiff   = newTotalPrice - oldPrice          // negative = cheaper, positive = surcharge
+            val extraCharge = if (priceDiff > 0) priceDiff else 0.0
+            val isFree      = priceDiff <= 0
+
+            // Build flight steps (same logic as /book-flights) for seat map
+            val primaryOutboundFlight = FlightDAO.getFlightOverview(outboundFlightIds.first())
+                ?: return@post call.respondRedirect("/profile")
+
+            val flightSteps = mutableListOf<Map<String, Any>>()
+
+            if (outboundFlightIds.size == 2) {
+                val leg2 = FlightDAO.getFlightOverview(outboundFlightIds[1])
+                flightSteps.add(mapOf(
+                    "stepIndex" to 1, "label" to "Outbound – Leg 1",
+                    "flightId"  to outboundFlightIds[0], "cabin" to outboundCabin,
+                    "deckData"  to buildDeckData(outboundFlightIds[0], primaryOutboundFlight.aircraftType)
+                ))
+                if (leg2 != null) flightSteps.add(mapOf(
+                    "stepIndex" to 2, "label" to "Outbound – Leg 2",
+                    "flightId"  to outboundFlightIds[1], "cabin" to outboundCabin,
+                    "deckData"  to buildDeckData(outboundFlightIds[1], leg2.aircraftType)
+                ))
             } else {
-                println("DEBUG: Could not find booking #$bookingId for reschedule.")
-                call.respondRedirect("/")
+                flightSteps.add(mapOf(
+                    "stepIndex" to 1, "label" to "Outbound",
+                    "flightId"  to outboundFlightIds[0], "cabin" to outboundCabin,
+                    "deckData"  to buildDeckData(outboundFlightIds[0], primaryOutboundFlight.aircraftType)
+                ))
+            }
+
+            if (returnFlightIds.isNotEmpty()) {
+                val primaryReturn = FlightDAO.getFlightOverview(returnFlightIds.first())
+                if (primaryReturn != null) {
+                    val base = flightSteps.size + 1
+                    if (returnFlightIds.size == 2) {
+                        val retLeg2 = FlightDAO.getFlightOverview(returnFlightIds[1])
+                        flightSteps.add(mapOf(
+                            "stepIndex" to base, "label" to "Return - Leg 1",
+                            "flightId"  to returnFlightIds[0], "cabin" to (returnCabin ?: "economy"),
+                            "deckData"  to buildDeckData(returnFlightIds[0], primaryReturn.aircraftType)
+                        ))
+                        if (retLeg2 != null) flightSteps.add(mapOf(
+                            "stepIndex" to base + 1, "label" to "Return - Leg 2",
+                            "flightId"  to returnFlightIds[1], "cabin" to (returnCabin ?: "economy"),
+                            "deckData"  to buildDeckData(returnFlightIds[1], retLeg2.aircraftType)
+                        ))
+                    } else {
+                        flightSteps.add(mapOf(
+                            "stepIndex" to base, "label" to "Return",
+                            "flightId"  to returnFlightIds[0], "cabin" to (returnCabin ?: "economy"),
+                            "deckData"  to buildDeckData(returnFlightIds[0], primaryReturn.aircraftType)
+                        ))
+                    }
+                }
+            }
+
+            // Fetch existing passengers so we pre-fill their names
+            val existingPassengers = UserDAO.getPassengersForBooking(bookingId)
+
+            val outboundLeg2Flight = if (outboundFlightIds.size == 2)
+                FlightDAO.getFlightOverview(outboundFlightIds[1]) else null
+
+            val primaryReturnFlight = if (returnFlightIds.isNotEmpty())
+                FlightDAO.getFlightOverview(returnFlightIds.first()) else null
+
+            val returnLeg2Flight = if (returnFlightIds.size == 2)
+                FlightDAO.getFlightOverview(returnFlightIds[1]) else null
+
+            val outboundLayoverDisplay = if (outboundLeg2Flight != null) {
+                val mins = java.time.Duration.between(
+                    primaryOutboundFlight.arrivalTime, outboundLeg2Flight.departureTime
+                ).toMinutes().toInt()
+                Utils.formatDuration(mins)
+            } else ""
+
+            val returnLayoverDisplay = if (primaryReturnFlight != null && returnLeg2Flight != null) {
+                val mins = java.time.Duration.between(
+                    primaryReturnFlight.arrivalTime, returnLeg2Flight.departureTime
+                ).toMinutes().toInt()
+                Utils.formatDuration(mins)
+            } else ""
+
+            val templateExtras = mutableMapOf<String, Any>(
+                "bookingId"              to bookingId,
+                "outboundFlightIdsRaw"   to outboundFlightIds.joinToString(","),
+                "returnFlightIdsRaw"     to returnFlightIds.joinToString(","),
+                "outboundCabin"          to outboundCabin,
+                "returnCabinVal"         to (returnCabin ?: ""),
+                "newTotalPrice"          to "%.2f".format(newTotalPrice),
+                "oldPrice"               to "%.2f".format(oldPrice),
+                "priceDiff"              to "%.2f".format(priceDiff),
+                "extraCharge"            to "%.2f".format(extraCharge),
+                "isFree"                 to isFree,
+                "flightSteps"            to flightSteps,
+                "totalSteps"             to flightSteps.size,
+                "passengers"             to existingPassengers,
+                "passengerCount"         to passengerCount,
+                "outboundFlight"         to Utils.flightToMap(primaryOutboundFlight),
+                "outboundLayoverDisplay" to outboundLayoverDisplay,
+                "returnLayoverDisplay"   to returnLayoverDisplay,
+                "returnCabin"            to (returnCabin ?: ""),
+            )
+            outboundLeg2Flight?.let  { templateExtras["outboundLeg2Flight"] = Utils.flightToMap(it) }
+            primaryReturnFlight?.let { templateExtras["returnFlight"]       = Utils.flightToMap(it) }
+            returnLeg2Flight?.let    { templateExtras["returnLeg2Flight"]   = Utils.flightToMap(it) }
+
+            call.respondTemplate("reschedule_seats.peb", call.nonNullSessionData() + templateExtras)
+        }
+
+        // Step 3: Seat selection submitted → execute the reschedule
+        post("/reschedule/confirm") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
+                return@post
+            }
+
+            val params        = call.receiveParameters()
+            val bookingId     = params["bookingId"]?.toIntOrNull()        ?: return@post call.respondRedirect("/profile")
+            val newTotalPrice = params["newTotalPrice"]?.toDoubleOrNull() ?: return@post call.respondRedirect("/profile")
+            val oldPrice      = params["oldPrice"]?.toDoubleOrNull()      ?: 0.0
+
+            // Collect all new flight IDs (outbound + return legs)
+            val outboundFlightIds = params["outboundFlightIdsRaw"]
+                ?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+            val returnFlightIds = params["returnFlightIdsRaw"]
+                ?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+            val allNewFlightIds = outboundFlightIds + returnFlightIds
+
+            if (allNewFlightIds.isEmpty()) {
+                call.respondRedirect("/profile")
+                return@post
+            }
+
+            // Collect all seat selections per passenger across all steps
+            // key format: seat_{passengerId}_step{N} e.g. "seat_26_step1"
+            // Result: Map<passengerId, comma-separated seats> e.g. {26 -> "3A,7A,16A,8A"}
+            val seatsByPassenger = mutableMapOf<Int, MutableMap<Int, String>>()
+            params.entries()
+                .filter { it.key.startsWith("seat_") && it.value.firstOrNull()?.isNotEmpty() == true }
+                .forEach { entry ->
+                    val key = entry.key  // e.g. "seat_26_step1"
+                    val seatNumber = entry.value.firstOrNull() ?: return@forEach
+                    // Extract passengerId and stepIndex from key
+                    val stepIndex = key.substringAfterLast("step").toIntOrNull() ?: return@forEach
+                    val passengerId = key.removePrefix("seat_").substringBefore("_step").toIntOrNull() ?: return@forEach
+                    seatsByPassenger.getOrPut(passengerId) { mutableMapOf() }[stepIndex] = seatNumber
+                }
+            // Convert to Map<passengerId, comma-separated seats in step order> e.g. {26 -> "3A,7A,16A,8A"}
+            val passengerSeatSelections = seatsByPassenger.mapValues { (_, stepMap) ->
+                stepMap.toSortedMap().values.joinToString(",")
+            }
+
+            val extraCharge = newTotalPrice - oldPrice
+
+            if (extraCharge > 0) {
+                // Store reschedule data in session and redirect to payment
+                call.sessions.set(session.copy(
+                    pendingReschedule = PendingReschedule(
+                        bookingId               = bookingId,
+                        newFlightIds            = allNewFlightIds,
+                        newTotalPrice           = newTotalPrice,
+                        passengerSeatSelections = passengerSeatSelections
+                    )
+                ))
+                val extraFormatted = "%.2f".format(extraCharge)
+                call.respondRedirect("/payment?totalPrice=$extraFormatted&reschedule=true")
+            } else {
+                // Free reschedule — execute immediately
+                val success = UserDAO.executeReschedule(
+                    bookingId               = bookingId,
+                    newFlightIds            = allNewFlightIds,
+                    newTotalPrice           = newTotalPrice,
+                    passengerSeatSelections = passengerSeatSelections
+                )
+                call.sessions.set(session.copy(rescheduleBookingId = null))
+                if (success) {
+                    call.respondRedirect("/edit-booking?id=$bookingId&rescheduled=true")
+                } else {
+                    call.respondTemplate("error.peb", mapOf("message" to "Reschedule failed. Please try again."))
+                }
             }
         }
 
@@ -969,27 +1314,26 @@ fun Application.configureRouting() {
             }
         }
 
-        // 1. 管理员审批主页
-get("/admin/pending-requests") {
-    // 权限检查 (假设你已经有检查 admin 的逻辑)
-    val requests = AdminDAO.getPendingChangeRequests()
-    call.respondTemplate("admin_requests.peb", mapOf("requests" to requests))
-}
+        // 1. Admin approval page
+        get("/admin/pending-requests") {
+            val requests = AdminDAO.getPendingChangeRequests()
+            call.respondTemplate("admin_requests.peb", mapOf("requests" to requests))
+        }
 
-// 2. 处理审批动作
-post("/admin/handle-request") {
-    val params = call.receiveParameters()
-    val userId = params["userId"]?.toIntOrNull() ?: return@post call.respondRedirect("/admin/pending-requests")
-    val action = params["action"]
+        // 2. processing approval
+        post("/admin/handle-request") {
+            val params = call.receiveParameters()
+            val userId = params["userId"]?.toIntOrNull() ?: return@post call.respondRedirect("/admin/pending-requests")
+            val action = params["action"]
 
-    if (action == "approve") {
-        AdminDAO.approveChangeRequest(userId)
-    } else if (action == "reject") {
-        AdminDAO.rejectChangeRequest(userId)
-    }
-    
-    call.respondRedirect("/admin/pending-requests")
-}
+            if (action == "approve") {
+                AdminDAO.approveChangeRequest(userId)
+            } else if (action == "reject") {
+                AdminDAO.rejectChangeRequest(userId)
+            }
+            
+            call.respondRedirect("/admin/pending-requests")
+        }
 
 
     }

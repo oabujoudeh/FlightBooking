@@ -74,6 +74,7 @@
                 </div>
             </div>
 
+            <input type="hidden" name="clientTime" id="clientTime">
             <button type="submit" class="primary-btn">Search Flights</button>
 
         </form>
@@ -176,6 +177,13 @@ const returnDate = document.getElementById("returnDate");
 
 departureDate.addEventListener("change", () => {
     returnDate.min = departureDate.value;
+});
+
+// Inject client local time on submit so server can filter departed flights
+document.querySelector('form').addEventListener('submit', function() {
+    const now = new Date();
+    document.getElementById('clientTime').value =
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 });
 
 // switch button

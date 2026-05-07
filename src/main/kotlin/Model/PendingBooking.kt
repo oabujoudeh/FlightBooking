@@ -10,4 +10,5 @@ data class PendingBooking(
     val passengers: List<Map<String, String>>,
     val contactEmail: String,
     val contactPhone: String,
+    val tripType: String = "oneway",
 )

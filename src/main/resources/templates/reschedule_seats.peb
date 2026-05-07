@@ -2,9 +2,9 @@
 
 {% block content %}
 
-<h1 class="sr-only">Complete Booking</h1>
+<h1 class="sr-only">Reschedule – Select Seats</h1>
 
-{# ── Booking Summary ── #}
+{# ── Flight Summary ── #}
 <div class="booking-summary">
 
     {# --- Outbound Card (single or connecting) --- #}
@@ -159,15 +159,6 @@
     </div>
     {% endif %}
 
-    <div class="price-summary-block">
-        <div class="price-summary-row">
-            <span class="price-summary-pax">{{ adults }} Adult{% if adults > 1 %}s{% endif %}{% if children > 0 %} + {{ children }} Child{% if children > 1 %}ren{% endif %}{% endif %}</span>
-            <span class="price-summary-total">£{{ totalPrice }}</span>
-        </div>
-        <div class="price-summary-label">Total price · all passengers · all flights</div>
-    </div>
-
-    <input type="hidden" name="totalPrice" value="{{ totalPrice }}">
 </div>
 
 <style>
@@ -177,7 +168,6 @@
         padding: 12px 16px;
         align-items: stretch;
     }
-
     .leg-track-col {
         display: flex;
         flex-direction: column;
@@ -198,7 +188,6 @@
         background: #d0d0d0;
         min-height: 24px;
     }
-
     .leg-body {
         flex: 1;
         display: flex;
@@ -218,7 +207,6 @@
     }
     .leg-airport { font-size: 0.95rem; color: var(--navy); }
     .terminal-tag { font-size: 0.8rem; color: #999; margin-left: 4px; }
-
     .leg-meta-row {
         display: flex;
         align-items: center;
@@ -227,13 +215,6 @@
         margin: 2px 0;
     }
     .leg-duration { font-size: 0.8rem; color: #aaa; min-width: 52px; }
-    .mid-flight-meta {
-        font-size: 0.82rem; color: #666;
-        background: #f4f4f4;
-        padding: 2px 10px;
-        border-radius: 4px;
-    }
-
     .leg-price-col {
         font-size: 1.2rem;
         font-weight: bold;
@@ -249,7 +230,12 @@
         color: #aaa;
         text-align: right;
     }
-
+    .mid-flight-meta {
+        font-size: 0.82rem; color: #666;
+        background: #f4f4f4;
+        padding: 2px 10px;
+        border-radius: 4px;
+    }
     .layover-bar {
         margin: 0 16px;
         padding: 8px 14px;
@@ -268,8 +254,9 @@
         color: var(--gold);
     }
     .layover-duration {
-        font-weight: 700;
+        font-weight: 600;
         color: var(--navy);
+        font-size: 0.85rem;
     }
     .day-offset {
         font-size: 0.65rem;
@@ -278,69 +265,58 @@
         vertical-align: super;
         margin-left: 1px;
     }
-    .layover-duration {
-        font-weight: 600;
-        color: var(--navy);
-        font-size: 0.85rem;
-    }
-    .price-summary-block {
-        margin-top: 16px;
-        padding: 16px 20px;
-        background: #fff;
-        border-radius: 10px;
-        border: 1px solid #e8e8e8;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
-    .price-summary-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-    }
-    .price-summary-total {
-        font-size: 1.6rem;
-        font-weight: bold;
-        color: var(--navy);
-    }
-    .price-summary-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--navy);
-        margin-top: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    .price-summary-pax {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--navy);
-    }
 </style>
 
 
+{# ── Price Difference Banner ── #}
+<div style="max-width:700px; margin:24px auto 0 auto; padding:0 16px;">
+    {% if isFree %}
+    <div style="background:#d1fae5; border:1px solid #10b981; border-radius:10px; padding:18px 20px; margin-bottom:20px; display:flex; align-items:center; gap:12px;">
+        <span style="font-size:1.4rem;">✅</span>
+        <div>
+            <strong style="color:#065f46;">Free Reschedule</strong>
+            <p style="margin:4px 0 0 0; color:#047857; font-size:0.9rem;">
+                The new flight is cheaper or the same price — no extra charge.<br>
+                Old price: £{{ oldPrice }} → New price: £{{ newTotalPrice }}
+            </p>
+        </div>
+    </div>
+    {% else %}
+    <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px; padding:18px 20px; margin-bottom:20px; display:flex; align-items:center; gap:12px;">
+        <span style="font-size:1.4rem;">⚠️</span>
+        <div>
+            <strong style="color:#92400e;">Price Difference: £{{ extraCharge }}</strong>
+            <p style="margin:4px 0 0 0; color:#b45309; font-size:0.9rem;">
+                The new flight costs more. This amount will be charged to complete your reschedule.<br>
+                Old price: £{{ oldPrice }} → New price: £{{ newTotalPrice }}
+            </p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
 {# ── Step Indicator ── #}
-<div class="step-indicator" 
-     style="display:flex; gap:12px; justify-content:center; 
-            margin: 20px 0 40px 0;
-            flex-wrap:wrap; position: relative; z-index: 10;">
+<div class="step-indicator"
+     style="display:flex; gap:12px; justify-content:center; margin:20px 0 40px 0; flex-wrap:wrap; position:relative; z-index:10;">
     {% for step in flightSteps %}
     <div class="step-pill" id="pill-{{ step.stepIndex }}"
-         style="padding:6px 16px;border-radius:999px;border:2px solid var(--navy);opacity:0.4;font-size:0.85rem;transition:all 0.2s;">
+         style="padding:6px 16px; border-radius:999px; border:2px solid var(--navy); opacity:0.4; font-size:0.85rem; transition:all 0.2s;">
         {{ step.stepIndex }}. {{ step.label }}
     </div>
     {% endfor %}
 </div>
 
 <div class="layout">
-    <form method="post" action="/confirm-booking" id="booking-form">
+    <form method="post" action="/reschedule/confirm" id="reschedule-form">
 
         {# Hidden fields #}
-        <input type="hidden" name="outboundCabin"        value="{{ outboundCabin }}">
-        <input type="hidden" name="returnCabin"          value="{{ returnCabinVal }}">
-        <input type="hidden" name="adults"               value="{{ adults }}">
-        <input type="hidden" name="children"             value="{{ children }}">
+        <input type="hidden" name="bookingId"            value="{{ bookingId }}">
         <input type="hidden" name="outboundFlightIdsRaw" value="{{ outboundFlightIdsRaw }}">
         <input type="hidden" name="returnFlightIdsRaw"   value="{{ returnFlightIdsRaw }}">
-        <input type="hidden" name="tripType"             value="{{ tripType }}">
+        <input type="hidden" name="outboundCabin"        value="{{ outboundCabin }}">
+        <input type="hidden" name="returnCabin"          value="{{ returnCabinVal }}">
+        <input type="hidden" name="newTotalPrice"        value="{{ newTotalPrice }}">
+        <input type="hidden" name="oldPrice"             value="{{ oldPrice }}">
 
         {# ── Per-step panels ── #}
         {% for step in flightSteps %}
@@ -349,77 +325,33 @@
 
             <div class="booking-layout">
 
-                {# Left: passenger info (step 1 only) + seat pickers #}
+                {# Left: passenger seat pickers #}
                 <div class="passengers-panel">
                     <section class="card booking-card">
-
-                        {% if step.stepIndex == 1 %}
-                        <h2 class="card-title">Passenger Details</h2>
-                        <p class="card-subtitle">Enter your details, then select seats for each flight</p>
-
-                        {% for i in range(0, adults - 1) %}
-                        <fieldset class="passenger-fieldset">
-                            <legend>Adult {{ i + 1 }}</legend>
-                            <p><input type="text" name="adult_{{ i }}_fullName" placeholder="Full Name" required></p>
-                            <p><input type="text" name="adult_{{ i }}_ID"       placeholder="Document Number"  required></p>
-                        </fieldset>
-                        {% endfor %}
-
-                        {% for i in range(0, children - 1) %}
-                        <fieldset class="passenger-fieldset">
-                            <legend>Child {{ i + 1 }}</legend>
-                            <p><input type="text" name="child_{{ i }}_fullName" placeholder="Full Name" required></p>
-                            <p><input type="text" name="child_{{ i }}_ID"       placeholder="Document Number"  required></p>
-                        </fieldset>
-                        {% endfor %}
-
-                        <fieldset class="passenger-fieldset contact-fieldset">
-                            <legend>Contact Details</legend>
-                            <p class="contact-hint">We'll use this to send your booking confirmation and travel updates.</p>
-                            <p><input type="email" name="contactEmail" placeholder="Email address" required></p>
-                            <p><input type="tel"   name="contactPhone" placeholder="Phone number (incl. country code)" required></p>
-                        </fieldset>
-
-                        <hr style="margin:20px 0;">
-                        {% endif %}
 
                         <h3 style="margin-bottom:8px;">{{ step.label }} – Select Seats</h3>
                         <p class="card-subtitle">{{ step.cabin | capitalize }} class · Click a passenger then pick their seat</p>
 
-                        {% for i in range(0, adults - 1) %}
-                        <fieldset class="passenger-fieldset" id="fieldset-adult_{{ i }}_s{{ step.stepIndex }}">
-                            <legend>Adult {{ i + 1 }}</legend>
+                        {# One fieldset per existing passenger #}
+                        {% for passenger in passengers %}
+                        <fieldset class="passenger-fieldset" id="fieldset-passenger_{{ passenger.passengerId }}_s{{ step.stepIndex }}">
+                            <legend>{{ passenger.type | capitalize }} {{ loop.index + 1 }}</legend>
                             <button type="button" class="select-seat-btn"
-                                    onclick="setActivePassenger('adult_{{ i }}_seat_step{{ step.stepIndex }}', {{ step.stepIndex }})">
+                                    onclick="setActivePassenger('seat_{{ passenger.passengerId }}_step{{ step.stepIndex }}', {{ step.stepIndex }})">
                                 Select Seat ▼
                             </button>
-                            <p class="seat-label" id="adult_{{ i }}_seat_step{{ step.stepIndex }}_label">No seat selected</p>
+                            <p class="seat-label" id="seat_{{ passenger.passengerId }}_step{{ step.stepIndex }}_label">No seat selected</p>
                             <input type="hidden"
-                                   name="adult_{{ i }}_seat_step{{ step.stepIndex }}"
-                                   id="adult_{{ i }}_seat_step{{ step.stepIndex }}"
-                                   required>
-                        </fieldset>
-                        {% endfor %}
-
-                        {% for i in range(0, children - 1) %}
-                        <fieldset class="passenger-fieldset" id="fieldset-child_{{ i }}_s{{ step.stepIndex }}">
-                            <legend>Child {{ i + 1 }}</legend>
-                            <button type="button" class="select-seat-btn"
-                                    onclick="setActivePassenger('child_{{ i }}_seat_step{{ step.stepIndex }}', {{ step.stepIndex }})">
-                                Select Seat ▼
-                            </button>
-                            <p class="seat-label" id="child_{{ i }}_seat_step{{ step.stepIndex }}_label">No seat selected</p>
-                            <input type="hidden"
-                                   name="child_{{ i }}_seat_step{{ step.stepIndex }}"
-                                   id="child_{{ i }}_seat_step{{ step.stepIndex }}"
+                                   name="seat_{{ passenger.passengerId }}_step{{ step.stepIndex }}"
+                                   id="seat_{{ passenger.passengerId }}_step{{ step.stepIndex }}"
                                    required>
                         </fieldset>
                         {% endfor %}
 
                         {% if step.stepIndex == totalSteps %}
                         <button type="button" class="primary-btn" style="margin-top:20px;"
-                                onclick="submitBooking({{ step.stepIndex }})">
-                            Confirm &amp; Proceed to Payment
+                                onclick="submitReschedule({{ step.stepIndex }})">
+                            {% if isFree %}Confirm Reschedule (Free){% else %}Pay £{{ extraCharge }} &amp; Confirm{% endif %}
                         </button>
                         {% else %}
                         <button type="button" class="primary-btn" style="margin-top:20px;"
@@ -441,7 +373,7 @@
                     </div>
 
                     <p class="seatmap-prompt" id="prompt-{{ step.stepIndex }}"
-                       style="text-align:center;font-weight:bold;margin-bottom:10px;">
+                       style="text-align:center; font-weight:bold; margin-bottom:10px;">
                         Please select a passenger first
                     </p>
 
@@ -497,16 +429,6 @@
         opacity: 0.7 !important;
         background: #e0e0e0;
     }
-    .contact-fieldset {
-        margin-top: 16px;
-        background: #f9f9fb;
-        border: 1px solid #e0e0e8;
-    }
-    .contact-hint {
-        font-size: 0.82rem;
-        color: #888;
-        margin: 0 0 8px 0;
-    }
     .seat[aria-disabled="true"] {
         opacity: 0.35;
         cursor: not-allowed;
@@ -539,7 +461,11 @@ function setActivePassenger(fieldId, stepIndex) {
 
     const panel = document.getElementById('step-panel-' + stepIndex);
     panel.querySelectorAll('.passenger-fieldset').forEach(f => f.classList.remove('active'));
-    const fs = document.getElementById('fieldset-' + fieldId.replace('_seat_step' + stepIndex, '_s' + stepIndex));
+
+    // fieldId format: seat_{passengerId}_step{stepIndex}
+    // fieldset ID format: fieldset-passenger_{passengerId}_s{stepIndex}
+    const passengerId = fieldId.replace('seat_', '').replace('_step' + stepIndex, '');
+    const fs = document.getElementById('fieldset-passenger_' + passengerId + '_s' + stepIndex);
     if (fs) fs.classList.add('active');
 
     const name = fs?.querySelector('legend')?.textContent?.trim();
@@ -551,7 +477,7 @@ function selectSeat(btn) {
     if (btn.getAttribute('aria-disabled') === 'true') return;
 
     if (!currentPassengerField) {
-        alert('Please click "Select Seat" for a passenger first.');
+        alert('Please click "Select New Seat" for a passenger first.');
         return;
     }
 
@@ -560,7 +486,8 @@ function selectSeat(btn) {
 
     const seat = btn.dataset.seat;
 
-    const stepInputs = document.querySelectorAll(`input[name*="_seat_step${stepIndex}"]`);
+    // Check for duplicate seat selection across passengers in this step
+    const stepInputs = document.querySelectorAll(`input[name*="_step${stepIndex}"]`);
     for (const input of stepInputs) {
         if (input.id !== currentPassengerField && input.value === seat) {
             alert('Seat ' + seat + ' is already selected by another passenger.');
@@ -568,6 +495,7 @@ function selectSeat(btn) {
         }
     }
 
+    // Deselect previous seat for this passenger
     const currentInput = document.getElementById(currentPassengerField);
     if (currentInput && currentInput.value) {
         const prev = document.querySelector(`#step-panel-${stepIndex} .seat[data-seat="${currentInput.value}"]`);
@@ -582,26 +510,13 @@ function selectSeat(btn) {
 }
 
 function checkInputsForStep(stepIndex) {
-    const currentPanel = document.getElementById('step-panel-' + stepIndex);
-    if (!currentPanel) return true;
-
-    const inputs = currentPanel.querySelectorAll('input[required]');
+    const panel = document.getElementById('step-panel-' + stepIndex);
+    if (!panel) return true;
+    const inputs = panel.querySelectorAll('input[required]');
     for (let input of inputs) {
         if (!input.value.trim()) {
-            if (input.type === 'text') {
-                input.style.borderColor = 'red';
-                alert('Please fill in all passenger details.');
-            } else if (input.type === 'email' || input.type === 'tel') {
-                input.style.borderColor = 'red';
-                alert('Please fill in your contact email and phone number.');
-            } else if (input.type === 'hidden') {
-                alert('Please select seats for all passengers for this flight.');
-            }
+            alert('Please select seats for all passengers for this flight.');
             return false;
-        } else {
-            if (input.type === 'text' || input.type === 'email' || input.type === 'tel') {
-                input.style.borderColor = '';
-            }
         }
     }
     return true;
@@ -609,23 +524,19 @@ function checkInputsForStep(stepIndex) {
 
 function nextStep(stepIndex) {
     if (!checkInputsForStep(stepIndex)) return;
-
     document.getElementById('step-panel-' + stepIndex).style.display = 'none';
-    const nextPanel = document.getElementById('step-panel-' + (stepIndex + 1));
-    if (nextPanel) nextPanel.style.display = 'block';
-
+    const next = document.getElementById('step-panel-' + (stepIndex + 1));
+    if (next) next.style.display = 'block';
     currentPassengerField = null;
     currentStepIndex = stepIndex + 1;
-
     activatePill(stepIndex + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function submitBooking(stepIndex) {
+function submitReschedule(stepIndex) {
     if (!checkInputsForStep(stepIndex)) return;
-    document.getElementById('booking-form').submit();
+    document.getElementById('reschedule-form').submit();
 }
-
 </script>
 
 {% endblock %}

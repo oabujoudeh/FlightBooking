@@ -377,7 +377,7 @@ object UserDAO{
         // get a single booking with its flights and passengers
         val bookingSql = """
             SELECT
-                b.booking_id, b.booking_date, b.total_price, b.status, b.contact_email,
+                b.booking_id, b.booking_date, b.total_price, b.status, b.contact_email, b.trip_type,
                 f.flight_date,
                 r.flight_number, r.departure_terminal, r.arrival_terminal,
                 r.planned_departure, r.base_duration_minutes,
@@ -415,6 +415,7 @@ object UserDAO{
                                 booking["totalPrice"] = result.getDouble("total_price")
                                 booking["status"] = result.getString("status")
                                 booking["contactEmail"] = result.getString("contact_email") ?: ""
+                                booking["tripType"] = result.getString("trip_type") ?: "oneway"
                                 found = true
                             }
                             flights.add(getFlightInfoFromRow(result))
@@ -549,6 +550,7 @@ object UserDAO{
         passengers: List<Map<String, String>>,
         contactEmail: String,
         contactPhone: String,
+        tripType: String,
     ): Boolean {
         return try {
             Database.getConnection().use { conn ->
@@ -563,15 +565,17 @@ object UserDAO{
                         total_price,
                         status,
                         contact_email,
-                        contact_phone
+                        contact_phone,
+                        trip_type
                     )
-                    VALUES (?, datetime('now'), ?, 'confirmed', ?, ?)
+                    VALUES (?, datetime('now'), ?, 'confirmed', ?, ?, ?)
                     """.trimIndent()
                 val bookingStmt = conn.prepareStatement(bookingSql, java.sql.Statement.RETURN_GENERATED_KEYS)
                 bookingStmt.setInt(1, userID)
                 bookingStmt.setDouble(2, totalPrice)
                 bookingStmt.setString(3, contactEmail)
                 bookingStmt.setString(4, contactPhone)
+                bookingStmt.setString(5, tripType)
                 bookingStmt.executeUpdate()
 
                 val keys = bookingStmt.generatedKeys
@@ -668,29 +672,115 @@ object UserDAO{
         }  
 
     fun getBookingForReschedule(bookingId: Int): Map<String, Any>? {
+        // Fetch all legs in sequence order
         val sql = """
-            SELECT r.departure_airport, r.arrival_airport, b.total_price, 
+            SELECT r.departure_airport, r.arrival_airport, b.total_price, b.trip_type,
+                bf.flight_sequence,
+                (SELECT COUNT(*) FROM booking_flights WHERE booking_id = b.booking_id) as total_legs,
                 (SELECT COUNT(*) FROM booking_passengers WHERE booking_id = b.booking_id) as passenger_count
             FROM bookings b
             JOIN booking_flights bf ON b.booking_id = bf.booking_id
             JOIN flights f ON bf.flight_id = f.flight_id
             JOIN routes r ON f.route_id = r.route_id
             WHERE b.booking_id = ?
-            LIMIT 1
+            ORDER BY bf.flight_sequence ASC
         """
+        // Get cabin for a specific flight sequence using first passenger's seat
+        fun queryCabin(conn: java.sql.Connection, bookingId: Int, sequence: Int): String {
+            // seat_id is stored as comma-separated e.g. "6A,1A" — index matches flight_sequence
+            // sequence is 1-based, so sequence=1 → index 0, sequence=2 → index 1
+            val seatSql = """
+                SELECT bp.seat_id, bf.flight_id
+                FROM booking_passengers bp
+                JOIN booking_flights bf ON bf.booking_id = bp.booking_id AND bf.flight_sequence = ?
+                WHERE bp.booking_id = ?
+                ORDER BY bp.passenger_id ASC
+                LIMIT 1
+            """
+            val seatNumber = conn.prepareStatement(seatSql).use { stmt ->
+                stmt.setInt(1, sequence)
+                stmt.setInt(2, bookingId)
+                stmt.executeQuery().use { rs ->
+                    if (!rs.next()) return "economy"
+                    val seatId  = rs.getString("seat_id") ?: return "economy"
+                    val seats   = seatId.split(",").map { it.trim() }
+                    // sequence is 1-based; index = sequence - 1
+                    seats.getOrNull(sequence - 1) ?: seats.firstOrNull() ?: return "economy"
+                }
+            }
+
+            val classSql = """
+                SELECT s.class as seat_class
+                FROM booking_flights bf
+                JOIN seats s ON s.flight_id = bf.flight_id AND s.seat_number = ?
+                WHERE bf.booking_id = ? AND bf.flight_sequence = ?
+                LIMIT 1
+            """
+            return conn.prepareStatement(classSql).use { stmt ->
+                stmt.setString(1, seatNumber)
+                stmt.setInt(2, bookingId)
+                stmt.setInt(3, sequence)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) rs.getString("seat_class")?.lowercase() ?: "economy"
+                    else "economy"
+                }
+            }
+        }
         return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     stmt.setInt(1, bookingId)
                     stmt.executeQuery().use { rs ->
-                        if (rs.next()) {
-                            mapOf(
-                                "origin" to rs.getString("departure_airport"),
-                                "destination" to rs.getString("arrival_airport"),
-                                "oldPrice" to rs.getDouble("total_price"),
-                                "passengerCount" to rs.getInt("passenger_count")
-                            )
+                        data class LegRow(val dep: String, val arr: String, val seq: Int)
+                        val legs = mutableListOf<LegRow>()
+                        var totalPrice = 0.0
+                        var passengerCount = 0
+                        var tripType = "oneway"
+                        var totalLegs = 0
+
+                        while (rs.next()) {
+                            if (legs.isEmpty()) {
+                                totalPrice     = rs.getDouble("total_price")
+                                passengerCount = rs.getInt("passenger_count")
+                                tripType       = rs.getString("trip_type") ?: "oneway"
+                                totalLegs      = rs.getInt("total_legs")
+                            }
+                            legs.add(LegRow(
+                                dep = rs.getString("departure_airport"),
+                                arr = rs.getString("arrival_airport"),
+                                seq = rs.getInt("flight_sequence")
+                            ))
+                        }
+
+                        if (legs.isEmpty()) return@use null
+
+                        val outboundLegs = if (tripType == "return") {
+                            legs.take(totalLegs / 2)
+                        } else {
+                            legs
+                        }
+
+                        val origin      = outboundLegs.first().dep
+                        val destination = outboundLegs.last().arr
+
+                        // Now totalLegs and tripType are known — safe to call queryCabin
+                        val outboundCabin = queryCabin(conn, bookingId, 1)
+                        println("DEBUG outboundCabin=$outboundCabin totalLegs=$totalLegs tripType=$tripType")
+
+                        val returnSeq = totalLegs / 2 + 1
+                        val returnCabin = if (tripType == "return") {
+                            queryCabin(conn, bookingId, returnSeq)
                         } else null
+
+                        mapOf(
+                            "origin"         to origin,
+                            "destination"    to destination,
+                            "oldPrice"       to totalPrice,
+                            "passengerCount" to passengerCount,
+                            "tripType"       to tripType,
+                            "outboundCabin"  to outboundCabin,
+                            "returnCabin"    to (returnCabin ?: outboundCabin)
+                        )
                     }
                 }
             }
@@ -700,68 +790,115 @@ object UserDAO{
         }
     }
 
+    /**
+     * Executes a reschedule: replaces old flights, updates total price,
+     * releases old seats, assigns new seat numbers, and locks new seats.
+     *
+     * passengerSeatSelections: Map<passengerId, newSeatNumber> (e.g. 3 to "14A")
+     * newFlightIds: all flight IDs for the new booking (outbound + return legs in order)
+     */
     fun executeReschedule(
-        bookingId: Int, 
-        newFlightId: Int, 
-        newTotalPrice: Double, 
-        passengerSeatSelections: Map<Int, Int> 
-        ): Boolean {
-            val conn = Database.getConnection()
-            return try {
-                conn.setAutoCommit(false) 
+        bookingId: Int,
+        newFlightIds: List<Int>,
+        newTotalPrice: Double,
+        passengerSeatSelections: Map<Int, String>  // passengerId -> seatNumber string e.g. "14A"
+    ): Boolean {
+        val conn = Database.getConnection()
+        return try {
+            conn.setAutoCommit(false)
 
-                val releaseOldSeats = """
-                    UPDATE seats SET is_occupied = 0 
-                    WHERE seat_id IN (SELECT seat_id FROM booking_passengers WHERE booking_id = ?)
-                """
-                conn.prepareStatement(releaseOldSeats).use { stmt ->
-                    stmt.setInt(1, bookingId)
-                    stmt.executeUpdate()
-                }
-
-                val updateBooking = "UPDATE bookings SET total_price = ?, status = 'confirmed' WHERE booking_id = ?"
-                conn.prepareStatement(updateBooking).use { stmt ->
-                    stmt.setDouble(1, newTotalPrice)
-                    stmt.setInt(2, bookingId)
-                    stmt.executeUpdate()
-                }
-
-                val updateFlight = "UPDATE booking_flights SET flight_id = ? WHERE booking_id = ?"
-                conn.prepareStatement(updateFlight).use { stmt ->
-                    stmt.setInt(1, newFlightId)
-                    stmt.setInt(2, bookingId)
-                    stmt.executeUpdate()
-                }
-
-                val updatePassengerSeat = "UPDATE booking_passengers SET seat_id = ? WHERE booking_id = ? AND passenger_id = ?"
-                val lockNewSeat = "UPDATE seats SET is_occupied = 1 WHERE seat_id = ?"
-        
-                passengerSeatSelections.forEach { (passengerId, newSeatId) ->
-
-                    conn.prepareStatement(updatePassengerSeat).use { stmt ->
-                        stmt.setInt(1, newSeatId)
-                        stmt.setInt(2, bookingId)
-                        stmt.setInt(3, passengerId)
-                        stmt.executeUpdate()
-                    }
-
-                    conn.prepareStatement(lockNewSeat).use { stmt ->
-                        stmt.setInt(1, newSeatId)
-                        stmt.executeUpdate()
+            // 1. Release old seats: seat_id is stored as "6A,1A" (comma-separated per leg)
+            //    Need to split and match each seat number against its corresponding flight
+            val getOldSeats = """
+                SELECT bp.seat_id, bf.flight_id, bf.flight_sequence
+                FROM booking_passengers bp
+                JOIN booking_flights bf ON bf.booking_id = bp.booking_id
+                WHERE bp.booking_id = ?
+                ORDER BY bf.flight_sequence
+            """
+            val releaseStmt = conn.prepareStatement(
+                "UPDATE seats SET is_occupied = 0 WHERE flight_id = ? AND seat_number = ?"
+            )
+            conn.prepareStatement(getOldSeats).use { stmt ->
+                stmt.setInt(1, bookingId)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        val seatId   = rs.getString("seat_id") ?: continue
+                        val flightId = rs.getInt("flight_id")
+                        val seq      = rs.getInt("flight_sequence")
+                        val seats    = seatId.split(",").map { it.trim() }
+                        val seatNum  = seats.getOrNull(seq - 1) ?: seats.firstOrNull() ?: continue
+                        releaseStmt.setInt(1, flightId)
+                        releaseStmt.setString(2, seatNum)
+                        releaseStmt.addBatch()
                     }
                 }
-
-                conn.commit()
-                true
-            } catch (e: Exception) {
-                conn.rollback()
-                println("ExecuteReschedule Error:")
-                e.printStackTrace()
-                false
-            } finally {
-                conn.setAutoCommit(true)
-                conn.close()
             }
+            releaseStmt.executeBatch()
+
+            // 2. Update total price on the booking
+            conn.prepareStatement("UPDATE bookings SET total_price = ?, status = 'confirmed' WHERE booking_id = ?").use { stmt ->
+                stmt.setDouble(1, newTotalPrice)
+                stmt.setInt(2, bookingId)
+                stmt.executeUpdate()
+            }
+
+            // 3. Replace all flights in booking_flights
+            conn.prepareStatement("DELETE FROM booking_flights WHERE booking_id = ?").use { stmt ->
+                stmt.setInt(1, bookingId)
+                stmt.executeUpdate()
+            }
+            val insertFlight = "INSERT INTO booking_flights(booking_id, flight_id, flight_sequence) VALUES(?, ?, ?)"
+            conn.prepareStatement(insertFlight).use { stmt ->
+                for ((index, flightId) in newFlightIds.withIndex()) {
+                    stmt.setInt(1, bookingId)
+                    stmt.setInt(2, flightId)
+                    stmt.setInt(3, index + 1)
+                    stmt.addBatch()
+                }
+                stmt.executeBatch()
+            }
+
+            // 4. Update each passenger's seat_id (comma-separated for all legs) and lock all new seats
+            // passengerSeatSelections: Map<passengerId, "3A,7A,16A,8A">
+            val updatePassengerSeat = "UPDATE booking_passengers SET seat_id = ? WHERE booking_id = ? AND passenger_id = ?"
+            val lockNewSeat = "UPDATE seats SET is_occupied = 1 WHERE flight_id = ? AND seat_number = ?"
+
+            println("DEBUG lock: newFlightIds=$newFlightIds")
+            passengerSeatSelections.forEach { (passengerId, seatsJoined) ->
+                println("DEBUG lock: passengerId=$passengerId seatsJoined=$seatsJoined")
+                // Update seat_id with full comma-separated string
+                conn.prepareStatement(updatePassengerSeat).use { stmt ->
+                    stmt.setString(1, seatsJoined)
+                    stmt.setInt(2, bookingId)
+                    stmt.setInt(3, passengerId)
+                    stmt.executeUpdate()
+                }
+                // Lock each seat on its corresponding flight leg
+                val seatList = seatsJoined.split(",").map { it.trim() }
+                seatList.forEachIndexed { index, seatNumber ->
+                    val flightId = newFlightIds.getOrNull(index) ?: return@forEachIndexed
+                    println("DEBUG lock: flightId=$flightId seatNumber=$seatNumber index=$index")
+                    val rows = conn.prepareStatement(lockNewSeat).use { stmt ->
+                        stmt.setInt(1, flightId)
+                        stmt.setString(2, seatNumber)
+                        stmt.executeUpdate()
+                    }
+                    println("DEBUG lock: rows affected=$rows")
+                }
+            }
+
+            conn.commit()
+            true
+        } catch (e: Exception) {
+            conn.rollback()
+            println("ExecuteReschedule Error:")
+            e.printStackTrace()
+            false
+        } finally {
+            conn.setAutoCommit(true)
+            conn.close()
+        }
     }
 
     fun getPassengerIdsByBooking(bookingId: Int): List<Int> {
@@ -776,6 +913,65 @@ object UserDAO{
             }
         }
         return ids
+    }
+
+    /**
+     * Returns all flight IDs associated with a booking.
+     * Used to filter out original flights when showing reschedule options.
+     */
+    fun getFlightIdsForBooking(bookingId: Int): List<Int> {
+        val sql = "SELECT flight_id FROM booking_flights WHERE booking_id = ? ORDER BY flight_sequence"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, bookingId)
+                    stmt.executeQuery().use { rs ->
+                        val ids = mutableListOf<Int>()
+                        while (rs.next()) ids.add(rs.getInt("flight_id"))
+                        ids
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    /**
+     * Returns passenger details for a booking including passenger_id.
+     * Used to pre-fill names on the reschedule seat selection page.
+     */
+    fun getPassengersForBooking(bookingId: Int): List<Map<String, Any>> {
+        val sql = """
+            SELECT passenger_id, full_name, id_number, type, seat_id
+            FROM booking_passengers
+            WHERE booking_id = ?
+            ORDER BY passenger_id
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, bookingId)
+                    stmt.executeQuery().use { rs ->
+                        val passengers = mutableListOf<Map<String, Any>>()
+                        while (rs.next()) {
+                            passengers.add(mapOf(
+                                "passengerId" to rs.getInt("passenger_id"),
+                                "fullName"    to (rs.getString("full_name") ?: ""),
+                                "idNumber"    to (rs.getString("id_number") ?: ""),
+                                "type"        to (rs.getString("type") ?: "adult"),
+                                "seat"        to (rs.getString("seat_id") ?: "")
+                            ))
+                        }
+                        passengers
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
     }
 
     fun updateUserEmail(userId: Int, newEmail: String): Boolean {
