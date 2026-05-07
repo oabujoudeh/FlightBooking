@@ -547,7 +547,9 @@
                             <td>{{ res.passengers }}</td>
                             <td>{{ res.bookingDate }}</td>
                             <td>
-                                <span class="badge {% if res.status == 'Cancelled' %}badge-cancelled{% else %}badge-confirmed{% endif %}">
+                                <span class="badge
+                                    {% if res.status == 'Cancelled' or res.status == 'cancelled' %}badge-cancelled
+                                    {% else %}badge-confirmed{% endif %}">
                                     {{ res.status }}
                                 </span>
                             </td>
@@ -569,47 +571,42 @@
             <div class="card-header-row">
                 <div class="header-left">
                     <p class="section-label">Manage</p>
-                    <h2>
-                        Flight Availability &amp; Changes
-                        {% if lastFlightDate or lastFlightNumber %}
-                            <span class="filter-active-dot" title="Filters active"></span>
-                        {% endif %}
-                    </h2>
+                    <h2>Flight Availability &amp; Changes</h2>
                 </div>
-                <button
-                    type="button"
-                    class="btn-toggle {% if lastFlightDate or lastFlightNumber %}is-open{% endif %}"
-                    aria-expanded="{% if lastFlightDate or lastFlightNumber %}true{% else %}false{% endif %}"
-                    aria-controls="flight-filter-panel"
-                    data-show-label="Show Filters"
-                    data-hide-label="Hide Filters"
-                    onclick="toggleFilter('flight-filter-panel', this)">
-                    <i class="toggle-icon">▾</i>
-                    <span class="toggle-label">{% if lastFlightDate or lastFlightNumber %}Hide Filters{% else %}Show Filters{% endif %}</span>
-                </button>
+                <!-- Flight-number quick filter (AJAX) -->
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="flight-number-input" placeholder="Flight # e.g. EJ101"
+                           value="{{ lastFlightNumber }}"
+                           style="padding:7px 11px; border:1px solid var(--border-color); border-radius:6px;
+                                  font-size:0.85rem; color:var(--text-primary); background:#fff; width:160px;"
+                           onkeydown="if(event.key==='Enter'){flightSearchByNumber();}">
+                    <button type="button" class="btn-primary" style="padding:7px 14px;"
+                            onclick="flightSearchByNumber()">Search</button>
+                    <button type="button" class="btn-clear" style="padding-bottom:0;"
+                            onclick="document.getElementById('flight-number-input').value='';flightSearchByNumber();">Clear</button>
+                </div>
             </div>
         </div>
 
-        <div id="flight-filter-panel" class="filter-panel {% if lastFlightDate or lastFlightNumber %}is-open{% endif %}">
-            <form action="/" method="GET" class="filter-bar">
-                <div class="filter-group">
-                    <label for="flightDate">Flight Date</label>
-                    <input type="date" id="flightDate" name="flightDate" value="{{ lastFlightDate }}">
-                </div>
-                <div class="filter-group">
-                    <label for="flightNumber">Flight Number</label>
-                    <input type="text" id="flightNumber" name="flightNumber" placeholder="e.g. EJ101" value="{{ lastFlightNumber }}">
-                </div>
-                <button type="submit" class="btn-primary">Filter Flights</button>
-                <a href="/" class="btn-clear">Clear</a>
-            </form>
+        <!-- Day navigation bar (AJAX — no page reload) -->
+        <div id="flight-nav-bar" style="display:flex; align-items:center; justify-content:center; gap:10px;
+                    padding:12px 22px; border-bottom:1px solid var(--border-color);
+                    background:var(--bg-table-head);">
+            <button type="button" class="btn-toggle" style="flex-shrink:0;" onclick="flightNav('prev')">← Prev</button>
+            <input type="date" id="flight-date-picker" value="{{ lastFlightDate }}"
+                   style="padding:6px 10px; border:1px solid var(--border-color); border-radius:6px;
+                          font-size:0.875rem; font-weight:600; color:var(--text-primary);
+                          background:#fff; cursor:pointer; width:150px; flex-shrink:0;"
+                   onchange="flightNav('pick', this.value)">
+            <button type="button" class="btn-toggle" style="flex-shrink:0;" onclick="flightNav('next')">Next →</button>
+            <button type="button" class="btn-clear" style="flex-shrink:0; padding-bottom:0; font-size:0.8rem;"
+                    onclick="flightNav('pick', new Date().toISOString().slice(0,10))">Today</button>
         </div>
 
-            {% if trackedFlights is not empty %}
         <div class="results-header">
             <div class="results-header-left">
                 <span class="results-label">Results</span>
-                <span class="results-count">{{ trackedFlights | length }} found</span>
+                <span class="results-count" id="flight-results-count">{{ trackedFlights | length }} found</span>
             </div>
             <button type="button"
                 class="btn-toggle-results is-open"
@@ -628,13 +625,13 @@
                         <tr>
                             <th scope="col">Flight #</th>
                             <th scope="col">Route</th>
-                            <th scope="col">Date</th>
+                            <th scope="col">Departure</th>
+                            <th scope="col">Arrival</th>
                             <th scope="col">Status</th>
-                            <th scope="col">Price</th>
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="flight-tbody">
                         {% for f in trackedFlights %}
                         <tr>
                             <td><strong>{{ f.flightNumber }}</strong></td>
@@ -643,18 +640,23 @@
                                     {{ f.originCity }}<span class="route-arrow">→</span>{{ f.destCity }}
                                 </span>
                             </td>
-                            <td>{{ f.flightDate }}</td>
+
+                            <td style="white-space:nowrap;">{{ f.depTime }}</td>
+                            <td style="white-space:nowrap;">{{ f.arrTime }}{% if f.overnight %} <span title="Arrives next day" style="font-size:0.7rem;color:var(--text-muted);">+1</span>{% endif %}</td>
+                            
                             <td>
-                                <span class="badge {% if f.status == 'Cancelled' %}badge-cancelled{% elseif f.status == 'Delayed' %}badge-delayed{% else %}badge-confirmed{% endif %}">
+                                <span class="badge
+                                    {% if f.status == 'Cancelled' %}badge-cancelled
+                                    {% elseif f.status == 'Delayed' %}badge-delayed
+                                    {% else %}badge-confirmed{% endif %}">
                                     {{ f.status }}
                                 </span>
                             </td>
-                            <td>${{ f.price }}</td>
                             <td>
                                 <form action="/admin/update-flight-status" method="POST"
                                       style="display:flex; gap:6px; align-items:center;">
-                                    <input type="hidden" name="flightId"    value="{{ f.flightId }}">
-                                    <input type="hidden" name="flightDate"  value="{{ lastFlightDate }}">
+                                    <input type="hidden" name="flightId"     value="{{ f.flightId }}">
+                                    <input type="hidden" name="flightDate"   value="{{ lastFlightDate }}">
                                     <input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">
                                     <select name="newStatus" style="
                                         padding: 5px 8px;
@@ -664,11 +666,11 @@
                                         color: var(--text-primary);
                                         background: #fff;
                                         cursor: pointer;">
-                                        <option value="Scheduled"  {% if f.status == 'Scheduled'  %}selected{% endif %}>Scheduled</option>
-                                        <option value="Delayed"    {% if f.status == 'Delayed'    %}selected{% endif %}>Delayed</option>
-                                        <option value="Cancelled"  {% if f.status == 'Cancelled'  %}selected{% endif %}>Cancelled</option>
-                                        <option value="Departed"   {% if f.status == 'Departed'   %}selected{% endif %}>Departed</option>
-                                        <option value="Landed"     {% if f.status == 'Landed'     %}selected{% endif %}>Landed</option>
+                                        <option value="Scheduled"  {% if f.status == 'Scheduled'  or f.status == 'scheduled'  %}selected{% endif %}>Scheduled</option>
+                                        <option value="Delayed"    {% if f.status == 'Delayed'    or f.status == 'delayed'    %}selected{% endif %}>Delayed</option>
+                                        <option value="Cancelled"  {% if f.status == 'Cancelled'  or f.status == 'cancelled'  %}selected{% endif %}>Cancelled</option>
+                                        <option value="Departed"   {% if f.status == 'Departed'   or f.status == 'departed'   %}selected{% endif %}>Departed</option>
+                                        <option value="Arrived"     {% if f.status == 'Arrived'     or f.status == 'Arrived'     %}selected{% endif %}>Arrived</option>
                                     </select>
                                     <button type="submit" class="btn-primary" style="padding: 5px 12px; font-size: 0.8rem;">
                                         Update
@@ -677,13 +679,12 @@
                             </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="6" class="td-empty">No flights matched your criteria.</td></tr>
+                        <tr><td colspan="4" class="td-empty">No flights found for {{ lastFlightDate }}.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
-        {% endif %}
     </div>
 
     <div class="card admin-section">
@@ -858,7 +859,7 @@
                             <tbody>
                             {% for row in popularRoutes %}
                                 <tr>
-                                    <td style="color: var(--text-muted); font-weight: 600;">{{ loop.index }}</td>
+                                    <td style="color: var(--text-muted); font-weight: 600;">{{ loop.index + 1 }}</td>
                                     <td>
                                         <span class="route-cell">
                                             {{ row.departureCity }}<span class="route-arrow">→</span>{{ row.arrivalCity }}
@@ -949,5 +950,107 @@ function toggleResults(panelId, btn) {
     btn.setAttribute('aria-expanded', isOpen);
     btn.querySelector('.toggle-label').textContent = isOpen ? 'Collapse' : 'Expand';
 }
+
+// Flight Table AJAX (no full page reload)
+(function () {
+    var currentDate = document.getElementById('flight-date-picker')
+        ? document.getElementById('flight-date-picker').value : '';
+    var currentFlightNumber = '{{ lastFlightNumber }}';
+
+    function statusBadgeClass(status) {
+        var s = (status || '').toLowerCase();
+        if (s === 'cancelled') return 'badge badge-cancelled';
+        if (s === 'delayed')   return 'badge badge-delayed';
+        return 'badge badge-confirmed';
+    }
+
+    function buildRows(flights, date) {
+        if (!flights || flights.length === 0) {
+            return '<tr><td colspan="6" class="td-empty">No flights found for ' + date + '.</td></tr>';
+        }
+        return flights.map(function(f) {
+            var statusOptions = ['Scheduled','Delayed','Cancelled','Departed','Arrived'].map(function(s) {
+                var sel = (f.status && f.status.toLowerCase() === s.toLowerCase()) ? ' selected' : '';
+                return '<option value="' + s + '"' + sel + '>' + s + '</option>';
+            }).join('');
+            var arrDisplay = f.arrTime + (f.overnight ? ' <span title="Arrives next day" style="font-size:0.7rem;color:var(--text-muted);">+1</span>' : '');
+            return '<tr>' +
+                '<td><strong>' + f.flightNumber + '</strong></td>' +
+                '<td><span class="route-cell">' + f.originCity + '<span class="route-arrow">→</span>' + f.destCity + '</span></td>' +
+                '<td style="white-space:nowrap;">' + (f.depTime || '—') + '</td>' +
+                '<td style="white-space:nowrap;">' + (f.arrTime ? arrDisplay : '—') + '</td>' +
+                '<td><span class="' + statusBadgeClass(f.status) + '">' + f.status + '</span></td>' +
+                '<td><form action="/admin/update-flight-status" method="POST" style="display:flex;gap:6px;align-items:center;">' +
+                    '<input type="hidden" name="flightId" value="' + f.flightId + '">' +
+                    '<input type="hidden" name="flightDate" value="' + date + '">' +
+                    '<input type="hidden" name="flightNumber" value="' + currentFlightNumber + '">' +
+                    '<select name="newStatus" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:6px;font-size:0.8rem;color:var(--text-primary);background:#fff;cursor:pointer;">' +
+                        statusOptions +
+                    '</select>' +
+                    '<button type="submit" class="btn-primary" style="padding:5px 12px;font-size:0.8rem;">Update</button>' +
+                '</form></td>' +
+            '</tr>';
+        }).join('');
+    }
+
+    function loadFlights(date, flightNumber) {
+        currentDate = date;
+        var tbody = document.getElementById('flight-tbody');
+        var countEl = document.getElementById('flight-results-count');
+        var picker = document.getElementById('flight-date-picker');
+        if (picker) picker.value = date;
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">Loading…</td></tr>';
+
+        var url = '/admin/flights-fragment?flightDate=' + encodeURIComponent(date);
+        if (flightNumber) url += '&flightNumber=' + encodeURIComponent(flightNumber);
+
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (picker) picker.value = data.date;
+                currentDate = data.date;
+                if (countEl) countEl.textContent = data.count + ' found';
+                if (tbody) tbody.innerHTML = buildRows(data.flights, data.date);
+                // Store adjacent dates for next/prev
+                window._flightPrevDate = data.prevDate;
+                window._flightNextDate = data.nextDate;
+            })
+            .catch(function() {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="td-empty">Failed to load flights.</td></tr>';
+            });
+    }
+
+    window.flightNav = function(direction, pickedDate) {
+        var date;
+        if (direction === 'pick') {
+            date = pickedDate;
+        } else if (direction === 'prev') {
+            date = window._flightPrevDate || currentDate;
+        } else {
+            date = window._flightNextDate || currentDate;
+        }
+        loadFlights(date, currentFlightNumber);
+    };
+
+    // Init adjacent dates from server-rendered values
+    window._flightPrevDate = '{{ flightPrevDate }}';
+    window._flightNextDate = '{{ flightNextDate }}';
+
+    window.flightSearchByNumber = function() {
+        var input = document.getElementById('flight-number-input');
+        currentFlightNumber = input ? input.value.trim() : '';
+        loadFlights(currentDate, currentFlightNumber);
+    };
+
+    // On page load: if the server-rendered date differs from today (client),
+    // automatically load today's flights so stale URL params don't confuse things.
+    (function() {
+        var today = new Date().toISOString().slice(0, 10);
+        var serverDate = '{{ lastFlightDate }}';
+        if (serverDate !== today) {
+            loadFlights(today, currentFlightNumber);
+        }
+    })();
+})();
 </script>
 {% endblock %}

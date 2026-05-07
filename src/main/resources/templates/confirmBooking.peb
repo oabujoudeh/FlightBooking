@@ -603,15 +603,6 @@ function submitBooking(stepIndex) {
     document.getElementById('booking-form').submit();
 }
 
-const selectedClass = "{{ outboundCabin }}".toLowerCase();
-document.querySelectorAll('.seat').forEach(seat => {
-     const seatClass = seat.dataset.class;
-
-      if (seatClass !== selectedClass) {
-        seat.disabled = true;
-         seat.classList.add('disabled-seat');
-      }
-});
 </script>
 
 {% endblock %}
