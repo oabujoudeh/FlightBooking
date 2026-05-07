@@ -360,7 +360,7 @@
                         <fieldset class="passenger-fieldset">
                             <legend>Adult {{ i + 1 }}</legend>
                             <p><input type="text" name="adult_{{ i }}_fullName" placeholder="Full Name" required></p>
-                            <p><input type="text" name="adult_{{ i }}_ID"       placeholder="Passport number"  required></p>
+                            <p><input type="text" name="adult_{{ i }}_ID"       placeholder="Document Number"  required></p>
                         </fieldset>
                         {% endfor %}
 
@@ -368,7 +368,7 @@
                         <fieldset class="passenger-fieldset">
                             <legend>Child {{ i + 1 }}</legend>
                             <p><input type="text" name="child_{{ i }}_fullName" placeholder="Full Name" required></p>
-                            <p><input type="text" name="child_{{ i }}_ID"       placeholder="Passport number"  required></p>
+                            <p><input type="text" name="child_{{ i }}_ID"       placeholder="Document Number"  required></p>
                         </fieldset>
                         {% endfor %}
 

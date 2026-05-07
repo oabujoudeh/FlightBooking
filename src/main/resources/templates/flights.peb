@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const returnSection = document.getElementById('return-section');
     const actionBar = document.getElementById('action-bar');
 
-    // after selecting outbound, show inbound
+    // after selecting outbound, show inbound (or action bar for oneway)
     outboundRadios.forEach(r => {
         r.addEventListener('change', () => {
             if (returnSection) {
@@ -239,11 +239,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 returnSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
                 actionBar.classList.remove('hidden-section');
+                actionBar.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     });
 
-    // after select inbound, show button
+    // after selecting inbound, show button
     if (returnRadios) {
         returnRadios.forEach(r => {
             r.addEventListener('change', () => {
