@@ -11,13 +11,15 @@
     <p>Total price: £{{ totalPrice }}</p>
     <p>Enter your payment details</p>
 
-    <form method="post" action="/payment">
+    <form method="post" action="/payment" autocomplete="off">
 
         <label>Card Number</label>
-        <input type="text" name="cardNumber" placeholder="1234 5678 9012 3456" required>
+        <input type="text" name="cardNumber" placeholder="1234 5678 9012 3456" 
+            autocomplete="cc-number" required>
 
         <label>PIN</label>
-        <input type="password" name="pin" placeholder="••••" required>
+        <input type="password" name="pin" placeholder="••••" 
+            autocomplete="off" required>
 
         <button type="submit">Pay Now</button>
 

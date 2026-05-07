@@ -379,15 +379,16 @@ object AdminDAO {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     var paramIndex = 1
+                    if (!filterSeason.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, filterSeason)
+                    }
                     if (!startDate.isNullOrEmpty()) {
                         stmt.setString(paramIndex++, startDate)
                     }
                     if (!endDate.isNullOrEmpty()) {
                         stmt.setString(paramIndex++, endDate)
                     }
-                    if (!endDate.isNullOrEmpty()) {
-                        stmt.setString(paramIndex++, endDate)
-                    }
+                    stmt.setInt(paramIndex, limit)
                     stmt.setInt(paramIndex, limit)
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()

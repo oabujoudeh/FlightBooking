@@ -221,15 +221,20 @@ fun Application.configureRouting() {
                 val bookingsPerFlightDate = call.request.queryParameters["bpfDate"]
                 val routesStartDate = call.request.queryParameters["routesStart"]
                 val routesEndDate = call.request.queryParameters["routesEnd"]
+                val filterSeason = call.request.queryParameters["filterSeason"]
 
                 val bookingsPerFlight = AdminDAO.getBookingsPerFlight(
-                    filterDate = if (bookingsPerFlightDate.isNullOrEmpty()) null else bookingsPerFlightDate
+                    filterDate = if (bookingsPerFlightDate.isNullOrEmpty()) null else bookingsPerFlightDate,
+                    filterSeason = if (filterSeason.isNullOrEmpty()) null else filterSeason
                 )
                 val popularRoutes = AdminDAO.getBusiestRoutes(
                     startDate = if (routesStartDate.isNullOrEmpty()) null else routesStartDate,
-                    endDate = if (routesEndDate.isNullOrEmpty()) null else routesEndDate
+                    endDate = if (routesEndDate.isNullOrEmpty()) null else routesEndDate,
+                    filterSeason = if (filterSeason.isNullOrEmpty()) null else filterSeason
                 )
-                val peakBookingTimes = AdminDAO.getAllBookingsGroupedByDate()
+                val peakBookingTimes = AdminDAO.getAllBookingsGroupedByDate(
+                    filterSeason = if (filterSeason.isNullOrEmpty()) null else filterSeason
+                )
 
                 val flightDateRaw = call.request.queryParameters["flightDate"]
                 val flightNumber = call.request.queryParameters["flightNumber"]
@@ -267,7 +272,8 @@ fun Application.configureRouting() {
                             "peakBookingTimes" to peakBookingTimes,
                             "lastBpfDate" to (bookingsPerFlightDate ?: ""),
                             "lastRoutesStart" to (routesStartDate ?: ""),
-                            "lastRoutesEnd" to (routesEndDate ?: "")
+                            "lastRoutesEnd" to (routesEndDate ?: ""),
+                            "lastFilterSeason" to (filterSeason ?: "")
                         )
                 )
             } else {
