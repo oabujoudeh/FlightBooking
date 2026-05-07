@@ -425,8 +425,68 @@
         margin: 0;
     }
 
+    /* ── Sidebar layout ── */
+    .admin-body {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+    .admin-sidebar {
+        width: 200px;
+        flex-shrink: 0;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        padding: 10px 0;
+        position: sticky;
+        top: 20px;
+    }
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 18px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-left: 3px solid transparent;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        user-select: none;
+    }
+    .sidebar-item:hover {
+        background: var(--brand-light);
+        color: var(--brand-primary);
+    }
+    .sidebar-item.active {
+        background: var(--brand-light);
+        color: var(--brand-primary);
+        border-left-color: var(--brand-primary);
+        font-weight: 600;
+    }
+    .sidebar-icon {
+        font-size: 1rem;
+        width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .admin-main {
+        flex: 1;
+        min-width: 0;
+    }
+    .tab-section {
+        display: none;
+    }
+    .tab-section.active {
+        display: block;
+    }
     @media (max-width: 900px) {
         .charts-grid { grid-template-columns: 1fr; }
+        .admin-body { flex-direction: column; }
+        .admin-sidebar { width: 100%; position: static; display: flex; padding: 6px; gap: 4px; }
+        .sidebar-item { border-left: none; border-bottom: 3px solid transparent; border-radius: 6px; flex: 1; justify-content: center; padding: 8px 10px; }
+        .sidebar-item.active { border-bottom-color: var(--brand-primary); border-left-color: transparent; }
     }
     @media (max-width: 600px) {
         .admin-container { padding: 16px 12px; }
@@ -465,6 +525,28 @@
             <img src="/admin/chart/busiest-routes" alt="Bar chart showing the busiest flight routes by booking count">
         </div>
     </div>
+
+    <!-- ── Sidebar + Main ── -->
+    <div class="admin-body">
+
+    <!-- Sidebar -->
+    <nav class="admin-sidebar">
+        <div class="sidebar-item active" data-tab="reservations" onclick="switchTab('reservations', this)">
+            <span class="sidebar-icon"></span> Reservations
+        </div>
+        <div class="sidebar-item" data-tab="flights" onclick="switchTab('flights', this)">
+            <span class="sidebar-icon"></span> Flights
+        </div>
+        <div class="sidebar-item" data-tab="reports" onclick="switchTab('reports', this)">
+            <span class="sidebar-icon"></span> Reports
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="admin-main">
+
+    <!-- ── TAB: Reservations ── -->
+    <div class="tab-section active" id="tab-reservations">
 
     <!-- ── Global Reservation Tracker ── -->
     <div class="card admin-section">
@@ -570,6 +652,11 @@
         </div>
         {% endif %}
     </div>
+
+    </div><!-- /tab-reservations -->
+
+    <!-- ── TAB: Flights ── -->
+    <div class="tab-section" id="tab-flights">
 
     <!-- ── Flight Availability & Changes ── -->
     <div class="card admin-section">
@@ -693,13 +780,41 @@
         </div>
     </div>
 
-    <div class="card admin-section">
+    </div><!-- /tab-flights -->
+
+    <!-- ── TAB: Reports ── -->
+    <div class="tab-section" id="tab-reports">
+
+    <div class="card admin-section" id="reports">
         <div class="card-header">
             <div class="card-header-row">
                 <div class="header-left">
                     <p class="section-label">Analytics</p>
-                    <h2>Reports</h2>
+                    <h2>Reports
+                        {% if lastFilterSeason %}
+                            <span class="filter-active-dot" title="Season filter active"></span>
+                        {% endif %}
+                    </h2>
                 </div>
+                <form action="/#reports" method="GET" style="display:flex; align-items:center; gap:8px;">
+                    {% if lastFilterDate %}<input type="hidden" name="filterDate" value="{{ lastFilterDate }}">{% endif %}
+                    {% if lastFilterUsername %}<input type="hidden" name="filterUsername" value="{{ lastFilterUsername }}">{% endif %}
+                    {% if lastFilterStatus %}<input type="hidden" name="filterStatus" value="{{ lastFilterStatus }}">{% endif %}
+                    {% if lastFlightDate %}<input type="hidden" name="flightDate" value="{{ lastFlightDate }}">{% endif %}
+                    {% if lastFlightNumber %}<input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">{% endif %}
+                    {% if lastBpfDate %}<input type="hidden" name="bpfDate" value="{{ lastBpfDate }}">{% endif %}
+                    {% if lastRoutesStart %}<input type="hidden" name="routesStart" value="{{ lastRoutesStart }}">{% endif %}
+                    {% if lastRoutesEnd %}<input type="hidden" name="routesEnd" value="{{ lastRoutesEnd }}">{% endif %}
+                    <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Season</label>
+                    <select name="filterSeason"
+                            onchange="this.form.submit()"
+                            style="padding:6px 10px; border:1px solid var(--border-color); border-radius:6px;
+                                font-size:0.85rem; color:var(--text-primary); background:#fff; cursor:pointer;">
+                        <option value="" {% if not lastFilterSeason %}selected{% endif %}>All Time</option>
+                        <option value="W25" {% if lastFilterSeason == "W25" %}selected{% endif %}>W25</option>
+                        <option value="S26" {% if lastFilterSeason == "S26" %}selected{% endif %}>S26</option>
+                    </select>
+                </form>
             </div>
         </div>
 
@@ -739,7 +854,7 @@
 
                 <!-- Filter Panel -->
                 <div id="bpf-filter-panel" class="filter-panel {% if lastBpfDate %}is-open{% endif %}" style="padding-left:0; padding-right:0;">
-                    <form action="/" method="GET" class="filter-bar" style="margin-bottom:0; padding: 14px 0 4px;">
+                    <form action="/#reports" method="GET" class="filter-bar" style="margin-bottom:0; padding: 14px 0 4px;">
                         <!-- preserve other active query params -->
                         {% if lastFilterDate %}<input type="hidden" name="filterDate" value="{{ lastFilterDate }}">{% endif %}
                         {% if lastFilterUsername %}<input type="hidden" name="filterUsername" value="{{ lastFilterUsername }}">{% endif %}
@@ -748,6 +863,7 @@
                         {% if lastFlightNumber %}<input type="hidden" name="flightNumber" value="{{ lastFlightNumber }}">{% endif %}
                         {% if lastRoutesStart %}<input type="hidden" name="routesStart" value="{{ lastRoutesStart }}">{% endif %}
                         {% if lastRoutesEnd %}<input type="hidden" name="routesEnd" value="{{ lastRoutesEnd }}">{% endif %}
+                        {% if lastFilterSeason %}<input type="hidden" name="filterSeason" value="{{ lastFilterSeason }}">{% endif %}
                         <div class="filter-group">
                             <label for="bpfDate">Flight Date</label>
                             <input type="date" id="bpfDate" name="bpfDate" value="{{ lastBpfDate }}">
@@ -829,7 +945,7 @@
 
                 <!-- Filter Panel -->
                 <div id="routes-filter-panel" class="filter-panel {% if lastRoutesStart or lastRoutesEnd %}is-open{% endif %}" style="padding-left:0; padding-right:0;">
-                    <form action="/" method="GET" class="filter-bar" style="margin-bottom:0; padding: 14px 0 4px;">
+                    <form action="/#reports" method="GET" class="filter-bar" style="margin-bottom:0; padding: 14px 0 4px;">
                         {% if lastFilterDate %}<input type="hidden" name="filterDate" value="{{ lastFilterDate }}">{% endif %}
                         {% if lastFilterUsername %}<input type="hidden" name="filterUsername" value="{{ lastFilterUsername }}">{% endif %}
                         {% if lastFilterStatus %}<input type="hidden" name="filterStatus" value="{{ lastFilterStatus }}">{% endif %}
@@ -936,9 +1052,50 @@
         </div>
     </div>
 
+    </div><!-- /tab-reports -->
+
+    </div><!-- /admin-main -->
+    </div><!-- /admin-body -->
+
 </div>
 
 <script>
+// ── Sidebar tab switching ─────────────────────────────────────────────────────
+function switchTab(tabName, el) {
+    // Hide all tab sections
+    document.querySelectorAll('.tab-section').forEach(function(s) {
+        s.classList.remove('active');
+    });
+    // Deactivate all sidebar items
+    document.querySelectorAll('.sidebar-item').forEach(function(s) {
+        s.classList.remove('active');
+    });
+    // Show selected tab
+    document.getElementById('tab-' + tabName).classList.add('active');
+    // Activate clicked sidebar item
+    if (el) el.classList.add('active');
+    // Update URL hash without scrolling
+    history.replaceState(null, '', '#' + tabName);
+}
+
+// On page load: activate tab from URL hash, or from active filters
+(function() {
+    var hash = window.location.hash.replace('#', '');
+    var validTabs = ['reservations', 'flights', 'reports'];
+    var tab = 'reservations'; // default
+
+    if (validTabs.indexOf(hash) !== -1) {
+        tab = hash;
+    } else if ({% if lastFilterDate or lastFilterUsername or lastFilterStatus %}true{% else %}false{% endif %}) {
+        tab = 'reservations';
+    } else if ({% if lastBpfDate or lastRoutesStart or lastRoutesEnd or lastFilterSeason %}true{% else %}false{% endif %}) {
+        tab = 'reports';
+    }
+
+    var el = document.querySelector('[data-tab="' + tab + '"]');
+    switchTab(tab, el);
+})();
+
 function toggleFilter(panelId, btn) {
     var panel = document.getElementById(panelId);
     var isOpen = panel.classList.toggle('is-open');

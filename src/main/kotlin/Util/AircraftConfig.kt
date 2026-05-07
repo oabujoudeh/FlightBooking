@@ -1,8 +1,8 @@
 package com.flightbooking
 
 /**
-* Stores the seat setup for one cabin section.
-*/
+ * Stores the seat setup for one cabin section.
+ */
 data class CabinConfig(
     val seatClass: String,
     val rows: IntRange,
@@ -10,8 +10,8 @@ data class CabinConfig(
 )
 
 /**
-* Stores the layout details for one deck of the plane.
-*/
+ * Stores the layout details for one deck of the plane.
+ */
 data class DeckConfig(
     val deckName: String,
     val cabins: List<CabinConfig>,
@@ -20,8 +20,8 @@ data class DeckConfig(
 )
 
 /**
-* Stores the seat layout setup for an aircraft.
-*/
+ * Stores the seat layout setup for an aircraft.
+ */
 data class AircraftConfig(
     val decks: List<DeckConfig>,
 )
@@ -29,54 +29,64 @@ data class AircraftConfig(
 object AircraftConfigs {
     val configs: Map<String, AircraftConfig> = mapOf(
 
-        // single-aisle
+        // ── Single-aisle ──────────────────────────────────────────────────────
+
+        // Business rows 1-5 (3-3), Economy rows 6-30 (3-3)
         "Airbus A320" to AircraftConfig(decks = listOf(DeckConfig(
             deckName = "Main Deck",
             exitRows = setOf(12, 13),
-            bassinetRows = setOf(1),
+            bassinetRows = setOf(6),
             cabins = listOf(
-                CabinConfig("economy",  1..30,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
+                CabinConfig("business", 1..5,   layout = listOf(listOf("A","C"), listOf("D","F"))), // 2-2
+                CabinConfig("economy",  6..30,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),
 
+        // Business rows 1-5 (3-3), Economy rows 6-35 (3-3)
         "Airbus A321" to AircraftConfig(decks = listOf(DeckConfig(
             deckName = "Main Deck",
             exitRows = setOf(14, 15),
-            bassinetRows = setOf(1),
+            bassinetRows = setOf(6),
             cabins = listOf(
-                CabinConfig("economy",  1..35,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
+                CabinConfig("business", 1..5,   layout = listOf(listOf("A","C"), listOf("D","F"))), // 2-2
+                CabinConfig("economy",  6..35,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),
 
+        // Business rows 1-5 (3-3), Economy rows 6-32 (3-3)
         "Boeing 737" to AircraftConfig(decks = listOf(DeckConfig(
             deckName = "Main Deck",
             exitRows = setOf(13, 14),
-            bassinetRows = setOf(1),
+            bassinetRows = setOf(6),
             cabins = listOf(
-                CabinConfig("economy",  1..32,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
+                CabinConfig("business", 1..5,   layout = listOf(listOf("A","C"), listOf("D","F"))), // 2-2
+                CabinConfig("economy",  6..32,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),
+
+        // Business rows 1-5 (2-2), Economy rows 6-20 (2-2)
+        "Embraer E175" to AircraftConfig(decks = listOf(DeckConfig(
+            deckName = "Main Deck",
+            exitRows = setOf(9, 10),
+            bassinetRows = setOf(6),
+            cabins = listOf(
+                CabinConfig("business", 1..3,   layout = listOf(listOf("A","B"), listOf("C","D"))), // 2-2
+                CabinConfig("economy",  4..20,  layout = listOf(listOf("A","B"), listOf("C","D")))  // 2-2
+            )
+        ))),
+
+        // ── Wide-body ─────────────────────────────────────────────────────────
 
         "Boeing 757" to AircraftConfig(decks = listOf(DeckConfig(
             deckName = "Main Deck",
             exitRows = setOf(15, 16),
             bassinetRows = setOf(1),
             cabins = listOf(
-                CabinConfig("business", 1..5,   layout = listOf(listOf("A","B","C"), listOf("D","E","F"))), // 3-3
+                CabinConfig("business", 1..5,   layout = listOf(listOf("A","C"), listOf("D","F"))), // 2-2
                 CabinConfig("economy",  6..36,  layout = listOf(listOf("A","B","C"), listOf("D","E","F")))  // 3-3
             )
         ))),
 
-        "Embraer E175" to AircraftConfig(decks = listOf(DeckConfig(
-            deckName = "Main Deck",
-            exitRows = setOf(9, 10),
-            bassinetRows = setOf(1),
-            cabins = listOf(
-                CabinConfig("economy",  1..20,  layout = listOf(listOf("A","B"), listOf("C","D")))  // 2-2
-            )
-        ))),
-
-        // wide-body
         "Airbus A330" to AircraftConfig(decks = listOf(DeckConfig(
             deckName = "Main Deck",
             exitRows = setOf(15, 16, 30),
@@ -118,7 +128,8 @@ object AircraftConfigs {
             )
         ))),
 
-        // double-decker
+        // ── Double-decker ─────────────────────────────────────────────────────
+
         "Boeing 747" to AircraftConfig(decks = listOf(
             DeckConfig(
                 deckName = "Main Deck",

@@ -9,10 +9,18 @@
 </section>
 
 <main class="flights-layout">
-<form method="post" action="/book-flights">
+<form method="post" action="{% if reschedule %}/reschedule/select-seats{% else %}/book-flights{% endif %}">
     <input type="hidden" name="adults" value="{{ adults }}">
     <input type="hidden" name="children" value="{{ children }}">
     <input type="hidden" name="tripType" value="{{ tripType }}">
+
+    {# --- Reschedule hidden fields (only present when rescheduling) --- #}
+    {% if reschedule %}
+    <input type="hidden" name="reschedule" value="true">
+    <input type="hidden" name="bookingId" value="{{ bookingId }}">
+    <input type="hidden" name="oldPrice" value="{{ oldPrice }}">
+    <input type="hidden" name="passengerCount" value="{{ passengerCount }}">
+    {% endif %}
 
     {# --- Outbound flight area --- #}
     <section id="outbound-section" class="card booking-card">
@@ -21,7 +29,9 @@
 
         {% if combinedFlights is not empty %}
             {% for flight in combinedFlights %}
-                <div class="flight-result-card">
+                <div class="flight-result-card"
+                     data-arrival-time="{{ flight.arrivalTime }}"
+                     data-arrival-day-offset="{{ flight.arrivalDayOffset }}">
                     <div class="flight-row">
                         <div class="flight-endpoint">
                             <span class="flight-time">{{ flight.departureTime }}</span>
@@ -61,24 +71,32 @@
 
                         <div class="flight-fare-options">
                             {% if flight.priceEconomy is not null %}
-                            <div class="fare-option">
+                            <div class="fare-option {% if reschedule and rescheduleCabin != 'economy' %}unavailable{% endif %}">
                                 <span class="fare-class">Economy</span>
-                                <span class="flight-price">£{{ flight.priceEconomy }}</span>
-                                <label class="select-btn">
-                                    <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_economy" required style="display:none;">
-                                    Select
-                                </label>
+                                {% if reschedule and rescheduleCabin != 'economy' %}
+                                    <span class="flight-meta">N/A</span>
+                                {% else %}
+                                    <span class="flight-price">£{{ flight.priceEconomy }}</span>
+                                    <label class="select-btn">
+                                        <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_economy" {% if not reschedule or rescheduleCabin == 'economy' %}required{% endif %} style="display:none;">
+                                        Select
+                                    </label>
+                                {% endif %}
                             </div>
                             {% endif %}
 
                             {% if flight.priceBusiness is not null %}
-                            <div class="fare-option">
+                            <div class="fare-option {% if reschedule and rescheduleCabin != 'business' %}unavailable{% endif %}">
                                 <span class="fare-class">Business</span>
-                                <span class="flight-price">£{{ flight.priceBusiness }}</span>
-                                <label class="select-btn">
-                                    <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_business" style="display:none;">
-                                    Select
-                                </label>
+                                {% if reschedule and rescheduleCabin != 'business' %}
+                                    <span class="flight-meta">N/A</span>
+                                {% else %}
+                                    <span class="flight-price">£{{ flight.priceBusiness }}</span>
+                                    <label class="select-btn">
+                                        <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_business" {% if reschedule and rescheduleCabin == 'business' %}required{% endif %} style="display:none;">
+                                        Select
+                                    </label>
+                                {% endif %}
                             </div>
                             {% else %}
                             <div class="fare-option unavailable">
@@ -88,13 +106,17 @@
                             {% endif %}
 
                             {% if flight.priceFirst is not null %}
-                            <div class="fare-option">
+                            <div class="fare-option {% if reschedule and rescheduleCabin != 'first' %}unavailable{% endif %}">
                                 <span class="fare-class">First</span>
-                                <span class="flight-price">£{{ flight.priceFirst }}</span>
-                                <label class="select-btn">
-                                    <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_first" style="display:none;">
-                                    Select
-                                </label>
+                                {% if reschedule and rescheduleCabin != 'first' %}
+                                    <span class="flight-meta">N/A</span>
+                                {% else %}
+                                    <span class="flight-price">£{{ flight.priceFirst }}</span>
+                                    <label class="select-btn">
+                                        <input type="radio" name="outboundFlight" value="{{ flight.flightId }}_first" {% if reschedule and rescheduleCabin == 'first' %}required{% endif %} style="display:none;">
+                                        Select
+                                    </label>
+                                {% endif %}
                             </div>
                             {% else %}
                             <div class="fare-option unavailable">
@@ -119,7 +141,8 @@
 
         {% if returnFlights is not empty %}
             {% for flight in returnFlights %}
-                <div class="flight-result-card">
+                <div class="flight-result-card return-flight-card"
+                     data-departure-time="{{ flight.departureTime }}">
                     <div class="flight-row">
                         <div class="flight-endpoint">
                             <span class="flight-time">{{ flight.departureTime }}</span>
@@ -156,24 +179,32 @@
 
                         <div class="flight-fare-options">
                             {% if flight.priceEconomy is not null %}
-                            <div class="fare-option">
+                            <div class="fare-option {% if reschedule and rescheduleReturnCabin != 'economy' %}unavailable{% endif %}">
                                 <span class="fare-class">Economy</span>
-                                <span class="flight-price">£{{ flight.priceEconomy }}</span>
-                                <label class="select-btn">
-                                    <input type="radio" name="returnFlight" value="{{ flight.flightId }}_economy" required style="display:none;">
-                                    Select
-                                </label>
+                                {% if reschedule and rescheduleReturnCabin != 'economy' %}
+                                    <span class="flight-meta">N/A</span>
+                                {% else %}
+                                    <span class="flight-price">£{{ flight.priceEconomy }}</span>
+                                    <label class="select-btn">
+                                        <input type="radio" name="returnFlight" value="{{ flight.flightId }}_economy" {% if not reschedule or rescheduleReturnCabin == 'economy' %}required{% endif %} style="display:none;">
+                                        Select
+                                    </label>
+                                {% endif %}
                             </div>
                             {% endif %}
 
                             {% if flight.priceBusiness is not null %}
-                            <div class="fare-option">
+                            <div class="fare-option {% if reschedule and rescheduleReturnCabin != 'business' %}unavailable{% endif %}">
                                 <span class="fare-class">Business</span>
-                                <span class="flight-price">£{{ flight.priceBusiness }}</span>
-                                <label class="select-btn">
-                                    <input type="radio" name="returnFlight" value="{{ flight.flightId }}_business" style="display:none;">
-                                    Select
-                                </label>
+                                {% if reschedule and rescheduleReturnCabin != 'business' %}
+                                    <span class="flight-meta">N/A</span>
+                                {% else %}
+                                    <span class="flight-price">£{{ flight.priceBusiness }}</span>
+                                    <label class="select-btn">
+                                        <input type="radio" name="returnFlight" value="{{ flight.flightId }}_business" {% if reschedule and rescheduleReturnCabin == 'business' %}required{% endif %} style="display:none;">
+                                        Select
+                                    </label>
+                                {% endif %}
                             </div>
                             {% else %}
                             <div class="fare-option unavailable">
@@ -183,13 +214,17 @@
                             {% endif %}
 
                             {% if flight.priceFirst is not null %}
-                            <div class="fare-option">
+                            <div class="fare-option {% if reschedule and rescheduleReturnCabin != 'first' %}unavailable{% endif %}">
                                 <span class="fare-class">First</span>
-                                <span class="flight-price">£{{ flight.priceFirst }}</span>
-                                <label class="select-btn">
-                                    <input type="radio" name="returnFlight" value="{{ flight.flightId }}_first" style="display:none;">
-                                    Select
-                                </label>
+                                {% if reschedule and rescheduleReturnCabin != 'first' %}
+                                    <span class="flight-meta">N/A</span>
+                                {% else %}
+                                    <span class="flight-price">£{{ flight.priceFirst }}</span>
+                                    <label class="select-btn">
+                                        <input type="radio" name="returnFlight" value="{{ flight.flightId }}_first" {% if reschedule and rescheduleReturnCabin == 'first' %}required{% endif %} style="display:none;">
+                                        Select
+                                    </label>
+                                {% endif %}
                             </div>
                             {% else %}
                             <div class="fare-option unavailable">
@@ -209,7 +244,9 @@
 
     {# --- Bottom Operation Bar --- #}
     <div id="action-bar" class="{% if tripType != 'oneway' %}hidden-section{% endif %}" style="margin-top: 30px; text-align: center;">
-        <button type="submit" class="primary-btn" style="width: auto; padding: 16px 60px;">Continue to Passenger Details</button>
+        <button type="submit" class="primary-btn" style="width: auto; padding: 16px 60px;">
+            {% if reschedule %}Continue to Seat Selection{% else %}Continue to Passenger Details{% endif %}
+        </button>
     </div>
 </form>
 </main>
@@ -226,24 +263,50 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
     const outboundRadios = document.querySelectorAll('input[name="outboundFlight"]');
     const returnRadios = document.querySelectorAll('input[name="returnFlight"]');
     const returnSection = document.getElementById('return-section');
     const actionBar = document.getElementById('action-bar');
 
-    // after selecting outbound, show inbound
+    const departureDate = '{{ departureDate }}';
+    const returnDate    = '{{ returnDate }}';
+    const isSameDay     = (departureDate && returnDate && departureDate === returnDate);
+
+    function filterReturnFlights(outboundArrivalTime, outboundArrivalDayOffset) {
+        // Only filter if same-day return and outbound lands on day 0 (no overnight)
+        if (!isSameDay || outboundArrivalDayOffset > 0) return;
+
+        document.querySelectorAll('.return-flight-card').forEach(card => {
+            const depTime = card.dataset.departureTime; // e.g. "14:30"
+            if (depTime <= outboundArrivalTime) {
+                card.style.display = 'none';
+            } else {
+                card.style.display = '';
+            }
+        });
+    }
+
+    // after selecting outbound, show inbound (or action bar for oneway)
     outboundRadios.forEach(r => {
         r.addEventListener('change', () => {
+            // Get arrival time from the parent flight card
+            const card = r.closest('.flight-result-card');
+            const arrivalTime    = card ? card.dataset.arrivalTime : null;
+            const arrivalDayOffset = card ? parseInt(card.dataset.arrivalDayOffset || '0') : 0;
+
             if (returnSection) {
+                if (arrivalTime) filterReturnFlights(arrivalTime, arrivalDayOffset);
                 returnSection.classList.remove('hidden-section');
                 returnSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
                 actionBar.classList.remove('hidden-section');
+                actionBar.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     });
 
-    // after select inbound, show button
+    // after selecting inbound, show button
     if (returnRadios) {
         returnRadios.forEach(r => {
             r.addEventListener('change', () => {

@@ -913,15 +913,15 @@ button[type=submit]:hover {
 }
 
 .flight-summary-badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: var(--gold);
+    background: #ffffff;
     color: var(--navy);
-    padding: 3px 12px;
+    border: 2px solid var(--gold);
     border-radius: 999px;
+    padding: 3px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .flight-summary-badge.return {

@@ -18,7 +18,9 @@ data class UserSession(
     val loggedIn: Boolean = false,
     val message: String = "",
     val isAdmin: Boolean = false,
-    val rescheduleBookingId: Int? = null
+    val pendingBooking: PendingBooking? = null,
+    val rescheduleBookingId: Int? = null,
+    val pendingReschedule: PendingReschedule? = null
 )
 
 /**
