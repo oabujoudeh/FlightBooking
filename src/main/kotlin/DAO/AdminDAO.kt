@@ -60,26 +60,45 @@ object AdminDAO {
     * @return a list of maps containing the date, booking count, and total revenue
     * for each booking date, or an empty list if the query fails
     */
-    fun getAllBookingsGroupedByDate(): List<Map<String, Any>> {
-        val sql = """
-            SELECT DATE(booking_date) as date, COUNT(*) as count, SUM(total_price) as revenue
-            FROM bookings
-            GROUP BY DATE(booking_date)
-            ORDER BY date ASC
-        """
+    fun getAllBookingsGroupedByDate(filterSeason: String? = null): List<Map<String, Any>> {
+        var sql: String
+        if (!filterSeason.isNullOrEmpty()) {
+            sql = """
+                SELECT DATE(b.booking_date) as booking_date,
+                    COUNT(*) as booking_count,
+                    SUM(b.total_price) as total_revenue
+                FROM bookings b
+                JOIN booking_flights bf ON b.booking_id = bf.booking_id
+                JOIN flights f ON bf.flight_id = f.flight_id
+                JOIN routes r ON f.route_id = r.route_id
+                WHERE r.season = ?
+                GROUP BY DATE(b.booking_date)
+                ORDER BY booking_date DESC
+            """
+        } else {
+            sql = """
+                SELECT DATE(b.booking_date) as booking_date,
+                    COUNT(*) as booking_count,
+                    SUM(b.total_price) as total_revenue
+                FROM bookings b
+                GROUP BY DATE(b.booking_date)
+                ORDER BY booking_date DESC
+            """
+        }
         return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
+                    if (!filterSeason.isNullOrEmpty()) {
+                        stmt.setString(1, filterSeason)
+                    }
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(
-                                mapOf(
-                                    "date" to (rs.getString("date") ?: ""),
-                                    "count" to rs.getInt("count"),
-                                    "revenue" to rs.getDouble("revenue"),
-                                ),
-                            )
+                            results.add(mapOf(
+                                "date"    to (rs.getString("booking_date") ?: ""),
+                                "count"   to rs.getInt("booking_count"),
+                                "revenue" to rs.getDouble("total_revenue"),
+                            ))
                         }
                         results
                     }
@@ -330,7 +349,7 @@ object AdminDAO {
     * @param limit the max number of routes to return, default is 10
     * @return a list of maps with the busiest route details, or an empty list if the query fails
     */
-    fun getBusiestRoutes(limit: Int = 10, startDate: String? = null, endDate: String? = null): List<Map<String, Any>> {
+    fun getBusiestRoutes(limit: Int = 10, startDate: String? = null, endDate: String? = null, filterSeason: String? = null): List<Map<String, Any>> {
         var sql = """
             SELECT dep.name as departure_city, arr.name as arrival_city,
                    r.flight_number, COUNT(*) as booking_count
@@ -341,6 +360,9 @@ object AdminDAO {
             JOIN airports arr ON r.arrival_airport = arr.airport_id
             WHERE 1=1
         """
+        if (!filterSeason.isNullOrEmpty()) {
+            sql += " AND r.season = ?"
+        }
         if (!startDate.isNullOrEmpty()) {
             sql += " AND f.flight_date >= ?"
         }
@@ -359,6 +381,9 @@ object AdminDAO {
                     var paramIndex = 1
                     if (!startDate.isNullOrEmpty()) {
                         stmt.setString(paramIndex++, startDate)
+                    }
+                    if (!endDate.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, endDate)
                     }
                     if (!endDate.isNullOrEmpty()) {
                         stmt.setString(paramIndex++, endDate)
@@ -569,7 +594,7 @@ object AdminDAO {
         }
     }
     
-    fun getBookingsPerFlight(limit: Int = 20, filterDate: String? = null): List<Map<String, Any>> {
+    fun getBookingsPerFlight(limit: Int = 20, filterDate: String? = null, filterSeason: String? = null): List<Map<String, Any>> {
         var sql = """
             SELECT r.flight_number,
                 f.flight_date,
@@ -586,6 +611,9 @@ object AdminDAO {
         if (!filterDate.isNullOrEmpty()) {
             sql += " AND f.flight_date = ?"
         }
+        if (!filterSeason.isNullOrEmpty()) {
+            sql += " AND r.season = ?"
+        }
         sql += """
             GROUP BY f.flight_id, r.flight_number, f.flight_date, dep.name, arr.name
             ORDER BY f.flight_date DESC, booking_count DESC
@@ -597,6 +625,9 @@ object AdminDAO {
                     var paramIndex = 1
                     if (!filterDate.isNullOrEmpty()) {
                         stmt.setString(paramIndex++, filterDate)
+                    }
+                    if (!filterSeason.isNullOrEmpty()) {
+                        stmt.setString(paramIndex++, filterSeason)
                     }
                     stmt.setInt(paramIndex, limit)
                     stmt.executeQuery().use { rs ->

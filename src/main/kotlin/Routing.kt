@@ -745,12 +745,15 @@ fun Application.configureRouting() {
             val params = call.receiveParameters()
 
             val outboundCabin = params["outboundCabin"] ?: "economy"
-            val returnCabin = params["returnCabin"] ?: "economy"
-            val adults = params["adults"]?.toIntOrNull() ?: 1
-            val children = params["children"]?.toIntOrNull() ?: 0
+            val returnCabin   = params["returnCabin"]   ?: "economy"
+            val adults        = params["adults"]?.toIntOrNull()   ?: 1
+            val children      = params["children"]?.toIntOrNull() ?: 0
             val totalPassengers = adults + children
 
-            // Parse all flight IDs (comma-separated)
+            // Read contact details
+            val contactEmail = params["contactEmail"] ?: ""
+            val contactPhone = params["contactPhone"] ?: ""
+
             val outboundFlightIds = params["outboundFlightIdsRaw"]
                 ?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
             val returnFlightIds = params["returnFlightIdsRaw"]
@@ -760,7 +763,8 @@ fun Application.configureRouting() {
                 call.respondRedirect("/")
                 return@post
             }
-
+            // Calculate total price:
+            // Each leg's per-person price × total passengers (adults + children, no discount)
             var totalPrice = 0.0
             val allFlightIds = mutableListOf<Int>()
 
@@ -769,57 +773,54 @@ fun Application.configureRouting() {
                 totalPrice += getPriceByCabin(flight, outboundCabin) * totalPassengers
                 allFlightIds.add(id)
             }
-
             for (id in returnFlightIds) {
                 val flight = FlightDAO.getFlightOverview(id) ?: continue
                 totalPrice += getPriceByCabin(flight, returnCabin) * totalPassengers
                 allFlightIds.add(id)
             }
 
-            // Collect passenger info
-            // Seats are stored per step: adult_0_seat_step1, adult_0_seat_step2, etc.
-            // For the booking record we store seats as comma-separated per passenger across all steps
             val totalSteps = outboundFlightIds.size + returnFlightIds.size
-
             val passengers = mutableListOf<Map<String, String>>()
 
             for (i in 0 until adults) {
                 val seats = (1..totalSteps).map { step ->
                     params["adult_${i}_seat_step${step}"] ?: ""
                 }.filter { it.isNotEmpty() }.joinToString(",")
-
                 passengers.add(mapOf(
                     "fullName" to (params["adult_${i}_fullName"] ?: ""),
-                    "idNumber" to (params["adult_${i}_ID"] ?: ""),
-                    "type" to "adult",
-                    "seat" to seats,
-                    "cabin" to outboundCabin
+                    "idNumber" to (params["adult_${i}_ID"]       ?: ""),
+                    "type"     to "adult",
+                    "seat"     to seats,
+                    "cabin"    to outboundCabin
                 ))
             }
-
             for (i in 0 until children) {
                 val seats = (1..totalSteps).map { step ->
                     params["child_${i}_seat_step${step}"] ?: ""
                 }.filter { it.isNotEmpty() }.joinToString(",")
-
                 passengers.add(mapOf(
                     "fullName" to (params["child_${i}_fullName"] ?: ""),
-                    "idNumber" to (params["child_${i}_ID"] ?: ""),
-                    "type" to "child",
-                    "seat" to seats,
-                    "cabin" to outboundCabin
+                    "idNumber" to (params["child_${i}_ID"]       ?: ""),
+                    "type"     to "child",
+                    "seat"     to seats,
+                    "cabin"    to outboundCabin
                 ))
             }
 
             val totalPriceFormatted = "%.2f".format(totalPrice)
-            val userID = UserDAO.getUserID(session.username)
-            val isSuccess = UserDAO.createBooking(userID, session.username, allFlightIds, totalPrice, passengers)
 
-            if (isSuccess) {
-                call.respondRedirect("/payment?totalPrice=$totalPriceFormatted")
-            } else {
-                call.respondRedirect("/")
-            }
+            // Save booking data to session — createBooking happens after payment
+            call.sessions.set(session.copy(
+                pendingBooking = PendingBooking(
+                    flightIds    = allFlightIds,
+                    totalPrice   = totalPrice,
+                    passengers   = passengers,
+                    contactEmail = contactEmail,
+                    contactPhone = contactPhone,
+                )
+            ))
+
+            call.respondRedirect("/payment?totalPrice=$totalPriceFormatted")
         }
 
         get("/payment") {
@@ -837,7 +838,37 @@ fun Application.configureRouting() {
         }
 
         post("/payment") {
-            call.respondRedirect("/payment-success")
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
+                return@post
+            }
+
+            val pending = session.pendingBooking
+            if (pending == null) {
+                call.respondRedirect("/")
+                return@post
+            }
+
+            val userID    = UserDAO.getUserID(session.username)
+            val isSuccess = UserDAO.createBooking(
+                userID,
+                session.username,
+                pending.flightIds,
+                pending.totalPrice,
+                pending.passengers,
+                pending.contactEmail,
+                pending.contactPhone,
+            )
+
+            // Clear pending booking from session regardless of outcome
+            call.sessions.set(session.copy(pendingBooking = null))
+
+            if (isSuccess) {
+                call.respondRedirect("/payment-success")
+            } else {
+                call.respondRedirect("/")
+            }
         }
 
         get("/payment-success") {

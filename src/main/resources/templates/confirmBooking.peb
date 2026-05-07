@@ -360,7 +360,7 @@
                         <fieldset class="passenger-fieldset">
                             <legend>Adult {{ i + 1 }}</legend>
                             <p><input type="text" name="adult_{{ i }}_fullName" placeholder="Full Name" required></p>
-                            <p><input type="text" name="adult_{{ i }}_ID"       placeholder="ID Number"  required></p>
+                            <p><input type="text" name="adult_{{ i }}_ID"       placeholder="Passport number"  required></p>
                         </fieldset>
                         {% endfor %}
 
@@ -368,9 +368,16 @@
                         <fieldset class="passenger-fieldset">
                             <legend>Child {{ i + 1 }}</legend>
                             <p><input type="text" name="child_{{ i }}_fullName" placeholder="Full Name" required></p>
-                            <p><input type="text" name="child_{{ i }}_ID"       placeholder="ID Number"  required></p>
+                            <p><input type="text" name="child_{{ i }}_ID"       placeholder="Passport number"  required></p>
                         </fieldset>
                         {% endfor %}
+
+                        <fieldset class="passenger-fieldset contact-fieldset">
+                            <legend>Contact Details</legend>
+                            <p class="contact-hint">We'll use this to send your booking confirmation and travel updates.</p>
+                            <p><input type="email" name="contactEmail" placeholder="Email address" required></p>
+                            <p><input type="tel"   name="contactPhone" placeholder="Phone number (incl. country code)" required></p>
+                        </fieldset>
 
                         <hr style="margin:20px 0;">
                         {% endif %}
@@ -489,6 +496,16 @@
         opacity: 0.7 !important;
         background: #e0e0e0;
     }
+    .contact-fieldset {
+        margin-top: 16px;
+        background: #f9f9fb;
+        border: 1px solid #e0e0e8;
+    }
+    .contact-hint {
+        font-size: 0.82rem;
+        color: #888;
+        margin: 0 0 8px 0;
+    }
     .seat[aria-disabled="true"] {
         opacity: 0.35;
         cursor: not-allowed;
@@ -573,12 +590,17 @@ function checkInputsForStep(stepIndex) {
             if (input.type === 'text') {
                 input.style.borderColor = 'red';
                 alert('Please fill in all passenger details.');
+            } else if (input.type === 'email' || input.type === 'tel') {
+                input.style.borderColor = 'red';
+                alert('Please fill in your contact email and phone number.');
             } else if (input.type === 'hidden') {
                 alert('Please select seats for all passengers for this flight.');
             }
             return false;
         } else {
-            if (input.type === 'text') input.style.borderColor = '';
+            if (input.type === 'text' || input.type === 'email' || input.type === 'tel') {
+                input.style.borderColor = '';
+            }
         }
     }
     return true;

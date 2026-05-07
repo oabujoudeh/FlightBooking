@@ -519,7 +519,15 @@ object UserDAO{
     * @param passengers the passenger details
     * @return true if the booking was created, otherwise false
     */
-    fun createBooking(userID: Int, email: String, flightIds: List<Int>, totalPrice: Double, passengers: List<Map<String, String>>): Boolean {
+    fun createBooking(
+        userID: Int,
+        username: String,
+        flightIds: List<Int>,
+        totalPrice: Double,
+        passengers: List<Map<String, String>>,
+        contactEmail: String,
+        contactPhone: String,
+    ): Boolean {
         return try {
             Database.getConnection().use { conn ->
                 conn.autoCommit = false
@@ -535,12 +543,13 @@ object UserDAO{
                         contact_email,
                         contact_phone
                     )
-                    VALUES (?, datetime('now'), ?, 'confirmed', ?, 0)
+                    VALUES (?, datetime('now'), ?, 'confirmed', ?, ?)
                     """.trimIndent()
                 val bookingStmt = conn.prepareStatement(bookingSql, java.sql.Statement.RETURN_GENERATED_KEYS)
                 bookingStmt.setInt(1, userID)
                 bookingStmt.setDouble(2, totalPrice)
-                bookingStmt.setString(3, email)
+                bookingStmt.setString(3, contactEmail)
+                bookingStmt.setString(4, contactPhone)
                 bookingStmt.executeUpdate()
 
                 val keys = bookingStmt.generatedKeys
