@@ -2,6 +2,7 @@ package com.flightbooking
 
 import kotlin.test.Test
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class UserDAOTest {
@@ -97,6 +98,12 @@ class UserDAOTest {
     fun testCancelBookingWithInvalidId() {
         val result = UserDAO.cancelBooking(-1, -1)
         assertFalse(result, "cant cancel a booking that doesnt exist")
+    }
+
+    @Test
+    fun testGetBookingCancellationNotificationForInvalidBookingReturnsNull(): Unit {
+        val result: BookingCancellationNotification? = UserDAO.getBookingCancellationNotification(-1, -1)
+        assertNull(result, "invalid booking should not create an email notification")
     }
 
 
