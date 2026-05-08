@@ -8,11 +8,13 @@ import jakarta.mail.Session
 import jakarta.mail.Transport
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
+import org.slf4j.LoggerFactory
 import java.util.Properties
 
 object EmailService {
-    private const val USERNAME = "6aff3dc4f403a8"
-    private const val PASSWORD = "de49a98f194e65"
+    private val logger = LoggerFactory.getLogger(EmailService::class.java)
+    private const val USERNAME = "9bfac39223924d"
+    private const val PASSWORD = "404922bf818847"
 
     /**
     * Sends an email using the mail server settings.
@@ -42,6 +44,8 @@ object EmailService {
                 },
             )
 
+        logger.info("Sending email to {} with subject '{}'", to, subject)
+
         try {
             val message =
                 MimeMessage(session).apply {
@@ -52,7 +56,9 @@ object EmailService {
                 }
 
             Transport.send(message)
+            logger.info("Email successfully sent to {}", to)
         } catch (e: MessagingException) {
+            logger.error("Failed to send email to {}", to, e)
             e.printStackTrace()
         }
     }
