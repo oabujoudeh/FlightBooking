@@ -385,8 +385,8 @@ fun Application.configureRouting() {
             val email = params["username"] ?: ""
             val password = params["password"] ?: ""
 
-            // if not get redirect_url, goto /profile
-            var redirectUrl = params["redirect_url"] ?: "/profile"
+            // if not get redirect_url, goto /
+            var redirectUrl = params["redirect_url"] ?: "/"
 
             if (redirectUrl.contains("forgot-password") || redirectUrl.contains("reset-password") || redirectUrl.contains("register")) {
                 redirectUrl = "/profile"
