@@ -307,4 +307,91 @@ class RoutingTest {
             assertEquals(HttpStatusCode.Found, response.status)
             assertEquals("/", response.headers["Location"])
         }
+
+
+    /**
+    * Tests for the complaint routes.
+    *
+    * These checks make sure the complaint page requires login, that the
+    * admin complaints page requires admin, and that public pages load fine.
+    */
+    @Test
+    fun testComplaintPageRequiresLogin() =
+        testApplication {
+            application { module() }
+            val client = createClient { followRedirects = false }
+
+            val response = client.get("/complaint")
+
+            assertEquals(HttpStatusCode.Found, response.status, "complaint page should redirect if not logged in")
+            assertEquals("/login", response.headers["Location"], "should send to login page")
+        }
+
+    @Test
+    fun testSubmitComplaintRequiresLogin() =
+        testApplication {
+            application { module() }
+            val client = createClient { followRedirects = false }
+
+            val response = client.post("/complaint") {
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody("content=test complaint")
+            }
+
+            assertEquals(HttpStatusCode.Found, response.status, "posting a complaint without login should redirect")
+            assertEquals("/login", response.headers["Location"])
+        }
+
+    @Test
+    fun testAdminComplaintsPageRequiresAdmin() =
+        testApplication {
+            application { module() }
+            val client = createClient { followRedirects = false }
+
+            val response = client.get("/admin/complaints")
+
+            assertEquals(HttpStatusCode.Found, response.status, "not an admin so should redirect")
+            assertEquals("/", response.headers["Location"])
+        }
+
+    @Test
+    fun testAdminComplaintReplyRequiresAdmin() =
+        testApplication {
+            application { module() }
+            val client = createClient { followRedirects = false }
+
+            val response = client.post("/admin/complaints/reply") {
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody("complaintId=1&reply=test reply")
+            }
+
+            assertEquals(HttpStatusCode.Found, response.status, "non-admin shouldnt be able to reply to complaints")
+            assertEquals("/", response.headers["Location"])
+        }
+
+
+    /**
+    * Tests for payment pages.
+    *
+    * These checks make sure the payment and payment success pages load correctly.
+    */
+    @Test
+    fun testPaymentPageLoads() =
+        testApplication {
+            application { module() }
+
+            val response = client.get("/payment")
+
+            assertEquals(HttpStatusCode.OK, response.status, "payment page should load")
+        }
+
+    @Test
+    fun testPaymentSuccessPageLoads() =
+        testApplication {
+            application { module() }
+
+            val response = client.get("/payment-success")
+
+            assertEquals(HttpStatusCode.OK, response.status, "payment success page should load")
+        }
 }

@@ -41,6 +41,7 @@
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <nav class="navbar" aria-label="Main navigation">
     <a href="/" class="logo" aria-label="EAJO Air home page">✈ EAJO Air</a>
+
     <div style="display: flex; align-items: center; gap: 20px;">
         <div style="position: relative;">
             <button type="button" onclick="toggleNoti()" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.08); cursor: pointer; font-weight: 800; font-size: 14px; background: #d4af37; color: #0b1f3a; position: relative;">
@@ -65,6 +66,7 @@
         </div>
         {% if loggedIn %}
             <a href="/profile" class="auth-btn">Profile</a>
+            <a href="/complaint" class="auth-btn">Complaint</a>
         {% else %}
             <a href="/login" class="auth-btn">Login</a>
         {% endif %}
