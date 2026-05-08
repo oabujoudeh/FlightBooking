@@ -6,7 +6,20 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Integration tests for administrative handling of passenger change requests.
+ *
+ * These tests verify that approving and rejecting requests correctly updates
+ * request statuses in the database and applies passenger information changes
+ * only to the selected pending request.
+ */
 class AdminChangeRequestTest {
+    /**
+    * Verifies that approving a pending change request:
+    * - marks only the selected request as accepted,
+    * - leaves other pending requests unchanged,
+    * - and updates the passenger information in the booking records.
+    */
     @Test
     fun approveChangeRequestAcceptsOnlySelectedPendingRequest(): Unit {
         DriverManager.getConnection("jdbc:sqlite::memory:").use { connection: Connection ->
@@ -23,6 +36,11 @@ class AdminChangeRequestTest {
         }
     }
 
+    /**
+    * Verifies that rejecting a pending change request:
+    * - marks only the selected request as rejected,
+    * - and leaves other pending requests unchanged.
+    */
     @Test
     fun rejectChangeRequestRejectsOnlySelectedPendingRequest(): Unit {
         DriverManager.getConnection("jdbc:sqlite::memory:").use { connection: Connection ->
@@ -36,7 +54,9 @@ class AdminChangeRequestTest {
             assertEquals(1, countRequestsByStatus(connection, userId, "pending"))
         }
     }
-
+    /**
+    * Creates the database schema required for change request integration tests.
+    */
     private fun createChangeRequestTables(connection: Connection): Unit {
         connection.createStatement().use { statement ->
             statement.executeUpdate("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT NOT NULL)")
@@ -46,6 +66,11 @@ class AdminChangeRequestTest {
         }
     }
 
+    /**
+    * Inserts a test user into the database.
+    *
+    * @return the generated user ID
+    */
     private fun insertUser(connection: Connection): Int {
         val userId: Int = 10
         connection.prepareStatement("INSERT INTO users (user_id, email) VALUES (?, ?)").use { statement ->
@@ -56,6 +81,9 @@ class AdminChangeRequestTest {
         return userId
     }
 
+    /**
+    * Inserts a booking and passenger record associated with the specified user.
+    */
     private fun insertBookingPassenger(connection: Connection, userId: Int): Unit {
         connection.prepareStatement("INSERT INTO bookings (booking_id, user_id) VALUES (?, ?)").use { statement ->
             statement.setInt(1, 20)
@@ -70,6 +98,11 @@ class AdminChangeRequestTest {
         }
     }
 
+    /**
+    * Inserts a pending personal information change request for the specified user.
+    *
+    * @return the database row ID of the inserted request
+    */
     private fun insertChangeRequest(connection: Connection, userId: Int, changeTo: String): Long {
         connection.prepareStatement("INSERT INTO change_requests (user_id, change_to, change_type, status) VALUES (?, ?, 'personal_info', 'pending')").use { statement ->
             statement.setInt(1, userId)
@@ -83,6 +116,9 @@ class AdminChangeRequestTest {
         }
     }
 
+    /**
+    * Retrieves the current status of a change request.
+    */
     private fun getRequestStatus(connection: Connection, requestId: Long): String {
         connection.prepareStatement("SELECT status FROM change_requests WHERE rowid = ?").use { statement ->
             statement.setLong(1, requestId)
@@ -93,6 +129,9 @@ class AdminChangeRequestTest {
         }
     }
 
+    /**
+    * Counts the number of requests for a user with the specified status.
+    */
     private fun countRequestsByStatus(connection: Connection, userId: Int, status: String): Int {
         connection.prepareStatement("SELECT COUNT(*) AS request_count FROM change_requests WHERE user_id = ? AND status = ?").use { statement ->
             statement.setInt(1, userId)
@@ -104,6 +143,9 @@ class AdminChangeRequestTest {
         }
     }
 
+    /**
+    * Retrieves the passenger full name associated with the specified user.
+    */
     private fun getPassengerFullName(connection: Connection, userId: Int): String {
         connection.prepareStatement(
             """

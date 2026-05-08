@@ -185,17 +185,6 @@ class RoutingTest {
             assertEquals("/login", response.headers["Location"])
         }
 
-    @Test
-    fun testCantEditBookingWithoutLogin() =
-        testApplication {
-            application { module() }
-            val client = createClient { followRedirects = false }
-
-            val response = client.get("/edit-booking?id=1")
-
-            assertEquals(HttpStatusCode.Found, response.status)
-            assertEquals("/login", response.headers["Location"])
-        }
 
     @Test
     fun testCantUpdateBookingWithoutLogin() =

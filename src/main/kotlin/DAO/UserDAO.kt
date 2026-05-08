@@ -603,6 +603,63 @@ object UserDAO{
         }
     }
 
+    /**
+    * Retrieves booking information required for sending a cancellation notification email.
+    *
+    * This function queries the database for all flights associated with the specified booking,
+    * including flight number, departure city, arrival city, and flight date. The booking must
+    * belong to the specified user and must not already be cancelled.
+    *
+    * @param bookingId the ID of the booking to retrieve notification details for
+    * @param userID the ID of the user who owns the booking
+    * @return a [BookingCancellationNotification] containing the recipient email and formatted
+    * flight summary if the booking exists and is valid; otherwise `null`
+    */
+    fun getBookingCancellationNotification(bookingId: Int, userID: Int): BookingCancellationNotification? {
+        val sql = """
+            SELECT b.booking_id,
+                b.contact_email,
+                f.flight_date,
+                r.flight_number,
+                dep.city AS departure_city,
+                arr.city AS arrival_city
+            FROM bookings b
+            JOIN booking_flights bf ON b.booking_id = bf.booking_id
+            JOIN flights f ON bf.flight_id = f.flight_id
+            JOIN routes r ON f.route_id = r.route_id
+            JOIN airports dep ON r.departure_airport = dep.airport_id
+            JOIN airports arr ON r.arrival_airport = arr.airport_id
+            WHERE b.booking_id = ? AND b.user_id = ? AND b.status != 'cancelled'
+            ORDER BY bf.flight_sequence
+        """
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setInt(1, bookingId)
+                    stmt.setInt(2, userID)
+                    stmt.executeQuery().use { result ->
+                        val flightSummaries: MutableList<String> = mutableListOf()
+                        var recipientEmail: String = ""
+                        while (result.next()) {
+                            recipientEmail = result.getString("contact_email") ?: recipientEmail
+                            flightSummaries.add(
+                                "${result.getString("flight_number")} ${result.getString("departure_city")} to ${result.getString("arrival_city")} on ${result.getString("flight_date")}",
+                            )
+                        }
+                        if (recipientEmail.isBlank() || flightSummaries.isEmpty()) return@use null
+                        BookingCancellationNotification(
+                            bookingId = bookingId,
+                            recipientEmail = recipientEmail,
+                            flightSummary = flightSummaries.joinToString("\n"),
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
 
     /**
      * Replaces all passengers on a booking with a new list.

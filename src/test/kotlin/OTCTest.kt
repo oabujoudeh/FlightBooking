@@ -5,9 +5,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/* tests for the one time code system
-   used for password resets */
-
+/**
+ * Unit tests for the one-time code (OTC) system used for password resets.
+ *
+ * These tests verify code generation, validation, single-use behaviour,
+ * and separation of codes between different email accounts.
+ */
 class OTCTest {
 
     /**
@@ -22,12 +25,19 @@ class OTCTest {
         assertEquals(6, code.length, "should be 6 digits long")
     }
 
+    /**
+    * Verifies that generated one-time codes contain only numeric characters.
+    */
     @Test
     fun testGenerateCodeIsNumeric() {
         val code = OTC.generateAndSave("numeric@example.com")
         assertTrue(code.all { it.isDigit() }, "should only have numbers in it")
     }
 
+    /**
+    * Verifies that generating a new code for the same email invalidates
+    * the previously generated code.
+    */
     @Test
     fun testGenerateCodeOverwritesPrevious() {
         val code1 = OTC.generateAndSave("overwrite@example.com")
@@ -61,6 +71,10 @@ class OTCTest {
         assertFalse(OTC.verify("unknown@example.com", "123456"), "random email shouldnt have a code")
     }
 
+    /**
+    * Verifies that a one-time code becomes invalid after
+    * being successfully verified once.
+    */
     @Test
     fun testCodeIsConsumedAfterVerification() {
         val code = OTC.generateAndSave("consumed@example.com")
