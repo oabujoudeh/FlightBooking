@@ -6,9 +6,22 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Integration tests for administrative handling of passenger change requests.
+ *
+ * These tests verify that approving and rejecting requests correctly updates
+ * request statuses in the database and applies passenger information changes
+ * only to the selected pending request.
+ */
 class AdminChangeRequestTest {
+    /**
+     * Verifies that approving a pending change request:
+     * - marks only the selected request as accepted,
+     * - leaves other pending requests unchanged,
+     * - and updates the passenger information in the booking records.
+     */
     @Test
-    fun approveChangeRequestAcceptsOnlySelectedPendingRequest(): Unit {
+    fun approveChangeRequestAcceptsOnlySelectedPendingRequest() {
         DriverManager.getConnection("jdbc:sqlite::memory:").use { connection: Connection ->
             createChangeRequestTables(connection)
             val userId: Int = insertUser(connection)
@@ -23,8 +36,13 @@ class AdminChangeRequestTest {
         }
     }
 
+    /**
+     * Verifies that rejecting a pending change request:
+     * - marks only the selected request as rejected,
+     * - and leaves other pending requests unchanged.
+     */
     @Test
-    fun rejectChangeRequestRejectsOnlySelectedPendingRequest(): Unit {
+    fun rejectChangeRequestRejectsOnlySelectedPendingRequest() {
         DriverManager.getConnection("jdbc:sqlite::memory:").use { connection: Connection ->
             createChangeRequestTables(connection)
             val userId: Int = insertUser(connection)
@@ -37,15 +55,27 @@ class AdminChangeRequestTest {
         }
     }
 
-    private fun createChangeRequestTables(connection: Connection): Unit {
+    /**
+     * Creates the database schema required for change request integration tests.
+     */
+    private fun createChangeRequestTables(connection: Connection) {
         connection.createStatement().use { statement ->
             statement.executeUpdate("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT NOT NULL)")
             statement.executeUpdate("CREATE TABLE bookings (booking_id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL)")
-            statement.executeUpdate("CREATE TABLE booking_passengers (booking_id INTEGER NOT NULL, full_name TEXT NOT NULL, id_number TEXT NOT NULL)")
-            statement.executeUpdate("CREATE TABLE change_requests (user_id INTEGER NOT NULL, change_to TEXT NOT NULL, change_type TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending')")
+            statement.executeUpdate(
+                "CREATE TABLE booking_passengers (booking_id INTEGER NOT NULL, full_name TEXT NOT NULL, id_number TEXT NOT NULL)",
+            )
+            statement.executeUpdate(
+                "CREATE TABLE change_requests (user_id INTEGER NOT NULL, change_to TEXT NOT NULL, change_type TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending')",
+            )
         }
     }
 
+    /**
+     * Inserts a test user into the database.
+     *
+     * @return the generated user ID
+     */
     private fun insertUser(connection: Connection): Int {
         val userId: Int = 10
         connection.prepareStatement("INSERT INTO users (user_id, email) VALUES (?, ?)").use { statement ->
@@ -56,7 +86,13 @@ class AdminChangeRequestTest {
         return userId
     }
 
-    private fun insertBookingPassenger(connection: Connection, userId: Int): Unit {
+    /**
+     * Inserts a booking and passenger record associated with the specified user.
+     */
+    private fun insertBookingPassenger(
+        connection: Connection,
+        userId: Int,
+    ) {
         connection.prepareStatement("INSERT INTO bookings (booking_id, user_id) VALUES (?, ?)").use { statement ->
             statement.setInt(1, 20)
             statement.setInt(2, userId)
@@ -70,12 +106,24 @@ class AdminChangeRequestTest {
         }
     }
 
-    private fun insertChangeRequest(connection: Connection, userId: Int, changeTo: String): Long {
-        connection.prepareStatement("INSERT INTO change_requests (user_id, change_to, change_type, status) VALUES (?, ?, 'personal_info', 'pending')").use { statement ->
-            statement.setInt(1, userId)
-            statement.setString(2, changeTo)
-            statement.executeUpdate()
-        }
+    /**
+     * Inserts a pending personal information change request for the specified user.
+     *
+     * @return the database row ID of the inserted request
+     */
+    private fun insertChangeRequest(
+        connection: Connection,
+        userId: Int,
+        changeTo: String,
+    ): Long {
+        connection
+            .prepareStatement(
+                "INSERT INTO change_requests (user_id, change_to, change_type, status) VALUES (?, ?, 'personal_info', 'pending')",
+            ).use { statement ->
+                statement.setInt(1, userId)
+                statement.setString(2, changeTo)
+                statement.executeUpdate()
+            }
         connection.createStatement().use { statement ->
             statement.executeQuery("SELECT last_insert_rowid()").use { resultSet ->
                 return resultSet.getLong(1)
@@ -83,7 +131,13 @@ class AdminChangeRequestTest {
         }
     }
 
-    private fun getRequestStatus(connection: Connection, requestId: Long): String {
+    /**
+     * Retrieves the current status of a change request.
+     */
+    private fun getRequestStatus(
+        connection: Connection,
+        requestId: Long,
+    ): String {
         connection.prepareStatement("SELECT status FROM change_requests WHERE rowid = ?").use { statement ->
             statement.setLong(1, requestId)
             statement.executeQuery().use { resultSet ->
@@ -93,31 +147,53 @@ class AdminChangeRequestTest {
         }
     }
 
-    private fun countRequestsByStatus(connection: Connection, userId: Int, status: String): Int {
-        connection.prepareStatement("SELECT COUNT(*) AS request_count FROM change_requests WHERE user_id = ? AND status = ?").use { statement ->
-            statement.setInt(1, userId)
-            statement.setString(2, status)
-            statement.executeQuery().use { resultSet ->
-                resultSet.next()
-                return resultSet.getInt("request_count")
+    /**
+     * Counts the number of requests for a user with the specified status.
+     */
+    private fun countRequestsByStatus(
+        connection: Connection,
+        userId: Int,
+        status: String,
+    ): Int {
+        connection
+            .prepareStatement(
+                """
+                SELECT COUNT(*) AS request_count
+                FROM change_requests
+                WHERE user_id = ? AND status = ?
+                """.trimIndent(),
+            ).use { statement ->
+                statement.setInt(1, userId)
+                statement.setString(2, status)
+
+                statement.executeQuery().use { resultSet ->
+                    resultSet.next()
+                    return resultSet.getInt("request_count")
+                }
             }
-        }
     }
 
-    private fun getPassengerFullName(connection: Connection, userId: Int): String {
-        connection.prepareStatement(
-            """
-            SELECT bp.full_name
-            FROM booking_passengers bp
-            JOIN bookings b ON b.booking_id = bp.booking_id
-            WHERE b.user_id = ?
-            """.trimIndent(),
-        ).use { statement ->
-            statement.setInt(1, userId)
-            statement.executeQuery().use { resultSet ->
-                resultSet.next()
-                return resultSet.getString("full_name")
+    /**
+     * Retrieves the passenger full name associated with the specified user.
+     */
+    private fun getPassengerFullName(
+        connection: Connection,
+        userId: Int,
+    ): String {
+        connection
+            .prepareStatement(
+                """
+                SELECT bp.full_name
+                FROM booking_passengers bp
+                JOIN bookings b ON b.booking_id = bp.booking_id
+                WHERE b.user_id = ?
+                """.trimIndent(),
+            ).use { statement ->
+                statement.setInt(1, userId)
+                statement.executeQuery().use { resultSet ->
+                    resultSet.next()
+                    return resultSet.getString("full_name")
+                }
             }
-        }
     }
 }

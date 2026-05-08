@@ -5,29 +5,38 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/* tests for the one time code system
-   used for password resets */
-
+/**
+ * Unit tests for the one-time code (OTC) system used for password resets.
+ *
+ * These tests verify code generation, validation, single-use behaviour,
+ * and separation of codes between different email accounts.
+ */
 class OTCTest {
-
     /**
-    * Tests for one-time code generation.
-    *
-    * These checks make sure the code is 6 digits, only contains numbers,
-    * and that making a new code replaces the old one.
-    */
+     * Tests for one-time code generation.
+     *
+     * These checks make sure the code is 6 digits, only contains numbers,
+     * and that making a new code replaces the old one.
+     */
     @Test
     fun testGenerateCodeReturns6Digits() {
         val code = OTC.generateAndSave("test@example.com")
         assertEquals(6, code.length, "should be 6 digits long")
     }
 
+    /**
+     * Verifies that generated one-time codes contain only numeric characters.
+     */
     @Test
     fun testGenerateCodeIsNumeric() {
         val code = OTC.generateAndSave("numeric@example.com")
         assertTrue(code.all { it.isDigit() }, "should only have numbers in it")
     }
 
+    /**
+     * Verifies that generating a new code for the same email invalidates
+     * the previously generated code.
+     */
     @Test
     fun testGenerateCodeOverwritesPrevious() {
         val code1 = OTC.generateAndSave("overwrite@example.com")
@@ -36,13 +45,12 @@ class OTCTest {
         assertFalse(OTC.verify("overwrite@example.com", code1), "old code shouldnt work anymore")
     }
 
-
     /**
-    * Tests for one-time code checking.
-    *
-    * These checks make sure the right code works, wrong ones fail, unknown
-    * emails fail, and a code cant be used twice.
-    */
+     * Tests for one-time code checking.
+     *
+     * These checks make sure the right code works, wrong ones fail, unknown
+     * emails fail, and a code cant be used twice.
+     */
 
     @Test
     fun testVerifyWithCorrectCode() {
@@ -61,6 +69,10 @@ class OTCTest {
         assertFalse(OTC.verify("unknown@example.com", "123456"), "random email shouldnt have a code")
     }
 
+    /**
+     * Verifies that a one-time code becomes invalid after
+     * being successfully verified once.
+     */
     @Test
     fun testCodeIsConsumedAfterVerification() {
         val code = OTC.generateAndSave("consumed@example.com")
@@ -68,13 +80,12 @@ class OTCTest {
         assertFalse(OTC.verify("consumed@example.com", code), "second time should fail cos its used up")
     }
 
-
     /**
-    * Tests for keeping one-time codes separate between emails.
-    *
-    * These checks make sure each email uses its own code and one user's code
-    * cannot be used for another user.
-    */
+     * Tests for keeping one-time codes separate between emails.
+     *
+     * These checks make sure each email uses its own code and one user's code
+     * cannot be used for another user.
+     */
     @Test
     fun testDifferentEmailsDifferentCodes() {
         val code1 = OTC.generateAndSave("user1@example.com")

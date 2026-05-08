@@ -9,7 +9,6 @@
     <div class="auth-card">
 
         <h2 class="auth-title">Create an Account</h2>
-        <h1 class="auth-title">Register</h1>
 
         {% if error is not empty %}
         <div class="error-box" role="alert">

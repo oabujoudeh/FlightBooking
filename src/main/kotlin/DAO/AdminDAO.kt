@@ -3,30 +3,60 @@ package com.flightbooking
 import java.sql.Connection
 
 /**
- * DAO object used for admin database queries.
+ * Data Access Object for admin dashboard queries.
  *
- * This object contains functions that help fetch data for the admin side of
- * the flight booking system. It is used for the dashboard
- * information, such as total users, booking statistics, recent bookings,
- * cancellations, upcoming flights, and busiest routes.
+ * Provides read and write operations for the admin side of the flight booking
+ * system. Covers dashboard statistics (user counts, booking trends, revenue),
+ * reservation and flight tracking, change request approval/rejection, and
+ * flight status management.
  *
- * Each function connects to the database, runs a query, and returns the
- * results in a simple format that can be used by the rest of the program.
- *
- * If a query fails, the functions usually return a default value like `0`
- * or an empty list instead of crashing the program.
+ * All functions return safe default values (`0`, `null`, or empty lists) on
+ * database errors rather than propagating exceptions.
  */
 object AdminDAO {
     /**
-    * Returns the total number of users stored in the database.
-    *
-    * This function executes a SQL `COUNT(*)` query on the `users` table and
-    * returns the result as an `Int`.
-    *
-    * If the query fails or any database error occurs, the function returns `0`.
-    *
-    * @return the total number of users in the `users` table, or `0` if the query fails
-    */
+     * Returns the display name and email for an admin account looked up by email.
+     *
+     * Queries the `admins` table for a row whose `email` column matches [email].
+     * The returned map contains:
+     * - `"firstName"`: the first word of `full_name`, or an empty string if not set
+     * - `"lastName"`: the remainder of `full_name` after the first word, or empty
+     * - `"email"`: the admin's email address
+     *
+     * @param email the admin's email address (used as the session username)
+     * @return a map of profile fields, or a map of empty strings if not found
+     */
+    fun getAdminDetails(login: String): Map<String, String> {
+        val sql = "SELECT full_name, email FROM admins WHERE email = ? OR username = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, login)
+                    stmt.setString(2, login)
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) {
+                            mapOf(
+                                "fullName" to (rs.getString("full_name") ?: ""),
+                                "email" to (rs.getString("email") ?: ""),
+                            )
+                        } else {
+                            mapOf("fullName" to "", "email" to "")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            mapOf("fullName" to "", "email" to "")
+        }
+    }
+
+    /**
+     * Returns the total number of registered users in the database.
+     *
+     * Executes a `COUNT(*)` query on the `users` table.
+     *
+     * @return the total user count, or `0` if the query fails
+     */
     fun getTotalUsers(): Int {
         val sql = "SELECT COUNT(*) FROM users"
         return try {
@@ -42,26 +72,22 @@ object AdminDAO {
         }
     }
 
-
     /**
-    * Retrieves all bookings grouped by booking date.
-    *
-    * This function queries the `bookings` table and groups records by the date
-    * portion of `booking_date`. For each date, it returns the total number of
-    * bookings and the total revenue generated.
-    *
-    * Each result map contains:
-    * - `"date"`: the booking date as a `String`
-    * - `"count"`: the number of bookings on that date
-    * - `"revenue"`: the total revenue for that date as a `Double`
-    *
-    * The results are ordered by date in ascending order.
-    *
-    * If an error occurs while accessing the database, an empty list is returned.
-    *
-    * @return a list of maps containing the date, booking count, and total revenue
-    * for each booking date, or an empty list if the query fails
-    */
+     * Returns booking counts and total revenue grouped by booking date.
+     *
+     * When [filterSeason] is provided, only bookings whose associated flight
+     * belongs to that season are included; otherwise all bookings are counted.
+     * Results are ordered by date descending.
+     *
+     * Each result map contains:
+     * - `"date"`: the booking date as a `String`
+     * - `"count"`: the number of bookings on that date as an `Int`
+     * - `"revenue"`: the total revenue for that date as a `Double`
+     *
+     * @param filterSeason optional season string to filter by (e.g. `"Summer 2025"`);
+     *        pass null or empty to include all seasons
+     * @return a list of per-date booking summary maps, or an empty list on error
+     */
     fun getAllBookingsGroupedByDate(filterSeason: String? = null): List<Map<String, Any>> {
         var sql: String
         if (!filterSeason.isNullOrEmpty()) {
@@ -96,11 +122,13 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "date"    to (rs.getString("booking_date") ?: ""),
-                                "count"   to rs.getInt("booking_count"),
-                                "revenue" to rs.getDouble("total_revenue"),
-                            ))
+                            results.add(
+                                mapOf(
+                                    "date" to (rs.getString("booking_date") ?: ""),
+                                    "count" to rs.getInt("booking_count"),
+                                    "revenue" to rs.getDouble("total_revenue"),
+                                ),
+                            )
                         }
                         results
                     }
@@ -111,22 +139,17 @@ object AdminDAO {
         }
     }
 
-
     /**
-    * Retrieves the number of bookings for each booking status.
-    *
-    * This function queries the `bookings` table, groups records by `status`,
-    * and counts how many bookings exist for each status value.
-    *
-    * Each result map contains:
-    * - `"status"`: the booking status as a `String`
-    * - `"count"`: the number of bookings with that status as an `Int`
-    *
-    * If an error occurs while querying the database, an empty list is returned.
-    *
-    * @return a list of maps containing each booking status and its corresponding
-    * count, or an empty list if the query fails
-    */
+     * Returns the number of bookings for each booking status.
+     *
+     * Groups all records in the `bookings` table by `status` and counts each group.
+     *
+     * Each result map contains:
+     * - `"status"`: the booking status string
+     * - `"count"`: the number of bookings with that status as an `Int`
+     *
+     * @return a list of status-count maps, or an empty list if the query fails
+     */
     fun getBookingStatusCounts(): List<Map<String, Any>> {
         val sql = """
             SELECT status, COUNT(*) as count
@@ -155,27 +178,19 @@ object AdminDAO {
         }
     }
 
-
     /**
-    * Retrieves the most recent bookings from the database.
-    *
-    * This function queries the `bookings` table, orders bookings by
-    * `booking_date` in descending order, and returns up to the specified
-    * number of results.
-    *
-    * Each result map contains:
-    * - `"bookingId"`: the booking ID as an `Int`
-    * - `"bookingDate"`: the booking date as a `String`
-    * - `"totalPrice"`: the total booking price as a `Double`
-    * - `"status"`: the booking status as a `String`
-    * - `"contactEmail"`: the contact email associated with the booking
-    *
-    * If an error occurs while querying the database, an empty list is returned.
-    *
-    * @param limit the maximum number of recent bookings to return; defaults to 20
-    * @return a list of maps containing recent booking details, or an empty list
-    * if the query fails
-    */
+     * Returns the most recent bookings across all users, ordered by booking date descending.
+     *
+     * Each result map contains:
+     * - `"bookingId"`: the booking ID as an `Int`
+     * - `"bookingDate"`: the booking date as a `String`
+     * - `"totalPrice"`: the total booking price as a `Double`
+     * - `"status"`: the booking status string
+     * - `"contactEmail"`: the contact email associated with the booking
+     *
+     * @param limit the maximum number of bookings to return (default 20)
+     * @return a list of recent booking maps, or an empty list if the query fails
+     */
     fun getRecentBookings(limit: Int = 20): List<Map<String, Any>> {
         val sql = """
             SELECT b.booking_id, b.booking_date, b.total_price, b.status, b.contact_email
@@ -209,26 +224,18 @@ object AdminDAO {
         }
     }
 
-
     /**
-    * Retrieves the most recent cancelled bookings from the database.
-    *
-    * This function queries the `bookings` table for records with a status of
-    * `"cancelled"`, orders them by `booking_date` in descending order, and
-    * returns up to the specified number of results.
-    *
-    * Each result map contains:
-    * - `"bookingId"`: the booking ID as an `Int`
-    * - `"bookingDate"`: the booking date as a `String`
-    * - `"totalPrice"`: the total price of the booking as a `Double`
-    * - `"contactEmail"`: the contact email associated with the booking
-    *
-    * If an error occurs while querying the database, an empty list is returned.
-    *
-    * @param limit the maximum number of recent cancelled bookings to return; defaults to 20
-    * @return a list of maps containing recent cancelled booking details, or an empty list
-    * if the query fails
-    */
+     * Returns the most recent cancelled bookings, ordered by booking date descending.
+     *
+     * Each result map contains:
+     * - `"bookingId"`: the booking ID as an `Int`
+     * - `"bookingDate"`: the booking date as a `String`
+     * - `"totalPrice"`: the total price of the booking as a `Double`
+     * - `"contactEmail"`: the contact email associated with the booking
+     *
+     * @param limit the maximum number of cancellations to return (default 20)
+     * @return a list of recent cancellation maps, or an empty list if the query fails
+     */
     fun getRecentCancellations(limit: Int = 20): List<Map<String, Any>> {
         val sql = """
             SELECT b.booking_id, b.booking_date, b.total_price, b.contact_email
@@ -262,33 +269,25 @@ object AdminDAO {
         }
     }
 
-
     /**
-    * Gets a list of upcoming flights from the database.
-    *
-    * This function looks for flights whose `flight_date` is today or later.
-    * It joins the `flights`, `routes`, and `airports` tables so it can return extra information like the flight number, departure time, and the
-    * departure and arrival cities.
-    *
-    * The flights are sorted by flight date first, and then by planned departure time. The number of results returned is limited by the `limit`
-    * parameter.
-    *
-    * Each map in the returned list contains:
-    * - `"flightId"`: the flight ID
-    * - `"flightDate"`: the date of the flight
-    * - `"status"`: the current flight status
-    * - `"flightNumber"`: the flight number
-    * - `"departureTime"`: the planned departure time
-    * - `"departureCity"`: the city the flight leaves from
-    * - `"arrivalCity"`: the city the flight arrives at
-    * - `"price"`: the price of the flight
-    *
-    * If something goes wrong with the database query, the function returns an
-    * empty list.
-    *
-    * @param limit the maximum number of upcoming flights to return, default is 20
-    * @return a list of maps containing upcoming flight details, or an empty list if the query fails
-    */
+     * Returns upcoming flights whose departure date is today or later.
+     *
+     * Joins `flights`, `routes`, and `airports` to include route metadata.
+     * Results are ordered by flight date ascending, then by planned departure time.
+     *
+     * Each result map contains:
+     * - `"flightId"`: the flight ID as an `Int`
+     * - `"flightDate"`: the flight date as a `String`
+     * - `"status"`: the current flight status string
+     * - `"flightNumber"`: the flight number string
+     * - `"departureTime"`: the planned departure time string
+     * - `"departureCity"`: the departure airport name
+     * - `"arrivalCity"`: the arrival airport name
+     * - `"price"`: the base flight price as a `Double`
+     *
+     * @param limit the maximum number of flights to return (default 20)
+     * @return a list of upcoming flight maps, or an empty list if the query fails
+     */
     fun getUpcomingFlights(limit: Int = 20): List<Map<String, Any>> {
         val sql = """
             SELECT f.flight_id, f.flight_date, f.status, f.price,
@@ -331,27 +330,31 @@ object AdminDAO {
         }
     }
 
-
     /**
-    * Gets the busiest routes based on how many bookings they have.
-    *
-    * This function checks the booking and flight tables, joins them with the
-    * route and airport tables, and works out which routes have the highest number of bookings.
-    *
-    * The results are ordered from most booked to least booked. The `limit`parameter controls how many routes are returned.
-    *
-    * Each map in the list contains:
-    * - `"departureCity"`: the city the flight leaves from
-    * - `"arrivalCity"`: the city the flight goes to
-    * - `"flightNumber"`: the flight number for the route
-    * - `"bookingCount"`: how many bookings that route has
-    *
-    * If there is a problem with the database, the function returns an empty list.
-    *
-    * @param limit the max number of routes to return, default is 10
-    * @return a list of maps with the busiest route details, or an empty list if the query fails
-    */
-    fun getBusiestRoutes(limit: Int = 10, startDate: String? = null, endDate: String? = null, filterSeason: String? = null): List<Map<String, Any>> {
+     * Returns the routes with the highest number of bookings.
+     *
+     * Joins booking, flight, route, and airport tables and groups by route ID.
+     * Optional filters narrow results by season and/or date range. Results are
+     * ordered from most to least booked.
+     *
+     * Each result map contains:
+     * - `"departureCity"`: the departure airport name
+     * - `"arrivalCity"`: the arrival airport name
+     * - `"flightNumber"`: the route's flight number
+     * - `"bookingCount"`: total number of bookings for this route as an `Int`
+     *
+     * @param limit the maximum number of routes to return (default 10)
+     * @param startDate optional lower bound for flight date (inclusive, `"yyyy-MM-dd"`)
+     * @param endDate optional upper bound for flight date (inclusive, `"yyyy-MM-dd"`)
+     * @param filterSeason optional season string to filter routes by
+     * @return a list of busiest route maps, or an empty list if the query fails
+     */
+    fun getBusiestRoutes(
+        limit: Int = 10,
+        startDate: String? = null,
+        endDate: String? = null,
+        filterSeason: String? = null,
+    ): List<Map<String, Any>> {
         var sql = """
             SELECT dep.name as departure_city, arr.name as arrival_city,
                    r.flight_number, COUNT(*) as booking_count
@@ -413,8 +416,33 @@ object AdminDAO {
         }
     }
 
-    fun trackReservations(filterDate: String? = null, filterUsername: String? = null, filterStatus: String? = null): List<Map<String, Any>> {
-        
+    /**
+     * Returns all bookings with optional filtering by date, username, and status.
+     *
+     * Used on the admin reservations tracking page. When [filterUsername] is
+     * provided, the query matches against the booking user's first name, last
+     * name, and any passenger names on the booking. Results are ordered by
+     * booking date descending.
+     *
+     * Each result map contains:
+     * - `"bookingId"`: the booking ID as an `Int`
+     * - `"bookingDate"`: the booking timestamp string
+     * - `"totalPrice"`: the total fare as a `Double`
+     * - `"status"`: the booking status string
+     * - `"contactEmail"`: the contact email on the booking
+     * - `"bookedBy"`: the full name of the user who made the booking
+     * - `"passengers"`: comma-separated passenger names, or `"N/A"` if none
+     *
+     * @param filterDate optional date string (`"yyyy-MM-dd"`) to restrict results to
+     * @param filterUsername optional name substring to search across user and passenger names
+     * @param filterStatus optional exact booking status to filter by
+     * @return a list of reservation maps, or an empty list if the query fails
+     */
+    fun trackReservations(
+        filterDate: String? = null,
+        filterUsername: String? = null,
+        filterStatus: String? = null,
+    ): List<Map<String, Any>> {
         var sql = """
             SELECT b.booking_id,
                    b.booking_date,
@@ -460,20 +488,19 @@ object AdminDAO {
 
                     if (filterUsername != null && filterUsername.isNotEmpty()) {
                         val searchPattern = "%$filterUsername%"
-                        stmt.setString(paramIndex++, searchPattern) 
-                        stmt.setString(paramIndex++, searchPattern) 
+                        stmt.setString(paramIndex++, searchPattern)
+                        stmt.setString(paramIndex++, searchPattern)
                     }
 
                     if (filterStatus != null && filterStatus.isNotEmpty()) {
                         stmt.setString(paramIndex++, filterStatus)
                     }
 
-                    println("Debug: SQL query is $sql")
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
                             val row = mutableMapOf<String, Any>()
-                            
+
                             row["bookingId"] = rs.getInt("booking_id")
                             row["bookingDate"] = rs.getString("booking_date") ?: ""
                             row["totalPrice"] = rs.getDouble("total_price")
@@ -495,13 +522,41 @@ object AdminDAO {
         }
     }
 
-    fun trackFlights(filterDate: String? = null, filterNumber: String? = null): List<Map<String, Any>> {
+    /**
+     * Returns flights for the admin flight-tracking page, defaulting to today's date.
+     *
+     * Defaults to the current date when [filterDate] is omitted, to avoid loading
+     * all flights at once. An optional [filterNumber] performs a partial match
+     * against the flight number. Results are ordered by local departure time ascending.
+     *
+     * Each result map contains:
+     * - `"flightId"`: the flight ID as an `Int`
+     * - `"flightDate"`: the flight date string
+     * - `"status"`: the current flight status string
+     * - `"flightNumber"`: the flight number string
+     * - `"originCity"`: the departure airport name
+     * - `"destCity"`: the arrival airport name
+     * - `"depTime"`: the local departure time string
+     * - `"arrTime"`: the local arrival time string
+     * - `"overnight"`: true if the flight arrives on a different calendar day
+     *
+     * @param filterDate optional date string (`"yyyy-MM-dd"`); defaults to today if null or empty
+     * @param filterNumber optional flight number substring for partial matching
+     * @return a list of flight tracking maps, or an empty list if the query fails
+     */
+    fun trackFlights(
+        filterDate: String? = null,
+        filterNumber: String? = null,
+    ): List<Map<String, Any>> {
         // Default to today if no date is provided — avoids loading all 10000+ flights at once
-        val effectiveDate = if (filterDate.isNullOrEmpty()) {
-            java.time.LocalDate.now().toString()
-        } else {
-            filterDate
-        }
+        val effectiveDate =
+            if (filterDate.isNullOrEmpty()) {
+                java.time.LocalDate
+                    .now()
+                    .toString()
+            } else {
+                filterDate
+            }
 
         var sql = """
             SELECT f.flight_id, 
@@ -562,22 +617,43 @@ object AdminDAO {
     }
 
     /**
-     * Returns the previous and next date relative to the given date string (yyyy-MM-dd).
-     * Used for day-by-day flight navigation in the admin dashboard.
+     * Returns the previous and next calendar dates relative to [currentDate].
+     *
+     * Used for day-by-day navigation on the admin flight tracking page.
+     * If [currentDate] cannot be parsed as a `yyyy-MM-dd` date, the current
+     * date is used as the reference point.
+     *
+     * @param currentDate the reference date string in `"yyyy-MM-dd"` format
+     * @return a map with keys `"prevDate"` and `"nextDate"`, each as a `"yyyy-MM-dd"` string
      */
     fun getAdjacentFlightDates(currentDate: String): Map<String, String> {
-        val date = try {
-            java.time.LocalDate.parse(currentDate)
-        } catch (e: Exception) {
-            java.time.LocalDate.now()
-        }
+        val date =
+            try {
+                java.time.LocalDate.parse(currentDate)
+            } catch (e: Exception) {
+                java.time.LocalDate.now()
+            }
         return mapOf(
             "prevDate" to date.minusDays(1).toString(),
-            "nextDate" to date.plusDays(1).toString()
+            "nextDate" to date.plusDays(1).toString(),
         )
     }
 
-    fun updateFlightStatus(flightId: Int, newStatus: String): Boolean {
+    /**
+     * Updates the status of a flight after validating the new value.
+     *
+     * Only the following status values are accepted:
+     * `"Scheduled"`, `"Delayed"`, `"Cancelled"`, `"Departed"`, `"Arrived"`.
+     * Any other value causes an immediate `false` return without touching the database.
+     *
+     * @param flightId the ID of the flight to update
+     * @param newStatus the new status string to set
+     * @return true if the update affected at least one row, otherwise false
+     */
+    fun updateFlightStatus(
+        flightId: Int,
+        newStatus: String,
+    ): Boolean {
         val allowedStatuses = setOf("Scheduled", "Delayed", "Cancelled", "Departed", "Arrived")
         if (newStatus !in allowedStatuses) return false
 
@@ -597,7 +673,25 @@ object AdminDAO {
         }
     }
 
-    fun getFlightStatusNotification(flightId: Int, newStatus: String): FlightStatusNotification? {
+    /**
+     * Builds a [FlightStatusNotification] for a flight status change, if notification is required.
+     *
+     * Only `"Delayed"` and `"Cancelled"` statuses trigger a notification. The function
+     * also returns null if the flight's current status is not `"Scheduled"` (to avoid
+     * duplicate notifications for already-changed flights).
+     *
+     * The notification includes the contact email from each active booking as well as
+     * the owning user's email as recipient addresses.
+     *
+     * @param flightId the ID of the flight whose status is changing
+     * @param newStatus the new status being applied
+     * @return a [FlightStatusNotification] with recipient emails and flight details,
+     *         or null if notification is not required or the query fails
+     */
+    fun getFlightStatusNotification(
+        flightId: Int,
+        newStatus: String,
+    ): FlightStatusNotification? {
         val notifiableStatuses: Set<String> = setOf("Delayed", "Cancelled")
         if (newStatus !in notifiableStatuses) return null
         val sql = """
@@ -658,8 +752,31 @@ object AdminDAO {
             null
         }
     }
-    
-    fun getBookingsPerFlight(limit: Int = 20, filterDate: String? = null, filterSeason: String? = null): List<Map<String, Any>> {
+
+    /**
+     * Returns the number of bookings per flight, with optional date and season filters.
+     *
+     * Joins flights with routes, airports, and booking_flights to count how many
+     * bookings reference each flight. Results are ordered by flight date descending,
+     * then by booking count descending.
+     *
+     * Each result map contains:
+     * - `"flightNumber"`: the route's flight number string
+     * - `"flightDate"`: the flight date string
+     * - `"origin"`: the departure airport name
+     * - `"dest"`: the arrival airport name
+     * - `"bookingCount"`: the number of bookings for this flight as an `Int`
+     *
+     * @param limit the maximum number of rows to return (default 20)
+     * @param filterDate optional exact flight date (`"yyyy-MM-dd"`) to filter by
+     * @param filterSeason optional season string to filter routes by
+     * @return a list of per-flight booking count maps, or an empty list if the query fails
+     */
+    fun getBookingsPerFlight(
+        limit: Int = 20,
+        filterDate: String? = null,
+        filterSeason: String? = null,
+    ): List<Map<String, Any>> {
         var sql = """
             SELECT r.flight_number,
                 f.flight_date,
@@ -698,13 +815,15 @@ object AdminDAO {
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
-                            results.add(mapOf(
-                                "flightNumber" to (rs.getString("flight_number") ?: ""),
-                                "flightDate"   to (rs.getString("flight_date") ?: ""),
-                                "origin"       to (rs.getString("origin") ?: ""),
-                                "dest"         to (rs.getString("dest") ?: ""),
-                                "bookingCount" to rs.getInt("booking_count")
-                            ))
+                            results.add(
+                                mapOf(
+                                    "flightNumber" to (rs.getString("flight_number") ?: ""),
+                                    "flightDate" to (rs.getString("flight_date") ?: ""),
+                                    "origin" to (rs.getString("origin") ?: ""),
+                                    "dest" to (rs.getString("dest") ?: ""),
+                                    "bookingCount" to rs.getInt("booking_count"),
+                                ),
+                            )
                         }
                         results
                     }
@@ -717,7 +836,22 @@ object AdminDAO {
         }
     }
 
-fun getPendingChangeRequests(): List<Map<String, Any>> {
+    /**
+     * Returns all pending change requests, joined with the submitting user's email.
+     *
+     * Each row that fails to parse is skipped with a console warning rather than
+     * aborting the entire result set.
+     *
+     * Each result map contains:
+     * - `"requestId"`: the row ID of the change request as a `Long`
+     * - `"userId"`: the ID of the user who submitted the request as an `Int`
+     * - `"changeTo"`: the requested new value string
+     * - `"type"`: the change type string (e.g. `"name"`)
+     * - `"username"`: the user's email address, or `"Unknown Email"` if not found
+     *
+     * @return a list of pending change request maps, or an empty list if the query fails
+     */
+    fun getPendingChangeRequests(): List<Map<String, Any>> {
         val sql = """
             SELECT 
                 change_requests.rowid AS request_id,
@@ -729,9 +863,9 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
             LEFT JOIN users ON change_requests.user_id = users.user_id 
             WHERE change_requests.status = 'pending'
         """
-    
+
         val requests = mutableListOf<Map<String, Any>>()
-    
+
         return try {
             Database.getConnection().use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
@@ -744,24 +878,36 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
                             row["changeTo"] = rs.getString("change_to") ?: ""
                             row["type"] = rs.getString("change_type") ?: ""
                             row["username"] = rs.getString("username") ?: "Unknown Email"
-                        
+
                             requests.add(row)
                         } catch (rowError: Exception) {
-                            println("DEBUG: Row parsing error: ${rowError.message}")
+                            println("Row parsing error: ${rowError.message}")
                         }
                     }
                 }
             }
-            println("DEBUG: Successfully fetched ${requests.size} requests from DB")
             requests
         } catch (e: Exception) {
-            println("DEBUG: SQL Error: ${e.message}")
             e.printStackTrace()
             emptyList()
         }
     }
 
-    fun updateRequestStatus(userId: Int, newStatus: String): Boolean {
+    /**
+     * Updates the status of all pending change requests belonging to a user.
+     *
+     * Only rows with status `'pending'` are affected. Intended as a bulk
+     * approve/reject fallback; prefer the overloads that accept a specific
+     * [requestId] for targeted updates.
+     *
+     * @param userId the ID of the user whose pending requests to update
+     * @param newStatus the new status string to apply (e.g. `"accepted"` or `"rejected"`)
+     * @return true if at least one row was updated, otherwise false
+     */
+    fun updateRequestStatus(
+        userId: Int,
+        newStatus: String,
+    ): Boolean {
         val sql = "UPDATE change_requests SET status = ? WHERE user_id = ? AND status = 'pending'"
         return try {
             Database.getConnection().use { conn ->
@@ -771,9 +917,20 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
                     stmt.executeUpdate() > 0
                 }
             }
-        } catch (e: Exception) { false }
+        } catch (e: Exception) {
+            false
+        }
     }
 
+    /**
+     * Approves the oldest pending change request for a user.
+     *
+     * Looks up the first pending request via [getFirstPendingRequestId], then
+     * delegates to [approveChangeRequest] with the resolved request ID.
+     *
+     * @param userId the ID of the user whose oldest pending request to approve
+     * @return true if the approval was committed successfully, otherwise false
+     */
     fun approveChangeRequest(userId: Int): Boolean {
         return try {
             Database.getConnection().use { conn ->
@@ -786,8 +943,21 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
         }
     }
 
-    fun approveChangeRequest(requestId: Long, userId: Int): Boolean {
-        return try {
+    /**
+     * Approves a specific pending change request identified by [requestId].
+     *
+     * Opens a new database connection and delegates to the internal
+     * [approveChangeRequest] overload that accepts an existing [Connection].
+     *
+     * @param requestId the row ID of the change request to approve
+     * @param userId the ID of the user who owns the request (used as a safety check)
+     * @return true if the approval was committed successfully, otherwise false
+     */
+    fun approveChangeRequest(
+        requestId: Long,
+        userId: Int,
+    ): Boolean =
+        try {
             Database.getConnection().use { conn ->
                 approveChangeRequest(conn, requestId, userId)
             }
@@ -795,9 +965,27 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
             e.printStackTrace()
             false
         }
-    }
 
-    internal fun approveChangeRequest(conn: Connection, requestId: Long, userId: Int): Boolean {
+    /**
+     * Core implementation: applies a pending change request within an existing transaction.
+     *
+     * Reads the `change_to` value for the request, parses it as
+     * `"<fullName> <idNumber>"` (whitespace-separated), and applies the update
+     * to all passengers on the user's bookings. The request status is then set
+     * to `'accepted'`. Both updates are wrapped in a single transaction; any
+     * failure triggers a rollback and re-throws the exception.
+     *
+     * @param conn an open [Connection] to use (auto-commit is managed internally)
+     * @param requestId the row ID of the change request to approve
+     * @param userId the ID of the user who owns the request
+     * @return true if the transaction was committed and the request row was updated,
+     *         otherwise false
+     */
+    internal fun approveChangeRequest(
+        conn: Connection,
+        requestId: Long,
+        userId: Int,
+    ): Boolean {
         val pendingData: String = getPendingDataByRequestId(conn, requestId, userId) ?: return false
         val parts = pendingData.trim().split(Regex("\\s+"))
         if (parts.size < 2) return false
@@ -819,11 +1007,12 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
                     stmt.setInt(3, userId)
                     stmt.executeUpdate()
                 }
-                val updatedRequestCount: Int = conn.prepareStatement(sqlUpdateStatus).use { stmt ->
-                    stmt.setLong(1, requestId)
-                    stmt.setInt(2, userId)
-                    stmt.executeUpdate()
-                }
+                val updatedRequestCount: Int =
+                    conn.prepareStatement(sqlUpdateStatus).use { stmt ->
+                        stmt.setLong(1, requestId)
+                        stmt.setInt(2, userId)
+                        stmt.executeUpdate()
+                    }
                 conn.commit()
                 updatedRequestCount > 0
             } catch (e: Exception) {
@@ -837,8 +1026,21 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
             false
         }
     }
-    
-    private fun getFirstPendingRequestId(conn: Connection, userId: Int): Long? {
+
+    /**
+     * Returns the row ID of the earliest pending change request for a user.
+     *
+     * Used internally to resolve a user-scoped approval/rejection to a specific
+     * request row before delegating to the ID-based overloads.
+     *
+     * @param conn an open [Connection] to reuse
+     * @param userId the ID of the user to query
+     * @return the `rowid` of the oldest pending request, or null if none exist
+     */
+    private fun getFirstPendingRequestId(
+        conn: Connection,
+        userId: Int,
+    ): Long? {
         val sql = "SELECT rowid FROM change_requests WHERE user_id = ? AND status = 'pending' ORDER BY rowid LIMIT 1"
         return try {
             conn.prepareStatement(sql).use { stmt ->
@@ -852,7 +1054,22 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
         }
     }
 
-    private fun getPendingDataByRequestId(conn: Connection, requestId: Long, userId: Int): String? {
+    /**
+     * Returns the `change_to` value for a specific pending change request.
+     *
+     * Used internally by [approveChangeRequest] to retrieve the data to apply
+     * before committing the approval.
+     *
+     * @param conn an open [Connection] to reuse
+     * @param requestId the row ID of the change request
+     * @param userId the ID of the user who owns the request (safety check)
+     * @return the `change_to` string if the request exists and is pending, otherwise null
+     */
+    private fun getPendingDataByRequestId(
+        conn: Connection,
+        requestId: Long,
+        userId: Int,
+    ): String? {
         val sql = "SELECT change_to FROM change_requests WHERE rowid = ? AND user_id = ? AND status = 'pending'"
         return try {
             conn.prepareStatement(sql).use { stmt ->
@@ -867,6 +1084,15 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
         }
     }
 
+    /**
+     * Rejects the oldest pending change request for a user.
+     *
+     * Looks up the first pending request via [getFirstPendingRequestId], then
+     * delegates to [rejectChangeRequest] with the resolved request ID.
+     *
+     * @param userId the ID of the user whose oldest pending request to reject
+     * @return true if the rejection was applied successfully, otherwise false
+     */
     fun rejectChangeRequest(userId: Int): Boolean {
         return try {
             Database.getConnection().use { conn ->
@@ -879,8 +1105,21 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
         }
     }
 
-    fun rejectChangeRequest(requestId: Long, userId: Int): Boolean {
-        return try {
+    /**
+     * Rejects a specific pending change request identified by [requestId].
+     *
+     * Opens a new database connection and delegates to the internal
+     * [rejectChangeRequest] overload that accepts an existing [Connection].
+     *
+     * @param requestId the row ID of the change request to reject
+     * @param userId the ID of the user who owns the request (used as a safety check)
+     * @return true if the rejection was applied successfully, otherwise false
+     */
+    fun rejectChangeRequest(
+        requestId: Long,
+        userId: Int,
+    ): Boolean =
+        try {
             Database.getConnection().use { conn ->
                 rejectChangeRequest(conn, requestId, userId)
             }
@@ -888,9 +1127,23 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
             e.printStackTrace()
             false
         }
-    }
 
-    internal fun rejectChangeRequest(conn: Connection, requestId: Long, userId: Int): Boolean {
+    /**
+     * Core implementation: sets a pending change request status to `'rejected'`.
+     *
+     * The update is scoped to the given [requestId] and [userId] and only affects
+     * rows that are still `'pending'`.
+     *
+     * @param conn an open [Connection] to reuse
+     * @param requestId the row ID of the change request to reject
+     * @param userId the ID of the user who owns the request
+     * @return true if the row was updated, otherwise false
+     */
+    internal fun rejectChangeRequest(
+        conn: Connection,
+        requestId: Long,
+        userId: Int,
+    ): Boolean {
         val sql = "UPDATE change_requests SET status = 'rejected' WHERE rowid = ? AND user_id = ? AND status = 'pending'"
         return try {
             conn.prepareStatement(sql).use { stmt ->
@@ -903,5 +1156,4 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
             false
         }
     }
-
 }

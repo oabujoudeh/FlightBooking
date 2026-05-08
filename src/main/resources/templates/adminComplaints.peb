@@ -1,0 +1,63 @@
+{% extends "base.peb" %}
+
+{% block title %}Admin - Complaints{% endblock %}
+
+{% block content %}
+<div class="admin-container ac-page">
+
+    <h1 class="ac-title">Customer Complaints</h1>
+    <p class="ac-subtitle">Review and reply to complaints submitted by passengers.</p>
+
+    <div class="ac-table-wrap">
+        <table class="ac-table">
+            <thead>
+                <tr>
+                    <th scope="col">User</th>
+                    <th scope="col">Complaint</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Reply</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for complaint in complaints %}
+                <tr>
+                    <td class="ac-td-user">{{ complaint.userEmail }}</td>
+                    <td class="ac-td-content">{{ complaint.content }}</td>
+                    <td class="ac-td-date">{{ complaint.createdAt }}</td>
+                    <td class="ac-td-status">
+                        {% if complaint.status == "resolved" %}
+                            <span class="ac-badge ac-badge-resolved">Resolved</span>
+                        {% else %}
+                            <span class="ac-badge ac-badge-pending">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="ac-td-reply">
+                        {% if complaint.reply != null and complaint.reply != "" %}
+                            <div class="ac-reply-box">{{ complaint.reply }}</div>
+                        {% endif %}
+                        {% if complaint.status != "resolved" %}
+                            <form action="/admin/complaints/reply" method="post">
+                                <input type="hidden" name="complaintId" value="{{ complaint.complaintId }}">
+                                <textarea name="reply" class="ac-reply-textarea" placeholder="Type your reply..." required
+                                    aria-label="Reply to complaint from {{ complaint.userEmail }}"></textarea>
+                                <button type="submit" class="ac-reply-btn">Send Reply</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="ac-empty">No complaints submitted yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="ac-footer">
+        <a href="/" class="ac-back-link">← Back to Dashboard</a>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.peb" %}
+
+{% block title %}Update Contact Info - EAJO Air{% endblock %}
+
+{% block content %}
+
+<div class="detail-page">
+
+    <a href="/booking-detail?id={{ booking.bookingId }}" class="back-link">← Back to Booking</a>
+
+    <div class="detail-header">
+        <div>
+            <div class="detail-booking-id">Booking · #{{ booking.bookingId }}</div>
+            <div class="detail-route-title">Update Contact Info</div>
+        </div>
+    </div>
+
+    <!-- Notice -->
+    <div class="section-block">
+        <div class="section-block-body">
+            <div class="update-info-notice">
+                <strong>Note:</strong> Contact information changes are applied immediately.
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" action="/update-contact-info">
+        <input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
+
+        <div class="section-block">
+            <div class="section-block-header">
+                Contact Information
+                <span class="pax-current-info">Current: {{ booking.contactEmail }} · {{ booking.contactPhone }}</span>
+            </div>
+            <div class="section-block-body">
+                <div class="update-info-grid">
+                    <div class="update-info-field">
+                        <label>New Email</label>
+                        <input type="email" name="newEmail" placeholder="Enter new email" value="{{ booking.contactEmail }}" required>
+                    </div>
+                    <div class="update-info-field">
+                        <label>New Phone</label>
+                        <input type="tel" name="newPhone" placeholder="Enter new phone" value="{{ booking.contactPhone }}" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="section-block">
+            <div class="section-block-body">
+                <div class="action-bar">
+                    <button type="submit" class="btn-primary">Update Contact Info</button>
+                    <a href="/booking-detail?id={{ booking.bookingId }}" class="btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

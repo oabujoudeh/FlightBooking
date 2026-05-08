@@ -17,12 +17,12 @@ object EmailService {
     private const val PASSWORD = "404922bf818847"
 
     /**
-    * Sends an email using the mail server settings.
-    *
-    * @param to the email address to send to
-    * @param subject the subject of the email
-    * @param body the main email text
-    */
+     * Sends an email using the mail server settings.
+     *
+     * @param to the email address to send to
+     * @param subject the subject of the email
+     * @param body the main email text
+     */
     fun sendEmail(
         to: String,
         subject: String,

@@ -5,27 +5,35 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-/* tests for the complaint system
-   covers submitting complaints, fetching them, and admin replies */
-
+/**
+ * Integration tests for the complaint management system.
+ *
+ * These tests verify complaint submission, retrieval, and administrative
+ * reply functionality, including validation of database updates and
+ * returned complaint data structures.
+ */
 class ComplaintDAOTest {
-
-    // the admin account we know exists in the test database
+    /**
+     * A known test user that exists in the database and is used for complaint tests.
+     */
     private val knownUserId = UserDAO.getUserID("tnvn3422@leeds.ac.uk")
 
-
     /**
-    * Tests for submitting a complaint.
-    *
-    * These checks make sure a valid complaint saves correctly and that
-    * an invalid user ID causes the insert to fail.
-    */
+     * Tests for submitting a complaint.
+     *
+     * These checks make sure a valid complaint saves correctly and that
+     * an invalid user ID causes the insert to fail.
+     */
     @Test
     fun testSubmitComplaintReturnsTrue() {
         val result = ComplaintDAO.submitComplaint(knownUserId, "test complaint from automated test")
         assertTrue(result, "valid complaint should save successfully")
     }
 
+    /**
+     * Verifies that submitting a complaint with a non-existent
+     * user ID fails and returns `false`.
+     */
     @Test
     fun testSubmitComplaintWithInvalidUserReturnsFalse() {
         // user id -1 doesnt exist so the foreign key should cause it to fail
@@ -33,13 +41,12 @@ class ComplaintDAOTest {
         assertFalse(result, "complaint with a non-existent user id should fail")
     }
 
-
     /**
-    * Tests for getting a user's complaints.
-    *
-    * These checks make sure the list comes back properly, returns empty for
-    * unknown users, and that each entry has the keys we expect.
-    */
+     * Tests for getting a user's complaints.
+     *
+     * These checks make sure the list comes back properly, returns empty for
+     * unknown users, and that each entry has the keys we expect.
+     */
     @Test
     fun testGetComplaintsForUserReturnsList() {
         // make sure there is at least one complaint first
@@ -48,12 +55,20 @@ class ComplaintDAOTest {
         assertNotNull(result, "should return a list not null")
     }
 
+    /**
+     * Verifies that retrieving complaints for an unknown user
+     * returns an empty list.
+     */
     @Test
     fun testGetComplaintsForUnknownUserReturnsEmpty() {
         val result = ComplaintDAO.getComplaintsForUser(-1)
         assertTrue(result.isEmpty(), "unknown user should have no complaints")
     }
 
+    /**
+     * Verifies that complaint entries returned for a user
+     * contain all expected fields required by the application.
+     */
     @Test
     fun testGetComplaintsForUserHasExpectedKeys() {
         ComplaintDAO.submitComplaint(knownUserId, "complaint for key check test")
@@ -68,6 +83,10 @@ class ComplaintDAOTest {
         }
     }
 
+    /**
+     * Verifies that newly submitted complaints are assigned
+     * the default `pending` status.
+     */
     @Test
     fun testNewComplaintHasPendingStatus() {
         ComplaintDAO.submitComplaint(knownUserId, "complaint for status check")
@@ -78,19 +97,22 @@ class ComplaintDAOTest {
         }
     }
 
-
     /**
-    * Tests for the admin complaints view.
-    *
-    * These checks make sure all complaints are returned and that each
-    * entry has the keys the admin page needs.
-    */
+     * Tests for the admin complaints view.
+     *
+     * These checks make sure all complaints are returned and that each
+     * entry has the keys the admin page needs.
+     */
     @Test
     fun testGetAllComplaintsReturnsList() {
         val result = ComplaintDAO.getAllComplaints()
         assertNotNull(result, "should return a list not null")
     }
 
+    /**
+     * Verifies that complaint entries returned for the admin view
+     * contain all required fields, including the user's email address.
+     */
     @Test
     fun testGetAllComplaintsHasExpectedKeys() {
         ComplaintDAO.submitComplaint(knownUserId, "complaint for admin key check")
@@ -106,13 +128,12 @@ class ComplaintDAOTest {
         }
     }
 
-
     /**
-    * Tests for replying to a complaint.
-    *
-    * These checks make sure a valid reply saves and changes the status to
-    * resolved, and that replying to a non-existent complaint fails.
-    */
+     * Tests for replying to a complaint.
+     *
+     * These checks make sure a valid reply saves and changes the status to
+     * resolved, and that replying to a non-existent complaint fails.
+     */
     @Test
     fun testReplyToComplaintReturnsTrue() {
         ComplaintDAO.submitComplaint(knownUserId, "complaint for reply test")
@@ -124,6 +145,10 @@ class ComplaintDAOTest {
         }
     }
 
+    /**
+     * Verifies that replying to a complaint updates its status
+     * from `pending` to `resolved`.
+     */
     @Test
     fun testReplyToComplaintSetsStatusToResolved() {
         ComplaintDAO.submitComplaint(knownUserId, "complaint for resolved status test")
@@ -137,6 +162,10 @@ class ComplaintDAOTest {
         }
     }
 
+    /**
+     * Verifies that replying to a non-existent complaint fails
+     * and returns `false`.
+     */
     @Test
     fun testReplyToComplaintWithInvalidIdReturnsFalse() {
         val result = ComplaintDAO.replyToComplaint(-1, "this shouldnt work")

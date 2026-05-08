@@ -3,9 +3,19 @@ package com.flightbooking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Unit tests for session template data generation.
+ *
+ * These tests verify that template data created for the user interface
+ * correctly includes session information and user notifications.
+ */
 class TemplateDataTest {
+    /**
+     * Verifies that notifications are included in the generated template data
+     * when the user is logged in.
+     */
     @Test
-    fun buildSessionTemplateDataIncludesNotificationsForLoggedInUser(): Unit {
+    fun buildSessionTemplateDataIncludesNotificationsForLoggedInUser() {
         val inputSession: UserSession =
             UserSession(
                 username = "passenger@example.com",

@@ -4,9 +4,20 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
+/**
+ * Unit tests for [FlightNotificationService].
+ *
+ * These tests verify that notification emails are generated correctly for booking
+ * cancellations and flight status updates, including recipient handling, subject
+ * formatting, and email body content.
+ */
 class FlightNotificationServiceTest {
+    /**
+     * Verifies that a booking cancellation email is created using the booking
+     * contact email address and contains the expected booking and flight details.
+     */
     @Test
-    fun buildBookingCancellationEmailUsesBookingContactEmail(): Unit {
+    fun buildBookingCancellationEmailUsesBookingContactEmail() {
         val inputNotification: BookingCancellationNotification =
             BookingCancellationNotification(
                 bookingId = 42,
@@ -21,8 +32,13 @@ class FlightNotificationServiceTest {
         assertContains(actualEmail.body, "EA101 Leeds to London on 2026-05-08")
     }
 
+    /**
+     * Verifies that duplicate recipient email addresses are removed when generating
+     * flight status update emails, while preserving unique recipients and correct
+     * email content.
+     */
     @Test
-    fun buildFlightStatusUpdateEmailsDeduplicatesContactAndAccountEmails(): Unit {
+    fun buildFlightStatusUpdateEmailsDeduplicatesContactAndAccountEmails() {
         val inputNotification: FlightStatusNotification =
             FlightStatusNotification(
                 flightId = 9,
