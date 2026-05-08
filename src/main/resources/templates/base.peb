@@ -14,6 +14,7 @@
     <a href="/" class="logo" aria-label="EAJO Air home page">✈ EAJO Air</a>
 
     <div class="navbar-right">
+        {% if not isAdmin %}
         <div class="noti-wrap">
             <button type="button" onclick="toggleNoti()" class="noti-btn">
                 Notifications
@@ -35,8 +36,11 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         {% if loggedIn %}
+            {% if not isAdmin %}
             <a href="/complaint" class="auth-btn">Complaint</a>
+            {% endif %}
             <a href="/profile" class="auth-btn">Profile</a>
         {% else %}
             <a href="/login" class="auth-btn">Login</a>

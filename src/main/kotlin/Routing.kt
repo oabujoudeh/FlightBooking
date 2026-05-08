@@ -546,24 +546,39 @@ fun Application.configureRouting() {
 
             if (session != null && session.loggedIn) {
                 val username = session.username
-                val userID = UserDAO.getUserID(username)
-                val bookings = UserDAO.getBookings(userID)
-                val loyaltyPoints = UserDAO.getLoyaltyPoints(userID)
-                val userDetails = UserDAO.getUserDetails(userID)
-
                 val profileUpdated = call.request.queryParameters["updated"] == "true"
-                call.respondTemplate(
-                    "profile.peb",
-                    call.nonNullSessionData() +
-                        mapOf(
-                            "bookings" to bookings,
-                            "loyaltyPoints" to loyaltyPoints,
-                            "firstName" to (userDetails?.firstName ?: ""),
-                            "lastName" to (userDetails?.lastName ?: ""),
-                            "email" to (userDetails?.email ?: ""),
-                            "profileUpdated" to profileUpdated,
-                        ),
-                )
+
+                if (session.isAdmin) {
+                    val adminDetails = AdminDAO.getAdminDetails(username)
+                    call.respondTemplate(
+                        "profile.peb",
+                        call.nonNullSessionData() +
+                            adminDetails +
+                            mapOf(
+                                "bookings" to emptyList<Any>(),
+                                "loyaltyPoints" to 0,
+                                "profileUpdated" to profileUpdated,
+                            ),
+                    )
+                } else {
+                    val userID = UserDAO.getUserID(username)
+                    val bookings = UserDAO.getBookings(userID)
+                    val loyaltyPoints = UserDAO.getLoyaltyPoints(userID)
+                    val userDetails = UserDAO.getUserDetails(userID)
+
+                    call.respondTemplate(
+                        "profile.peb",
+                        call.nonNullSessionData() +
+                            mapOf(
+                                "bookings" to bookings,
+                                "loyaltyPoints" to loyaltyPoints,
+                                "firstName" to (userDetails?.firstName ?: ""),
+                                "lastName" to (userDetails?.lastName ?: ""),
+                                "email" to (userDetails?.email ?: ""),
+                                "profileUpdated" to profileUpdated,
+                            ),
+                    )
+                }
             } else {
                 call.respondRedirect("/login")
             }

@@ -15,6 +15,42 @@ import java.sql.Connection
  */
 object AdminDAO {
     /**
+     * Returns the display name and email for an admin account looked up by email.
+     *
+     * Queries the `admins` table for a row whose `email` column matches [email].
+     * The returned map contains:
+     * - `"firstName"`: the first word of `full_name`, or an empty string if not set
+     * - `"lastName"`: the remainder of `full_name` after the first word, or empty
+     * - `"email"`: the admin's email address
+     *
+     * @param email the admin's email address (used as the session username)
+     * @return a map of profile fields, or a map of empty strings if not found
+     */
+    fun getAdminDetails(login: String): Map<String, String> {
+        val sql = "SELECT full_name, email FROM admins WHERE email = ? OR username = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, login)
+                    stmt.setString(2, login)
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) {
+                            mapOf(
+                                "fullName" to (rs.getString("full_name") ?: ""),
+                                "email" to (rs.getString("email") ?: ""),
+                            )
+                        } else {
+                            mapOf("fullName" to "", "email" to "")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            mapOf("fullName" to "", "email" to "")
+        }
+    }
+
+    /**
      * Returns the total number of registered users in the database.
      *
      * Executes a `COUNT(*)` query on the `users` table.

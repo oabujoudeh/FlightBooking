@@ -12,6 +12,7 @@
             <div class="sidebar-avatar">{% if firstName | length > 0 %}{{ firstName | slice(0, 1) | upper }}{% else %}{{ username | slice(0, 1) | upper }}{% endif %}{% if lastName | length > 0 %}{{ lastName | slice(0, 1) | upper }}{% endif %}</div>
             <p class="sidebar-username">{{ username }}</p>
             <p class="sidebar-tag">EAJO Member</p>
+            {% if not isAdmin %}
             <p class="sidebar-greeting" id="sidebar-greeting"></p>
             <script>
                 (function() {
@@ -20,18 +21,23 @@
                     document.getElementById('sidebar-greeting').textContent = 'Good ' + period + ', {{ firstName }}.';
                 })();
             </script>
+            {% endif %}
         </div>
 
         <nav class="sidebar-nav">
+            {% if not isAdmin %}
             <a onclick="showSection('bookings')" id="link-bookings" class="nav-item active">
                 Upcoming Flights
             </a>
-            <a onclick="showSection('personal')" id="link-personal" class="nav-item">
+            {% endif %}
+            <a onclick="showSection('personal')" id="link-personal" class="nav-item{% if isAdmin %} active{% endif %}">
                 Personal Info
             </a>
+            {% if not isAdmin %}
             <a onclick="showSection('miles')" id="link-miles" class="nav-item">
                 EAJO Miles
             </a>
+            {% endif %}
         </nav>
 
         <div class="sidebar-bottom">
@@ -43,7 +49,7 @@
     <main class="profile-main">
 
         <!-- Bookings -->
-        <div id="section-bookings" class="content-section active">
+        <div id="section-bookings" class="content-section{% if not isAdmin %} active{% endif %}">
             <p class="section-title">Upcoming Flights</p>
             {% if bookings is empty %}
                 <div class="empty-state">You have no bookings yet.</div>
@@ -109,7 +115,7 @@
         </div>
 
         <!-- Personal Info -->
-        <div id="section-personal" class="content-section">
+        <div id="section-personal" class="content-section{% if isAdmin %} active{% endif %}">
             <p class="section-title">Personal Information</p>
             {% if profileUpdated %}
             <div class="update-info-notice" style="margin-bottom:16px;"><strong>✓</strong> Profile updated successfully.</div>
@@ -117,7 +123,7 @@
             <div class="info-card">
                 <div class="info-row">
                     <div class="info-label">Full Name</div>
-                    <div class="info-value">{{ firstName }} {{ lastName }}</div>
+                    <div class="info-value">{% if isAdmin %}{{ fullName }}{% else %}{{ firstName }} {{ lastName }}{% endif %}</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">Email</div>
@@ -128,9 +134,11 @@
                     <div class="info-value">{{ username }}</div>
                 </div>
             </div>
+            {% if not isAdmin %}
             <div class="action-bar" style="margin-top:20px;">
                 <a href="/profile/edit" class="btn-primary">Edit Profile</a>
             </div>
+            {% endif %}
         </div>
 
         <!-- Miles -->
@@ -139,7 +147,7 @@
             <div class="miles-display">
                 <p class="miles-label-top">Your Balance</p>
                 <div class="miles-value">{{ loyaltyPoints }}</div>
-                <p class="miles-unit">Available EAJO Miles</p>
+                <p class="miles-unit">EAJO Miles</p>
             </div>
         </div>
 
