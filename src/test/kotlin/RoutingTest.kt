@@ -5,12 +5,14 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /* tests for checking our routes work properly
    mostly checking pages load and that auth protection is in place */
@@ -126,6 +128,29 @@ class RoutingTest {
 
             assertEquals(HttpStatusCode.Found, response.status, "should redirect if not logged in")
             assertEquals("/login", response.headers["Location"], "should send to login page")
+        }
+
+    @Test
+    fun testProfilePagePreventsStaleAccountCache() =
+        testApplication {
+            application { module() }
+            val client = createClient { followRedirects = false }
+
+            val response = client.get("/profile")
+            val cacheControl = response.headers[HttpHeaders.CacheControl] ?: ""
+
+            assertTrue(cacheControl.contains("no-store"), "profile should not be cached between accounts")
+        }
+
+    @Test
+    fun testHomePagePreventsStaleAccountCache() =
+        testApplication {
+            application { module() }
+
+            val response = client.get("/")
+            val cacheControl = response.headers[HttpHeaders.CacheControl] ?: ""
+
+            assertTrue(cacheControl.contains("no-store"), "home should not cache admin or user state")
         }
 
     @Test

@@ -41,13 +41,104 @@
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <nav class="navbar" aria-label="Main navigation">
     <a href="/" class="logo" aria-label="EAJO Air home page">✈ EAJO Air</a>
-    {% if loggedIn %}
-        <a href="/profile" class="auth-btn">Profile</a>
-        <a href="/complaint" class="auth-btn">Complaint</a>
-    {% else %}
-        <a href="/login" class="auth-btn">Login</a>
-    {% endif %}
+
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div style="position: relative;">
+            <button type="button" onclick="toggleNoti()" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.08); cursor: pointer; font-weight: 800; font-size: 14px; background: #d4af37; color: #0b1f3a; position: relative;">
+                Notifications
+                <span id="noti-dot" style="display: none; position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%; background: #ef4444; border: 2px solid white;"></span>
+            </button>
+            <div id="noti-box" style="display: none; position: absolute; right: 0; top: 45px; width: 280px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 1000; padding: 10px; color: #333;">
+                <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 0.9rem; border-bottom: 1px solid #eee; padding-bottom: 8px;">Messages</p>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    {% if notifications is not empty %}
+                        {% for note in notifications %}
+                        <div id="noti-item-{{ loop.index }}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.8rem; line-height: 1.4;">
+                            <span>Your <strong>{{ note.type }}</strong> request was <span style="color: {% if note.status == 'accepted' %}#10b981{% else %}#ef4444{% endif %}; font-weight: bold;">{{ note.status }}</span>.</span>
+                            <button onclick="markRead({{ loop.index }})" id="read-btn-{{ loop.index }}" style="flex-shrink: 0; padding: 3px 10px; border-radius: 999px; border: 1px solid #e2e8f0; background: white; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer;">Mark read</button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: #94a3b8; font-size: 13px; text-align: center; margin: 16px 0;">No notifications</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% if loggedIn %}
+            <a href="/profile" class="auth-btn">Profile</a>
+            <a href="/complaint" class="auth-btn">Complaint</a>
+        {% else %}
+            <a href="/login" class="auth-btn">Login</a>
+        {% endif %}
+    </div>
 </nav>
+<script>
+function toggleNoti() {
+    var box = document.getElementById('noti-box');
+    if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+window.onclick = function(event) {
+    if (!event.target.closest('.navbar')) {
+        var box = document.getElementById('noti-box');
+        if (box) box.style.display = 'none';
+    }
+}
+
+
+function markRead(index) {
+    const item = document.getElementById('noti-item-' + index);
+    if (!item) return;
+
+
+    const content = item.querySelector('span').innerText;
+
+
+    let dismissed = JSON.parse(localStorage.getItem('dismissed_notis') || '[]');
+    if (!dismissed.includes(content)) {
+        dismissed.push(content);
+        localStorage.setItem('dismissed_notis', JSON.stringify(dismissed));
+    }
+
+
+    item.remove();
+
+
+    updateUIState();
+}
+
+
+function updateUIState() {
+    const dismissed = JSON.parse(localStorage.getItem('dismissed_notis') || '[]');
+    const items = document.querySelectorAll('[id^="noti-item-"]');
+    
+
+    items.forEach(item => {
+        const content = item.querySelector('span').innerText;
+        if (dismissed.includes(content)) {
+            item.remove();
+        }
+    });
+
+
+    const remaining = document.querySelectorAll('[id^="noti-item-"]');
+    const dot = document.getElementById('noti-dot');
+    
+    if (remaining.length > 0) {
+        if (dot) dot.style.display = 'block';
+    } else {
+        if (dot) dot.style.display = 'none';
+
+        const container = document.querySelector('#noti-box > div');
+        if (container && !container.querySelector('p')) {
+            container.innerHTML = '<p style="color: #94a3b8; font-size: 13px; text-align: center; margin: 16px 0;">No notifications</p>';
+        }
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', updateUIState);
+</script>
 <main id="main-content">
     {% block content %}{% endblock %}
 </main>
