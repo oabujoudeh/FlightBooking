@@ -5,131 +5,95 @@
 <header class="hero">
     <div class="hero-inner">
         <h1>EAJO Air</h1>
+        <div class="hero-divider"></div>
         <p class="slogan">Fly High</p>
     </div>
 </header>
 
-<div class="layout">
+<div class="home-layout">
 
-    <section class="card booking-card">
-        <h2 class="card-title">Book a Flight</h2>
-        <p class="card-subtitle">Choose your route and dates to see available flights.</p>
+    <section class="section-block booking-form-card">
+        <div class="section-block-header">Book a Flight</div>
+        <div class="section-block-body">
 
-        {% if message is not empty %}
-        <article>
-            <p><strong>{{ message }}</strong></p>
-        </article>
-        {% endif %}
+            {% if message is not empty %}
+            <div class="home-message">{{ message }}</div>
+            {% endif %}
 
-        <form action="/search-flights" method="post">
+            <form action="/search-flights" method="post" class="booking-form">
 
-            <div class="segmented-row">
-                <div class="segmented">
-                    <input type="radio" id="oneway" name="tripType" value="oneway" checked>
-                    <label for="oneway">One Way</label>
-
-                    <input type="radio" id="return" name="tripType" value="return">
-                    <label for="return">Return</label>
-                </div>
-
-                <div class="pax-controls">
-                    <div class="pax-field">
-                        <label>Adults</label>
-                        <input type="number" name="adults" min="1" max="9" value="1" required>
+                <!-- Trip type + passengers -->
+                <div class="booking-form-top">
+                    <div class="segmented">
+                        <input type="radio" id="oneway" name="tripType" value="oneway" checked>
+                        <label for="oneway">One Way</label>
+                        <input type="radio" id="return" name="tripType" value="return">
+                        <label for="return">Return</label>
                     </div>
-                    <div class="pax-field">
-                        <label>Children</label>
-                        <input type="number" name="children" min="0" max="9" value="0">
+
+                    <div class="pax-controls">
+                        <div class="pax-field">
+                            <label>Adults</label>
+                            <input type="number" name="adults" min="1" max="9" value="1" required>
+                        </div>
+                        <div class="pax-field">
+                            <label>Children</label>
+                            <input type="number" name="children" min="0" max="9" value="0">
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="route-row">
-                <div class="route-field" style="position:relative">
-                    <input type="text" id="departureInput" class="route-input" placeholder="From" autocomplete="off" required value="{{ departureLabel }}">
-                    <input type="hidden" name="departure" id="departureValue" value="{{ departure }}">
-                    <ul id="departureSuggestions" class="suggestions"></ul>
+                <!-- Route -->
+                <div class="route-row">
+                    <div class="route-field" style="position:relative">
+                        <label class="route-label">From</label>
+                        <input type="text" id="departureInput" class="route-input" placeholder="City or airport" autocomplete="off" required value="{{ departureLabel }}">
+                        <input type="hidden" name="departure" id="departureValue" value="{{ departure }}">
+                        <ul id="departureSuggestions" class="suggestions"></ul>
+                    </div>
+
+                    <div class="route-arrow">
+                        <button type="button" id="swapBtn" title="Swap">⇄</button>
+                    </div>
+
+                    <div class="route-field" style="position:relative">
+                        <label class="route-label">To</label>
+                        <input type="text" id="destinationInput" class="route-input" placeholder="City or airport" autocomplete="off" required value="{{ destinationLabel }}">
+                        <input type="hidden" name="destination" id="destinationValue" value="{{ destination }}">
+                        <ul id="destinationSuggestions" class="suggestions"></ul>
+                    </div>
                 </div>
 
-                <div class="route-arrow">
-                    <button type="button" id="swapBtn" title="Swap">⇄</button>
+                <!-- Dates -->
+                <div class="booking-dates-row">
+                    <div class="booking-date-field">
+                        <label>Departure Date</label>
+                        <input type="date" id="departureDate" name="departureDate" required value="{{ departureDate }}">
+                    </div>
+                    <div class="booking-date-field" id="returnDateField" style="display:none;">
+                        <label>Return Date</label>
+                        <input type="date" name="returnDate" id="returnDate">
+                    </div>
                 </div>
 
-                <div class="route-field" style="position:relative">
-                    <input type="text" id="destinationInput" class="route-input" placeholder="To" autocomplete="off" required value="{{ destinationLabel }}">
-                    <input type="hidden" name="destination" id="destinationValue" value="{{ destination }}">
-                    <ul id="destinationSuggestions" class="suggestions"></ul>
-                </div>
-            </div>
+                <button type="submit" class="booking-submit-btn">Search Flights</button>
 
-            <div class="form-grid">
-                <div class="field">
-                    <label>Departure Date</label>
-                    <input type="date" id="departureDate" name="departureDate" required value="{{ departureDate }}">
-                </div>
-
-                <div class="field" id="returnDateField" style="display:none;">
-                    <label>Return Date</label>
-                    <input type="date" name="returnDate" id="returnDate">
-                </div>
-            </div>
-
-            <input type="hidden" name="clientTime" id="clientTime">
-            <button type="submit" class="primary-btn">Search Flights</button>
-
-        </form>
-    </section>
-
-    <aside class="card updates-card">
-        <div class="updates-header">
-            <h2 class="card-title">Latest Updates</h2>
-            <p class="card-subtitle">Notices and helpful travel info.</p>
+            </form>
         </div>
-
-        <ul class="updates-list">
-            <li class="update">
-                <div class="badge">INFO</div>
-                <div>
-                    <div class="update-title">Airport updates will appear here</div>
-                    <div class="update-meta">Shown once connected to the system.</div>
-                </div>
-            </li>
-
-            <li class="update">
-                <div class="badge">NOTICE</div>
-                <div>
-                    <div class="update-title">Flight notices and service alerts</div>
-                    <div class="update-meta">Delays, cancellations, and changes.</div>
-                </div>
-            </li>
-
-            <li class="update">
-                <div class="badge">TIP</div>
-                <div>
-                    <div class="update-title">Peak booking windows</div>
-                    <div class="update-meta">Plan ahead for better availability.</div>
-                </div>
-            </li>
-        </ul>
-    </aside>
+    </section>
 
 </div>
 
 <script>
-
 function setupAutocomplete(inputId, suggestionsId, hiddenId) {
     const input = document.getElementById(inputId);
-    const list = document.getElementById(suggestionsId);
+    const list  = document.getElementById(suggestionsId);
     const hidden = document.getElementById(hiddenId);
 
     input.addEventListener("input", async () => {
         const q = input.value.trim();
         hidden.value = "";
-
-        if (q.length < 2) {
-            list.innerHTML = "";
-            return;
-        }
+        if (q.length < 2) { list.innerHTML = ""; return; }
 
         const res = await fetch(`/search-airports?q=${encodeURIComponent(q)}`);
         const airports = await res.json();
@@ -140,7 +104,7 @@ function setupAutocomplete(inputId, suggestionsId, hiddenId) {
 
         list.querySelectorAll("li").forEach(li => {
             li.addEventListener("click", () => {
-                input.value = li.dataset.label;
+                input.value  = li.dataset.label;
                 hidden.value = li.dataset.value;
                 list.innerHTML = "";
             });
@@ -152,53 +116,40 @@ function setupAutocomplete(inputId, suggestionsId, hiddenId) {
     });
 }
 
-setupAutocomplete("departureInput","departureSuggestions","departureValue");
+setupAutocomplete("departureInput",  "departureSuggestions",  "departureValue");
 setupAutocomplete("destinationInput","destinationSuggestions","destinationValue");
 
-const oneWay = document.getElementById("oneway");
-const returnTrip = document.getElementById("return");
+const oneWay      = document.getElementById("oneway");
+const returnTrip  = document.getElementById("return");
 const returnField = document.getElementById("returnDateField");
 
-function toggleReturnDate(){
-    if(returnTrip.checked){
-        returnField.style.display = "block";
-    } else {
-        returnField.style.display = "none";
-    }
+function toggleReturnDate() {
+    returnField.style.display = returnTrip.checked ? "block" : "none";
 }
-
 oneWay.addEventListener("change", toggleReturnDate);
 returnTrip.addEventListener("change", toggleReturnDate);
-
 toggleReturnDate();
 
 const departureDate = document.getElementById("departureDate");
-const returnDate = document.getElementById("returnDate");
+const returnDate    = document.getElementById("returnDate");
 
-departureDate.addEventListener("change", () => {
-    returnDate.min = departureDate.value;
-});
+const today = new Date().toISOString().split("T")[0];
+departureDate.min = today;
+returnDate.min    = today;
 
-// Inject client local time on submit so server can filter departed flights
-document.querySelector('form').addEventListener('submit', function() {
-    const now = new Date();
-    document.getElementById('clientTime').value =
-        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-});
+departureDate.addEventListener("change", () => { returnDate.min = departureDate.value; });
 
-// switch button
 document.getElementById("swapBtn").addEventListener("click", () => {
-    const depLabel = document.getElementById("departureInput").value;
-    const depValue = document.getElementById("departureValue").value;
+    const depLabel  = document.getElementById("departureInput").value;
+    const depValue  = document.getElementById("departureValue").value;
     const destLabel = document.getElementById("destinationInput").value;
     const destValue = document.getElementById("destinationValue").value;
 
-    document.getElementById("departureInput").value = destLabel;
-    document.getElementById("departureValue").value = destValue;
+    document.getElementById("departureInput").value  = destLabel;
+    document.getElementById("departureValue").value  = destValue;
     document.getElementById("destinationInput").value = depLabel;
     document.getElementById("destinationValue").value = depValue;
 });
-
 </script>
 
 {% endblock %}

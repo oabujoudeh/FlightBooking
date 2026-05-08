@@ -36,7 +36,7 @@
                         <div class="flight-endpoint">
                             <span class="flight-time">{{ flight.departureTime }}</span>
                             <span class="flight-airport">{{ flight.departureAirport }}</span>
-                            {% if not flight.isConnecting %}
+                            {% if flight.departureTerminal %}
                                 <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
                             {% endif %}
                         </div>
@@ -57,7 +57,7 @@
                                 <div class="flight-dot"></div>
                             </div>
                             {% if flight.isConnecting %}
-                                <span class="layover-info">{{ flight.layoverMinutes }}min layover at {{ flight.stopCity }}</span>
+                                <span class="layover-info">{% set hours = flight.layoverMinutes / 60 %}{% set mins = flight.layoverMinutes % 60 %}{{ hours }}h {{ mins }}m layover at {{ flight.stopCity }}</span>
                             {% endif %}
                         </div>
 
@@ -67,6 +67,9 @@
                                 {% if flight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ flight.arrivalDayOffset }}</sup>{% endif %}
                             </span>
                             <span class="flight-airport">{{ flight.arrivalAirport }}</span>
+                            {% if flight.arrivalTerminal %}
+                                <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
+                            {% endif %}
                         </div>
 
                         <div class="flight-fare-options">
@@ -147,7 +150,7 @@
                         <div class="flight-endpoint">
                             <span class="flight-time">{{ flight.departureTime }}</span>
                             <span class="flight-airport">{{ flight.departureAirport }}</span>
-                            {% if not flight.isConnecting %}
+                            {% if flight.departureTerminal %}
                                 <span class="flight-terminal">Terminal {{ flight.departureTerminal }}</span>
                             {% endif %}
                         </div>
@@ -168,13 +171,18 @@
                                 <div class="flight-dot"></div>
                             </div>
                             {% if flight.isConnecting %}
-                                <span class="layover-info">{{ flight.layoverMinutes }}min layover at {{ flight.stopCity }}</span>
+                                {% set hours = flight.layoverMinutes / 60 %}
+                                {% set mins = flight.layoverMinutes % 60 %}
+                                <span class="layover-info">{{ hours }}h {{ mins }}m layover at {{ flight.stopCity }}</span>
                             {% endif %}
                         </div>
 
                         <div class="flight-endpoint right">
                             <span class="flight-time">{{ flight.arrivalTime }}{% if flight.arrivalDayOffset > 0 %}<sup class="day-offset">+{{ flight.arrivalDayOffset }}</sup>{% endif %}</span>
                             <span class="flight-airport">{{ flight.arrivalAirport }}</span>
+                            {% if flight.arrivalTerminal %}
+                                <span class="flight-terminal">Terminal {{ flight.arrivalTerminal }}</span>
+                            {% endif %}
                         </div>
 
                         <div class="flight-fare-options">

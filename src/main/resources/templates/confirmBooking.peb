@@ -170,152 +170,6 @@
     <input type="hidden" name="totalPrice" value="{{ totalPrice }}">
 </div>
 
-<style>
-    .leg-row {
-        display: flex;
-        gap: 14px;
-        padding: 12px 16px;
-        align-items: stretch;
-    }
-
-    .leg-track-col {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 4px;
-        width: 14px;
-        flex-shrink: 0;
-    }
-    .track-dot {
-        width: 10px; height: 10px;
-        border: 2px solid var(--gold);
-        border-radius: 50%; background: #fff;
-        flex-shrink: 0;
-    }
-    .track-solid-line {
-        flex: 1;
-        width: 2px;
-        background: #d0d0d0;
-        min-height: 24px;
-    }
-
-    .leg-body {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .leg-endpoint {
-        display: flex;
-        align-items: baseline;
-        gap: 10px;
-    }
-    .leg-time {
-        font-size: 1.15rem;
-        font-weight: bold;
-        color: var(--navy);
-        min-width: 52px;
-    }
-    .leg-airport { font-size: 0.95rem; color: var(--navy); }
-    .terminal-tag { font-size: 0.8rem; color: #999; margin-left: 4px; }
-
-    .leg-meta-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding-left: 2px;
-        margin: 2px 0;
-    }
-    .leg-duration { font-size: 0.8rem; color: #aaa; min-width: 52px; }
-    .mid-flight-meta {
-        font-size: 0.82rem; color: #666;
-        background: #f4f4f4;
-        padding: 2px 10px;
-        border-radius: 4px;
-    }
-
-    .leg-price-col {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: var(--navy);
-        text-align: right;
-        align-self: center;
-        min-width: 75px;
-        flex-shrink: 0;
-    }
-    .price-sub {
-        font-size: 0.72rem;
-        font-weight: normal;
-        color: #aaa;
-        text-align: right;
-    }
-
-    .layover-bar {
-        margin: 0 16px;
-        padding: 8px 14px;
-        background: #f5f5f5;
-        border-radius: 6px;
-        font-size: 0.83rem;
-        color: #555;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 6px;
-        border-left: 3px solid #ddd;
-    }
-    .layover-icon {
-        font-size: 1rem;
-        color: var(--gold);
-    }
-    .layover-duration {
-        font-weight: 700;
-        color: var(--navy);
-    }
-    .day-offset {
-        font-size: 0.65rem;
-        font-weight: 700;
-        color: var(--gold);
-        vertical-align: super;
-        margin-left: 1px;
-    }
-    .layover-duration {
-        font-weight: 600;
-        color: var(--navy);
-        font-size: 0.85rem;
-    }
-    .price-summary-block {
-        margin-top: 16px;
-        padding: 16px 20px;
-        background: #fff;
-        border-radius: 10px;
-        border: 1px solid #e8e8e8;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
-    .price-summary-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-    }
-    .price-summary-total {
-        font-size: 1.6rem;
-        font-weight: bold;
-        color: var(--navy);
-    }
-    .price-summary-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--navy);
-        margin-top: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    .price-summary-pax {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--navy);
-    }
-</style>
-
 
 {# ── Step Indicator ── #}
 <div class="step-indicator" 
@@ -376,8 +230,8 @@
                         <fieldset class="passenger-fieldset contact-fieldset">
                             <legend>Contact Details</legend>
                             <p class="contact-hint">We'll use this to send your booking confirmation and travel updates.</p>
-                            <p><input type="email" name="contactEmail" placeholder="Email address" required></p>
-                            <p><input type="tel"   name="contactPhone" placeholder="Phone number (incl. country code)" required></p>
+                            <p><input type="email" name="contactEmail" placeholder="Email address" required inputmode="email" autocomplete="email" pattern="[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"></p>
+                            <p><input type="tel"   name="contactPhone" placeholder="Phone number (incl. country code)" required inputmode="tel" autocomplete="tel"></p>
                         </fieldset>
 
                         <hr style="margin:20px 0;">
@@ -416,17 +270,26 @@
                         </fieldset>
                         {% endfor %}
 
-                        {% if step.stepIndex == totalSteps %}
-                        <button type="button" class="primary-btn" style="margin-top:20px;"
-                                onclick="submitBooking({{ step.stepIndex }})">
-                            Confirm &amp; Proceed to Payment
-                        </button>
-                        {% else %}
-                        <button type="button" class="primary-btn" style="margin-top:20px;"
-                                onclick="nextStep({{ step.stepIndex }})">
-                            Next Flight →
-                        </button>
-                        {% endif %}
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;">
+                            {% if step.stepIndex > 1 %}
+                            <button type="button" class="secondary-btn" style="min-width:220px;"
+                                    onclick="previousStep({{ step.stepIndex }})">
+                                ← Previous Flight
+                            </button>
+                            {% endif %}
+
+                            {% if step.stepIndex == totalSteps %}
+                            <button type="button" class="primary-btn" style="min-width:220px;"
+                                    onclick="submitBooking({{ step.stepIndex }})">
+                                Confirm &amp; Proceed to Payment
+                            </button>
+                            {% else %}
+                            <button type="button" class="primary-btn" style="min-width:220px;"
+                                    onclick="nextStep({{ step.stepIndex }})">
+                                Next Flight →
+                            </button>
+                            {% endif %}
+                        </div>
 
                     </section>
                 </div>
@@ -486,36 +349,6 @@
 
     </form>
 </div>
-
-<style>
-    .step-pill.active {
-        opacity: 1 !important;
-        background: var(--navy);
-        color: var(--gold);
-    }
-    .step-pill.done {
-        opacity: 0.7 !important;
-        background: #e0e0e0;
-    }
-    .contact-fieldset {
-        margin-top: 16px;
-        background: #f9f9fb;
-        border: 1px solid #e0e0e8;
-    }
-    .contact-hint {
-        font-size: 0.82rem;
-        color: #888;
-        margin: 0 0 8px 0;
-    }
-    .seat[aria-disabled="true"] {
-        opacity: 0.35;
-        cursor: not-allowed;
-        pointer-events: none;
-    }
-    .seat.selected {
-        outline: 3px solid var(--gold);
-    }
-</style>
 
 <script>
 const totalSteps = {{ totalSteps }};
@@ -598,10 +431,22 @@ function checkInputsForStep(stepIndex) {
                 alert('Please select seats for all passengers for this flight.');
             }
             return false;
-        } else {
-            if (input.type === 'text' || input.type === 'email' || input.type === 'tel') {
-                input.style.borderColor = '';
-            }
+        }
+
+        if (input.type === 'email' && !input.checkValidity()) {
+            input.style.borderColor = 'red';
+            alert('Please enter a valid email address.');
+            return false;
+        }
+
+        if (input.type === 'tel' && !input.checkValidity()) {
+            input.style.borderColor = 'red';
+            alert('Please enter a valid phone number.');
+            return false;
+        }
+
+        if (input.type === 'text' || input.type === 'email' || input.type === 'tel') {
+            input.style.borderColor = '';
         }
     }
     return true;
@@ -618,7 +463,24 @@ function nextStep(stepIndex) {
     currentStepIndex = stepIndex + 1;
 
     activatePill(stepIndex + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToPanel(nextPanel);
+}
+
+function previousStep(stepIndex) {
+    document.getElementById('step-panel-' + stepIndex).style.display = 'none';
+    const prevPanel = document.getElementById('step-panel-' + (stepIndex - 1));
+    if (prevPanel) prevPanel.style.display = 'block';
+
+    currentPassengerField = null;
+    currentStepIndex = stepIndex - 1;
+
+    activatePill(stepIndex - 1);
+    scrollToPanel(prevPanel);
+}
+
+function scrollToPanel(panel) {
+    if (!panel) return;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function submitBooking(stepIndex) {

@@ -5,324 +5,26 @@
 {% block content %}
 
 {% if loggedIn %}
-<style>
-    /* ── Layout ── */
-    .profile-container {
-        display: flex;
-        min-height: calc(100vh - 60px);
-        background-color: var(--bg);
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-
-    /* ── Sidebar ── */
-    .profile-sidebar {
-        width: 240px;
-        background: linear-gradient(180deg, var(--navy2) 0%, var(--navy) 100%);
-        color: white;
-        padding: 0;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 3px 0 12px rgba(0,0,0,0.18);
-    }
-
-    .sidebar-header {
-        padding: 28px 20px 24px;
-        text-align: center;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-        background: rgba(0,0,0,0.15);
-    }
-
-    .sidebar-avatar {
-        width: 58px;
-        height: 58px;
-        border-radius: 50%;
-        background: var(--gold);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        font-weight: 800;
-        color: var(--navy);
-        margin: 0 auto 12px;
-        letter-spacing: 0;
-    }
-
-    .sidebar-username {
-        font-size: 15px;
-        font-weight: 600;
-        color: #e8edf5;
-        margin: 0;
-    }
-
-    .sidebar-tag {
-        font-size: 11px;
-        color: var(--gold);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        margin-top: 4px;
-    }
-
-    /* ── Nav items ── */
-    .sidebar-nav {
-        margin-top: 12px;
-        flex-grow: 1;
-        padding: 0 12px;
-    }
-
-    .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        color: #94a3b8;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        border-radius: 8px;
-        transition: background 0.2s, color 0.2s;
-        cursor: pointer;
-        margin-bottom: 4px;
-        border: none;
-        background: none;
-        width: 100%;
-        text-align: left;
-    }
-
-    .nav-item:hover {
-        background-color: rgba(255,255,255,0.07);
-        color: #e2e8f0;
-    }
-
-    .nav-item.active {
-        background-color: rgba(212,175,55,0.15);
-        color: var(--gold);
-        font-weight: 700;
-    }
-
-    .sidebar-divider {
-        height: 1px;
-        background: rgba(255,255,255,0.07);
-        margin: 12px 12px;
-    }
-
-    .sidebar-bottom {
-        padding: 12px;
-        border-top: 1px solid rgba(255,255,255,0.07);
-    }
-
-    .nav-item-danger {
-        color: #f87171;
-    }
-
-    .nav-item-danger:hover {
-        background-color: rgba(248,113,113,0.1);
-        color: #fca5a5;
-    }
-
-    /* ── Main content ── */
-    .profile-main {
-        flex-grow: 1;
-        padding: 36px 40px;
-        overflow-y: auto;
-    }
-
-    .section-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: var(--navy);
-        margin: 0 0 20px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid var(--border);
-    }
-
-    .content-section {
-        display: none;
-    }
-
-    .content-section.active {
-        display: block;
-    }
-
-    /* ── Cards ── */
-    .info-card, .booking-card {
-        background: white;
-        border-radius: 18px;
-        padding: 24px;
-        box-shadow: var(--shadow);
-        margin-bottom: 16px;
-        border: 1px solid var(--border);
-    }
-
-    .booking-card {
-        transition: box-shadow 0.2s, transform 0.2s;
-    }
-
-    .booking-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-    }
-
-    .booking-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-    }
-
-    .booking-id {
-        font-weight: 800;
-        font-size: 15px;
-        color: var(--navy);
-    }
-
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 900;
-        background: rgba(212,175,55,0.18);
-        color: var(--navy);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .flight-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 0;
-        border-bottom: 1px dashed var(--border);
-    }
-
-    .flight-row:last-of-type {
-        border-bottom: none;
-    }
-
-    .flight-num {
-        font-weight: 800;
-        color: var(--navy);
-        font-size: 13px;
-        width: 70px;
-        flex-shrink: 0;
-    }
-
-    .flight-route {
-        flex-grow: 1;
-        font-size: 14px;
-        color: var(--text);
-    }
-
-    .flight-meta {
-        font-size: 12px;
-        color: var(--muted);
-        text-align: right;
-    }
-
-    .action-group {
-        display: flex;
-        gap: 10px;
-        margin-top: 16px;
-    }
-
-    /* ── Edit button ── */
-    .btn-manage {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 9px 20px;
-        border-radius: 999px;
-        text-decoration: none;
-        font-weight: 800;
-        font-size: 13px;
-        background: var(--gold);
-        color: var(--navy);
-        border: 1px solid rgba(0,0,0,0.08);
-        transition: background 0.2s, transform 0.15s;
-    }
-
-    .btn-manage:hover {
-        background: var(--gold2);
-        transform: translateY(-1px);
-    }
-
-    /* ── Personal Info ── */
-    .info-row {
-        display: flex;
-        align-items: center;
-        padding: 14px 0;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .info-row:last-child {
-        border-bottom: none;
-    }
-
-    .info-label {
-        width: 160px;
-        font-weight: 800;
-        color: var(--muted);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-
-    .info-value {
-        color: var(--text);
-        font-size: 15px;
-    }
-
-    /* ── Miles section ── */
-    .miles-display {
-        text-align: center;
-        padding: 48px 40px;
-        background: linear-gradient(135deg, var(--navy2) 0%, var(--navy) 100%);
-        color: white;
-        border-radius: 18px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: var(--shadow);
-    }
-
-    .miles-label-top {
-        font-size: 12px;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.5);
-        margin-bottom: 10px;
-    }
-
-    .miles-value {
-        font-size: 60px;
-        font-weight: 900;
-        color: var(--gold);
-        line-height: 1;
-    }
-
-    .miles-unit {
-        font-size: 16px;
-        color: rgba(255,255,255,0.5);
-        margin-top: 8px;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--muted);
-    }
-</style>
 
 <div class="profile-container">
     <aside class="profile-sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-avatar">{{ username | slice(0, 2) | upper }}</div>
+            <div class="sidebar-avatar">{% if firstName | length > 0 %}{{ firstName | slice(0, 1) | upper }}{% else %}{{ username | slice(0, 1) | upper }}{% endif %}{% if lastName | length > 0 %}{{ lastName | slice(0, 1) | upper }}{% endif %}</div>
             <p class="sidebar-username">{{ username }}</p>
             <p class="sidebar-tag">EAJO Member</p>
+            <p class="sidebar-greeting" id="sidebar-greeting"></p>
+            <script>
+                (function() {
+                    var h = new Date().getHours();
+                    var period = h < 6 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : h < 22 ? 'evening' : 'night';
+                    document.getElementById('sidebar-greeting').textContent = 'Good ' + period + ', {{ firstName }}.';
+                })();
+            </script>
         </div>
 
         <nav class="sidebar-nav">
             <a onclick="showSection('bookings')" id="link-bookings" class="nav-item active">
-                My Bookings
+                Upcoming Flights
             </a>
             <a onclick="showSection('personal')" id="link-personal" class="nav-item">
                 Personal Info
@@ -333,13 +35,8 @@
         </nav>
 
         <div class="sidebar-bottom">
-            <div class="sidebar-divider"></div>
-            <a href="/" class="nav-item">
-                Return Home
-            </a>
-            <a href="/logout" class="nav-item nav-item-danger">
-                Logout
-            </a>
+            <a href="/" class="nav-item">Return Home</a>
+            <a href="/logout" class="nav-item nav-item-danger">Logout</a>
         </div>
     </aside>
 
@@ -347,38 +44,76 @@
 
         <!-- Bookings -->
         <div id="section-bookings" class="content-section active">
-            <h2 class="section-title">My Bookings</h2>
+            <p class="section-title">Upcoming Flights</p>
             {% if bookings is empty %}
-                <div class="empty-state">
-                    <p>You have no bookings yet.</p>
-                </div>
+                <div class="empty-state">You have no bookings yet.</div>
             {% else %}
-                {% for booking in bookings %}
-                    <div class="booking-card">
-                        <div class="booking-header">
-                            <span class="booking-id">Booking #{{ booking.bookingId }}</span>
-                            <span class="status-badge">{{ booking.status }}</span>
-                        </div>
-                        {% for flight in booking.flights %}
-                            <div class="flight-row">
-                                <span class="flight-num">{{ flight.flightNumber }}</span>
-                                <span class="flight-route">{{ flight.departureCity }} → {{ flight.arrivalCity }}</span>
-                                <span class="flight-meta">{{ flight.departureDate }}<br>{{ flight.departureTime }}</span>
+                <div class="bookings-timeline">
+                    {% set currentDate = '' %}
+                    {% for booking in bookings %}
+                        {% set firstFlight = (booking.flights | first) %}
+                        {% set bookingDate = firstFlight.departureDate %}
+                        {% if bookingDate != currentDate %}
+                            <div class="timeline-date">{{ bookingDate }}</div>
+                            {% set currentDate = bookingDate %}
+                        {% endif %}
+                        <div class="timeline-item">
+                            <div class="timeline-connector">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-line"></div>
                             </div>
-                        {% endfor %}
-                        <div class="action-group">
-                            <a href="/edit-booking?id={{ booking.bookingId }}" class="btn-manage">
-                                Edit Flight
-                            </a>
+                            <div class="booking-content">
+                                <a href="/booking-detail?id={{ booking.bookingId }}" class="profile-booking-card">
+                                    <div class="booking-card-header">
+                                        <div>
+                                            <div class="booking-card-route">
+                                                {% if booking.tripType == "return" %}
+                                                    {% set outboundCount = (booking.flights | length) / 2 %}
+                                                    {% set outboundFlights = booking.flights | slice(0, outboundCount) %}
+                                                    {% set departureCity = (outboundFlights | first).departureCity %}
+                                                    {% set destinationCity = (outboundFlights | last).arrivalCity %}
+                                                    {{ departureCity }} ↔ {{ destinationCity }}
+                                                {% else %}
+                                                    {% set departureCity = (booking.flights | first).departureCity %}
+                                                    {% set destinationCity = (booking.flights | last).arrivalCity %}
+                                                    {{ departureCity }} → {{ destinationCity }}
+                                                {% endif %}
+                                            </div>
+                                            <div class="booking-card-meta">EAJO{{ booking.bookingId }} · £{{ booking.totalPrice | numberformat("0.00") }}</div>
+                                        </div>
+                                        <span class="status-badge {% if booking.status == 'cancelled' %}cancelled{% endif %}">{{ booking.status }}</span>
+                                    </div>
+
+                                    {% for flight in booking.flights %}
+                                    <div class="flight-leg-row">
+                                        <div class="fl-track">
+                                            <div class="fl-dot"></div>
+                                            <div class="fl-line"></div>
+                                            <div class="fl-dot"></div>
+                                        </div>
+                                        <div class="fl-body">
+                                            <div class="fl-airports">{{ flight.departureCode }} → {{ flight.arrivalCode }}</div>
+                                            <div class="fl-times">{{ flight.departureTime }} - {{ flight.arrivalTime }}</div>
+                                            <div class="fl-meta">{{ flight.flightNumber }} · {{ flight.aircraftType }}</div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+
+                                    <div class="view-link">View details →</div>
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             {% endif %}
         </div>
 
         <!-- Personal Info -->
         <div id="section-personal" class="content-section">
-            <h2 class="section-title">Personal Information</h2>
+            <p class="section-title">Personal Information</p>
+            {% if profileUpdated %}
+            <div class="update-info-notice" style="margin-bottom:16px;"><strong>✓</strong> Profile updated successfully.</div>
+            {% endif %}
             <div class="info-card">
                 <div class="info-row">
                     <div class="info-label">Full Name</div>
@@ -393,11 +128,14 @@
                     <div class="info-value">{{ username }}</div>
                 </div>
             </div>
+            <div class="action-bar" style="margin-top:20px;">
+                <a href="/profile/edit" class="btn-primary">Edit Profile</a>
+            </div>
         </div>
 
         <!-- Miles -->
         <div id="section-miles" class="content-section">
-            <h2 class="section-title">Travel Milestones</h2>
+            <p class="section-title">Travel Milestones</p>
             <div class="miles-display">
                 <p class="miles-label-top">Your Balance</p>
                 <div class="miles-value">{{ loyaltyPoints }}</div>

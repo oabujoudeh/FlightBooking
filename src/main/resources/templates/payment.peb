@@ -4,28 +4,60 @@
 
 {% block content %}
 
-<div class="payment-success-wrapper">
-<div class="payment-success-card">
+<div class="detail-page">
 
-    <h2>Payment</h2>
-    <p>Total price: £{{ totalPrice }}</p>
-    <p>Enter your payment details</p>
+    <div class="detail-header">
+        <div>
+            <div class="detail-booking-id">Checkout</div>
+            <div class="detail-route-title">Payment</div>
+        </div>
+    </div>
 
+    <!-- Price summary -->
+    <div class="section-block">
+        <div class="section-block-header">Order Summary</div>
+        <div class="section-block-body" style="padding: 20px 24px;">
+            <div class="payment-summary-row">
+                <span class="payment-summary-label">Total Due</span>
+                <span class="payment-summary-amount">£{{ totalPrice }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment form -->
     <form method="post" action="/payment" autocomplete="off">
 
-        <label>Card Number</label>
-        <input type="text" name="cardNumber" placeholder="1234 5678 9012 3456" 
-            autocomplete="cc-number" required>
+        <div class="section-block">
+            <div class="section-block-header">
+                Card Details
+                <span class="payment-secure-badge">We keep your information secure.</span>
+            </div>
+            <div class="section-block-body">
+                <div class="update-info-grid" style="grid-template-columns: 1fr;">
+                    <div class="update-info-field">
+                        <label>Card Number</label>
+                        <input type="text" name="cardNumber" placeholder="1234 5678 9012 3456"
+                            maxlength="19" autocomplete="cc-number" required>
+                    </div>
+                    <div class="update-info-field">
+                        <label>PIN</label>
+                        <input type="password" name="pin" placeholder="••••"
+                            maxlength="4" autocomplete="off" required>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <label>PIN</label>
-        <input type="password" name="pin" placeholder="••••" 
-            autocomplete="off" required>
-
-        <button type="submit">Pay Now</button>
+        <div class="section-block">
+            <div class="section-block-body">
+                <div class="action-bar">
+                    <button type="submit" class="btn-primary">Pay £{{ totalPrice }}</button>
+                </div>
+            </div>
+        </div>
 
     </form>
 
-</div>
 </div>
 
 {% endblock %}

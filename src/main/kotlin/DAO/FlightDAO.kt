@@ -302,7 +302,9 @@ object FlightDAO {
         priceFirst = if (leg1.priceFirst != null && leg2.priceFirst != null) 
                     leg1.priceFirst + leg2.priceFirst else null,
                     
-        stopCity = this.leg1.arrivalCity,
-        layoverMinutes = this.layoverMinutes
+        stopCity = this.leg1.arrivalAirportName,
+        layoverMinutes = this.layoverMinutes,
+        departureTerminal = this.leg1.departureTerminal,
+        arrivalTerminal = this.leg2.arrivalTerminal
     )
 }

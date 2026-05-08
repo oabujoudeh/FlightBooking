@@ -1,0 +1,66 @@
+{% extends "base.peb" %}
+
+{% block title %}Update Passenger Info - EAJO Air{% endblock %}
+
+{% block content %}
+
+<div class="detail-page">
+
+    <a href="/booking-detail?id={{ booking.bookingId }}" class="back-link">← Back to Booking</a>
+
+    <div class="detail-header">
+        <div>
+            <div class="detail-booking-id">Booking · #{{ booking.bookingId }}</div>
+            <div class="detail-route-title">Update Passenger Info</div>
+        </div>
+    </div>
+
+    <!-- Notice -->
+    <div class="section-block">
+        <div class="section-block-body">
+            <div class="update-info-notice">
+                <strong>Note:</strong> Changes to Name or ID Number require manual review by our staff. You will be notified once the request is processed.
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" action="/submit-info-request">
+        <input type="hidden" name="bookingId" value="{{ booking.bookingId }}">
+
+        {% for passenger in booking.passengers %}
+        <div class="section-block">
+            <div class="section-block-header">
+                Passenger {{ loop.index + 1 }}
+                <span class="pax-current-info">Current: {{ passenger.fullName }} · {{ passenger.idNumber }}</span>
+            </div>
+            <div class="section-block-body">
+                <div class="update-info-grid">
+                    <div class="update-info-field">
+                        <label>New Full Name</label>
+                        <input type="text" name="newName" placeholder="Enter new full name" required>
+                    </div>
+                    <div class="update-info-field">
+                        <label>New ID Number</label>
+                        <input type="text" name="newId" placeholder="Enter new ID number" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Actions -->
+        <div class="section-block">
+            <div class="section-block-body">
+                <div class="action-bar">
+                    <button type="submit" class="btn-primary">Submit Change Request</button>
+                    <a href="/booking-detail?id={{ booking.bookingId }}" class="btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

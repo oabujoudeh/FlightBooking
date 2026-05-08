@@ -419,6 +419,7 @@ fun Application.configureRouting() {
                 val userDetails = UserDAO.getUserDetails(userID)
 
 
+                val profileUpdated = call.request.queryParameters["updated"] == "true"
                 call.respondTemplate(
                     "profile.peb",
                     call.nonNullSessionData() +
@@ -427,11 +428,48 @@ fun Application.configureRouting() {
                             "loyaltyPoints" to loyaltyPoints,
                             "firstName" to (userDetails?.firstName ?: ""),
                             "lastName" to (userDetails?.lastName ?: ""),
-                            "email" to (userDetails?.email ?: "")
+                            "email" to (userDetails?.email ?: ""),
+                            "profileUpdated" to profileUpdated
                         ),
                 )        
             } else {
                 call.respondRedirect("/login")
+            }
+        }
+
+        get("/profile/edit") {
+            val session = call.sessions.get<UserSession>() ?: return@get call.respondRedirect("/login")
+            val userID = UserDAO.getUserID(session.username)
+            if (userID == -1) return@get call.respondRedirect("/login")
+            val userDetails = UserDAO.getUserDetails(userID)
+            call.respondTemplate(
+                "editProfile.peb",
+                call.nonNullSessionData() + mapOf(
+                    "firstName" to (userDetails?.firstName ?: ""),
+                    "middleName" to (userDetails?.middleName ?: ""),
+                    "lastName" to (userDetails?.lastName ?: ""),
+                    "email" to (userDetails?.email ?: "")
+                )
+            )
+        }
+
+        post("/profile/edit") {
+            val session = call.sessions.get<UserSession>() ?: return@post call.respondRedirect("/login")
+            val userID = UserDAO.getUserID(session.username)
+            if (userID == -1) return@post call.respondRedirect("/login")
+            val params = call.receiveParameters()
+            val firstName = params["firstName"]?.trim() ?: ""
+            val middleName = params["middleName"]?.trim() ?: ""
+            val lastName = params["lastName"]?.trim() ?: ""
+            val email = params["email"]?.trim() ?: ""
+            val success = UserDAO.updateUserProfile(userID, firstName, middleName, lastName, email)
+            if (success) {
+                if (email != session.username) {
+                    call.sessions.set(session.copy(username = email))
+                }
+                call.respondRedirect("/profile?updated=true#personal")
+            } else {
+                call.respondRedirect("/profile/edit?error=true")
             }
         }
 
@@ -490,28 +528,31 @@ fun Application.configureRouting() {
             call.respondRedirect("/profile")
         }
 
-        get("/edit-booking") {
+        get("/booking-detail") {
             val session = call.sessions.get<UserSession>()
             if (session == null || !session.loggedIn) {
                 call.respondRedirect("/login")
                 return@get
             }
-
+        
             val bookingId = call.request.queryParameters["id"]?.toIntOrNull()
             if (bookingId == null) {
                 call.respondRedirect("/profile")
                 return@get
             }
-
+        
             val userID = UserDAO.getUserID(session.username)
             val booking = UserDAO.getBookingById(bookingId, userID)
-
+        
             if (booking == null) {
                 call.respondRedirect("/profile")
                 return@get
             }
-
-            call.respondTemplate("editBooking.peb", call.nonNullSessionData() + mapOf("booking" to booking))
+        
+            call.respondTemplate(
+                "bookingDetail.peb",
+                call.nonNullSessionData() + mapOf("booking" to booking)
+            )
         }
 
         post("/search-flights") {
@@ -929,7 +970,7 @@ fun Application.configureRouting() {
                     rescheduleBookingId  = null
                 ))
                 if (success) {
-                    call.respondRedirect("/edit-booking?id=${pendingReschedule.bookingId}&rescheduled=true")
+                    call.respondRedirect("/booking-detail?id=${pendingReschedule.bookingId}&rescheduled=true")
                 } else {
                     call.respondRedirect("/")
                 }
@@ -944,7 +985,7 @@ fun Application.configureRouting() {
             }
 
             val userID    = UserDAO.getUserID(session.username)
-            val isSuccess = UserDAO.createBooking(
+            val newBookingId = UserDAO.createBooking(
                 userID,
                 session.username,
                 pending.flightIds,
@@ -958,18 +999,19 @@ fun Application.configureRouting() {
             // Clear pending booking from session regardless of outcome
             call.sessions.set(session.copy(pendingBooking = null))
 
-            if (isSuccess) {
-                call.respondRedirect("/payment-success")
+            if (newBookingId != null) {
+                call.respondRedirect("/payment-success?bookingId=$newBookingId")
             } else {
                 call.respondRedirect("/")
             }
         }
 
         get("/payment-success") {
+            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull()
             call.respond(
                 PebbleContent(
                     "payment-success.peb",
-                    call.nonNullSessionData(),
+                    call.nonNullSessionData() + mapOf("bookingId" to (bookingId ?: "")),
                 ),
             )
         }
@@ -1205,7 +1247,7 @@ fun Application.configureRouting() {
             primaryReturnFlight?.let { templateExtras["returnFlight"]       = Utils.flightToMap(it) }
             returnLeg2Flight?.let    { templateExtras["returnLeg2Flight"]   = Utils.flightToMap(it) }
 
-            call.respondTemplate("reschedule_seats.peb", call.nonNullSessionData() + templateExtras)
+            call.respondTemplate("rescheduleSeats.peb", call.nonNullSessionData() + templateExtras)
         }
 
         // Step 3: Seat selection submitted → execute the reschedule
@@ -1276,7 +1318,7 @@ fun Application.configureRouting() {
                 )
                 call.sessions.set(session.copy(rescheduleBookingId = null))
                 if (success) {
-                    call.respondRedirect("/edit-booking?id=$bookingId&rescheduled=true")
+                    call.respondRedirect("/booking-detail?id=$bookingId&rescheduled=true")
                 } else {
                     call.respondTemplate("error.peb", mapOf("message" to "Reschedule failed. Please try again."))
                 }
@@ -1288,19 +1330,55 @@ fun Application.configureRouting() {
             val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull() ?: return@get call.respondRedirect("/profile")
    
             val userId = UserDAO.getUserID(session.username)
+            if (userId == -1) return@get call.respondRedirect("/login")
     
             val booking = UserDAO.getBookingById(bookingId, userId)
     
             if (booking != null) {
-                call.respondTemplate("update_info.peb", mapOf("booking" to booking))
+                call.respondTemplate("updateInfo.peb", mapOf("booking" to booking))
             } else {
                 call.respondRedirect("/profile")
+            }
+        }
+
+        get("/update-contact-info") {
+            val session = call.sessions.get<UserSession>() ?: return@get call.respondRedirect("/login")
+            val bookingId = call.request.queryParameters["bookingId"]?.toIntOrNull() ?: return@get call.respondRedirect("/profile")
+   
+            val userId = UserDAO.getUserID(session.username)
+    
+            val booking = UserDAO.getBookingById(bookingId, userId)
+    
+            if (booking != null) {
+                call.respondTemplate("updateContact.peb", mapOf("booking" to booking))
+            } else {
+                call.respondRedirect("/profile")
+            }
+        }
+
+        post("/update-contact-info") {
+            val session = call.sessions.get<UserSession>() ?: return@post call.respondRedirect("/login")
+            val userId = UserDAO.getUserID(session.username)
+            if (userId == -1) return@post call.respondRedirect("/login")
+            val params = call.receiveParameters()
+    
+            val bookingId = params["bookingId"]?.toIntOrNull() ?: return@post call.respondRedirect("/profile")
+            val newEmail = params["newEmail"]?.trim() ?: ""
+            val newPhone = params["newPhone"]?.trim() ?: ""
+    
+            val success = UserDAO.updateContactInfo(bookingId, userId, newEmail, newPhone)
+    
+            if (success) {
+                call.respondRedirect("/booking-detail?id=$bookingId&updateSuccess=true")
+            } else {
+                call.respondText("Error: Could not update contact info.")
             }
         }
 
         post("/submit-info-request") {
             val session = call.sessions.get<UserSession>() ?: return@post call.respondRedirect("/login")
             val userId = UserDAO.getUserID(session.username)
+            if (userId == -1) return@post call.respondRedirect("/login")
             val params = call.receiveParameters()
     
             val newName = params["newName"]?.trim() ?: ""

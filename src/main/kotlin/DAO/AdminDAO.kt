@@ -466,7 +466,6 @@ object AdminDAO {
                         stmt.setString(paramIndex++, filterStatus)
                     }
 
-                    println("Debug: SQL query is $sql")
                     stmt.executeQuery().use { rs ->
                         val results = mutableListOf<Map<String, Any>>()
                         while (rs.next()) {
@@ -681,15 +680,13 @@ fun getPendingChangeRequests(): List<Map<String, Any>> {
                         
                             requests.add(row)
                         } catch (rowError: Exception) {
-                            println("DEBUG: Row parsing error: ${rowError.message}")
+                            println("Row parsing error: ${rowError.message}")
                         }
                     }
                 }
             }
-            println("DEBUG: Successfully fetched ${requests.size} requests from DB")
             requests
         } catch (e: Exception) {
-            println("DEBUG: SQL Error: ${e.message}")
             e.printStackTrace()
             emptyList()
         }

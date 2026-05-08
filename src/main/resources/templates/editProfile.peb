@@ -1,0 +1,65 @@
+{% extends "base.peb" %}
+
+{% block title %}Edit Profile - EAJO Air{% endblock %}
+
+{% block content %}
+
+<div class="detail-page">
+
+    <a href="/profile#personal" class="back-link">← Back to Profile</a>
+
+    <div class="detail-header">
+        <div>
+            <div class="detail-booking-id">Account</div>
+            <div class="detail-route-title">Edit Personal Information</div>
+        </div>
+    </div>
+
+    <div class="section-block">
+        <div class="section-block-body">
+            <div class="update-info-notice">
+                <strong>Note:</strong> Changes are applied immediately. If you update your email, it will be used to log in next time.
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/profile/edit">
+
+        <div class="section-block">
+            <div class="section-block-header">Personal Details</div>
+            <div class="section-block-body">
+                <div class="update-info-grid">
+                    <div class="update-info-field">
+                        <label>First Name</label>
+                        <input type="text" name="firstName" placeholder="First name" value="{{ firstName }}" required>
+                    </div>
+                    <div class="update-info-field">
+                        <label>Middle Name <span style="font-weight:400;color:#aaa;">(optional)</span></label>
+                        <input type="text" name="middleName" placeholder="Middle name" value="{{ middleName }}">
+                    </div>
+                    <div class="update-info-field">
+                        <label>Last Name</label>
+                        <input type="text" name="lastName" placeholder="Last name" value="{{ lastName }}" required>
+                    </div>
+                    <div class="update-info-field">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="Email address" value="{{ email }}" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <div class="section-block-body">
+                <div class="action-bar">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <a href="/profile#personal" class="btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

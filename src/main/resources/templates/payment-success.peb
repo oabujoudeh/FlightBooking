@@ -1,23 +1,30 @@
 {% extends "base.peb" %}
 
-{% block title %}Payment Successful{% endblock %}
+{% block title %}Booking Confirmed - EAJO Air{% endblock %}
 
 {% block content %}
 
-<div class="payment-success-wrapper">
-<div class="payment-success-card">
+<div class="success-page">
 
-    <h1>Payment Successful</h1>
+    <div class="success-card">
 
-    <p>Your booking has been confirmed.</p>
+        <div class="success-icon">✓</div>
 
-    <div class="booking-ref">
-        <p><strong>Booking Reference:</strong> EAJO-{{ bookingId }}</p>
+        <h1 class="success-title">Booking Confirmed</h1>
+        <p class="success-sub">Your payment was successful and your seat is reserved.</p>
+
+        <div class="success-ref">
+            <div class="success-ref-label">Booking Reference</div>
+            <div class="success-ref-value">EAJO{{ bookingId }}</div>
+        </div>
+
+        <div class="success-actions">
+            <a href="/booking-detail?id={{ bookingId }}" class="btn-primary">View Booking</a>
+            <a href="/profile" class="btn-secondary">My Bookings</a>
+        </div>
+
     </div>
 
-    <a href="/profile" class="primary-btn">Go to My Bookings</a>
-
-</div>
 </div>
 
 {% endblock %}

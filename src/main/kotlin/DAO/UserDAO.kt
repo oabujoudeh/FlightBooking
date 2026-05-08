@@ -8,7 +8,7 @@ import java.time.ZonedDateTime
 object UserDAO{
 
     fun getUserDetails(userId: Int): User? {
-        val sql = "SELECT first_name, last_name, email FROM users WHERE user_id = ?"
+        val sql = "SELECT first_name, middle_name, last_name, email FROM users WHERE user_id = ?"
         return Database.getConnection().use { conn ->
             conn.prepareStatement(sql).use { stmt ->
                 stmt.setInt(1, userId)
@@ -16,14 +16,13 @@ object UserDAO{
                 if (rs.next()){
                     User(
                         firstName = rs.getString("first_name"),
+                        middleName = rs.getString("middle_name"),
                         lastName = rs.getString("last_name"),
                         email = rs.getString("email"),
                         passwordHash = ""
                     )
                 }else null
-
             }
-
         }
     }
 
@@ -265,30 +264,40 @@ object UserDAO{
     */
     private fun getFlightInfoFromRow(result: java.sql.ResultSet): Map<String, Any> {
         val durationMinutes = result.getInt("base_duration_minutes")
-
+    
         val departureDate = LocalDate.parse(result.getString("flight_date"))
         val departureTime = LocalTime.parse(result.getString("planned_departure"))
-
+    
         val departureTimezone = ZoneId.of(result.getString("departure_timezone") ?: "UTC")
         val arrivalTimezone = ZoneId.of(result.getString("arrival_timezone") ?: "UTC")
-
-        // work out the arrival time by adding the duration and converting to the arrival timezone
+    
         val departureDateTime = ZonedDateTime.of(departureDate, departureTime, departureTimezone)
         val arrivalDateTime = departureDateTime.plusMinutes(durationMinutes.toLong())
         val arrivalTime = arrivalDateTime.withZoneSameInstant(arrivalTimezone).toLocalTime()
-
+    
         val flightInfo = mutableMapOf<String, Any>()
-        flightInfo["flightNumber"] = result.getString("flight_number")
-        flightInfo["departureCity"] = result.getString("departure_city")
-        flightInfo["arrivalCity"] = result.getString("arrival_city")
-        flightInfo["departureAirport"] = result.getString("departure_airport_name")
-        flightInfo["arrivalAirport"] = result.getString("arrival_airport_name")
+        flightInfo["flightNumber"]      = result.getString("flight_number")
+        flightInfo["aircraftType"]      = result.getString("aircraft_type") ?: ""
+        flightInfo["departureCity"]     = result.getString("departure_city")
+        flightInfo["arrivalCity"]       = result.getString("arrival_city")
+        flightInfo["departureAirport"]  = result.getString("departure_airport_name")
+        flightInfo["arrivalAirport"]    = result.getString("arrival_airport_name")
+
+        flightInfo["departureCode"]     = result.getString("departure_code")
+        flightInfo["arrivalCode"]       = result.getString("arrival_code")
+        flightInfo["departureLat"]      = result.getDouble("departure_lat")
+        flightInfo["departureLng"]      = result.getDouble("departure_lng")
+        flightInfo["arrivalLat"]        = result.getDouble("arrival_lat")
+        flightInfo["arrivalLng"]        = result.getDouble("arrival_lng")
+
         flightInfo["departureTerminal"] = result.getString("departure_terminal") ?: ""
-        flightInfo["arrivalTerminal"] = result.getString("arrival_terminal") ?: ""
-        flightInfo["departureDate"] = departureDate.toString()
-        flightInfo["departureTime"] = departureTime.toString()
-        flightInfo["arrivalTime"] = arrivalTime.toString()
-        flightInfo["duration"] = Utils.formatDuration(durationMinutes)
+        flightInfo["arrivalTerminal"]   = result.getString("arrival_terminal") ?: ""
+        flightInfo["departureDate"]     = departureDate.toString()
+        flightInfo["departureTime"]     = departureTime.toString()
+        flightInfo["arrivalTime"]       = arrivalTime.toString()
+        flightInfo["arrivalDate"]       = arrivalDateTime.withZoneSameInstant(arrivalTimezone).toLocalDate().toString()
+        flightInfo["dayOffset"]         = java.time.temporal.ChronoUnit.DAYS.between(departureDate, arrivalDateTime.withZoneSameInstant(arrivalTimezone).toLocalDate()).toInt()
+        flightInfo["duration"]          = Utils.formatDuration(durationMinutes)
         return flightInfo
     }
 
@@ -304,15 +313,24 @@ object UserDAO{
     fun getBookings(userID: Int): List<Map<String, Any>> {
         // get all bookings for the user, joining to get the flight and route info
         // a booking can have multiple flights so we group by booking_id at the end
-        val sql = """
+       val sql = """
             SELECT
-                b.booking_id, b.booking_date, b.total_price, b.status,
+                b.booking_id, b.booking_date, b.total_price, b.status, b.trip_type,
                 f.flight_date,
-                r.flight_number, r.departure_terminal, r.arrival_terminal,
+                r.flight_number, r.aircraft_type, r.departure_terminal, r.arrival_terminal,
                 r.planned_departure, r.base_duration_minutes,
-                dep.city as departure_city, arr.city as arrival_city,
-                dep.name as departure_airport_name, arr.name as arrival_airport_name,
-                dep.timezone as departure_timezone, arr.timezone as arrival_timezone,
+                dep.city            as departure_city,
+                arr.city            as arrival_city,
+                dep.name            as departure_airport_name,
+                arr.name            as arrival_airport_name,
+                dep.timezone        as departure_timezone,
+                arr.timezone        as arrival_timezone,
+                dep.airport_id      as departure_code,
+                arr.airport_id      as arrival_code,
+                dep.latitude        as departure_lat,
+                dep.longitude       as departure_lng,
+                arr.latitude        as arrival_lat,
+                arr.longitude       as arrival_lng,
                 bf.flight_sequence
             FROM bookings b
             JOIN booking_flights bf ON b.booking_id = bf.booking_id
@@ -342,6 +360,7 @@ object UserDAO{
                                 newBooking["bookingDate"] = result.getString("booking_date") ?: ""
                                 newBooking["totalPrice"] = result.getDouble("total_price")
                                 newBooking["status"] = result.getString("status")
+                                newBooking["tripType"] = result.getString("trip_type") ?: ""
                                 newBooking["flights"] = mutableListOf<Map<String, Any>>()
                                 bookings.add(newBooking)
                                 seenBookingIds[bookingId] = newBooking
@@ -354,7 +373,15 @@ object UserDAO{
                             val flightList = booking["flights"] as MutableList<Map<String, Any>>
                             flightList.add(getFlightInfoFromRow(result))
                         }
-                        bookings
+                        bookings.sortedBy { booking ->
+                            val flights = booking["flights"] as List<Map<String, Any>>
+                            if (flights.isNotEmpty()) {
+                                val firstFlight = flights.first()
+                                "${firstFlight["departureDate"]} ${firstFlight["departureTime"]}"
+                            } else {
+                                ""
+                            }
+                        }
                     }
                 }
             }
@@ -377,13 +404,23 @@ object UserDAO{
         // get a single booking with its flights and passengers
         val bookingSql = """
             SELECT
-                b.booking_id, b.booking_date, b.total_price, b.status, b.contact_email, b.trip_type,
+                b.booking_id, b.booking_date, b.total_price, b.status,
+                b.contact_email, b.contact_phone, b.trip_type,
                 f.flight_date,
-                r.flight_number, r.departure_terminal, r.arrival_terminal,
+                r.flight_number, r.aircraft_type, r.departure_terminal, r.arrival_terminal,
                 r.planned_departure, r.base_duration_minutes,
-                dep.city as departure_city, arr.city as arrival_city,
-                dep.name as departure_airport_name, arr.name as arrival_airport_name,
-                dep.timezone as departure_timezone, arr.timezone as arrival_timezone,
+                dep.city            as departure_city,
+                arr.city            as arrival_city,
+                dep.name            as departure_airport_name,
+                arr.name            as arrival_airport_name,
+                dep.timezone        as departure_timezone,
+                arr.timezone        as arrival_timezone,
+                dep.airport_id      as departure_code,
+                arr.airport_id      as arrival_code,
+                dep.latitude        as departure_lat,
+                dep.longitude       as departure_lng,
+                arr.latitude        as arrival_lat,
+                arr.longitude       as arrival_lng,
                 bf.flight_sequence
             FROM bookings b
             JOIN booking_flights bf ON b.booking_id = bf.booking_id
@@ -396,6 +433,43 @@ object UserDAO{
         """
 
         val passengerSql = "SELECT full_name, id_number, type, seat_id FROM booking_passengers WHERE booking_id = ?"
+
+        fun queryCabin(conn: java.sql.Connection, bookingId: Int, sequence: Int): String {
+            val seatSql = """
+                SELECT bp.seat_id, bf.flight_id
+                FROM booking_passengers bp
+                JOIN booking_flights bf ON bf.booking_id = bp.booking_id AND bf.flight_sequence = ?
+                WHERE bp.booking_id = ?
+                ORDER BY bp.passenger_id ASC
+                LIMIT 1
+            """
+            val seatNumber = conn.prepareStatement(seatSql).use { stmt ->
+                stmt.setInt(1, sequence)
+                stmt.setInt(2, bookingId)
+                stmt.executeQuery().use { rs ->
+                    if (!rs.next()) return "economy"
+                    val seatId = rs.getString("seat_id") ?: return "economy"
+                    val seats = seatId.split(",").map { it.trim() }
+                    seats.getOrNull(sequence - 1) ?: seats.firstOrNull() ?: return "economy"
+                }
+            }
+            val classSql = """
+                SELECT s.class as seat_class
+                FROM booking_flights bf
+                JOIN seats s ON s.flight_id = bf.flight_id AND s.seat_number = ?
+                WHERE bf.booking_id = ? AND bf.flight_sequence = ?
+                LIMIT 1
+            """
+            return conn.prepareStatement(classSql).use { stmt ->
+                stmt.setString(1, seatNumber)
+                stmt.setInt(2, bookingId)
+                stmt.setInt(3, sequence)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) rs.getString("seat_class")?.lowercase() ?: "economy"
+                    else "economy"
+                }
+            }
+        }
 
         return try {
             Database.getConnection().use { conn ->
@@ -415,6 +489,7 @@ object UserDAO{
                                 booking["totalPrice"] = result.getDouble("total_price")
                                 booking["status"] = result.getString("status")
                                 booking["contactEmail"] = result.getString("contact_email") ?: ""
+                                booking["contactPhone"] = result.getString("contact_phone") ?: ""
                                 booking["tripType"] = result.getString("trip_type") ?: "oneway"
                                 found = true
                             }
@@ -422,7 +497,25 @@ object UserDAO{
                         }
 
                         if (!found) return@use null
-                        booking["flights"] = flights
+
+                        // Annotate each flight with cabin and direction
+                        val tripType = booking["tripType"] as String
+                        val totalFlights = flights.size
+                        // outbound legs: for return trips, first half; for oneway, all
+                        val outboundCount = when {
+                            tripType == "return" && totalFlights >= 2 -> totalFlights / 2
+                            else -> totalFlights
+                        }
+                        val annotatedFlights = flights.mapIndexed { i, flight ->
+                            val seq = i + 1
+                            val cabin = queryCabin(conn, bookingId, seq)
+                            val direction = if (i < outboundCount) "outbound" else "return"
+                            (flight as MutableMap).also {
+                                it["cabin"] = cabin
+                                it["direction"] = direction
+                            }
+                        }
+                        booking["flights"] = annotatedFlights
                     }
                 }
 
@@ -551,7 +644,7 @@ object UserDAO{
         contactEmail: String,
         contactPhone: String,
         tripType: String,
-    ): Boolean {
+    ): Int? {
         return try {
             Database.getConnection().use { conn ->
                 conn.autoCommit = false
@@ -581,7 +674,7 @@ object UserDAO{
                 val keys = bookingStmt.generatedKeys
                 if (!keys.next()) {
                     conn.rollback()
-                    return false
+                    return null
                 }
                 val bookingId = keys.getInt(1)
 
@@ -632,11 +725,11 @@ object UserDAO{
                 seatStmt.executeBatch()
 
                 conn.commit()
-                true
+                bookingId
             }
         } catch (e: Exception) {
              e.printStackTrace()
-            false
+            null
         }
     }
 
@@ -765,7 +858,6 @@ object UserDAO{
 
                         // Now totalLegs and tripType are known — safe to call queryCabin
                         val outboundCabin = queryCabin(conn, bookingId, 1)
-                        println("DEBUG outboundCabin=$outboundCabin totalLegs=$totalLegs tripType=$tripType")
 
                         val returnSeq = totalLegs / 2 + 1
                         val returnCabin = if (tripType == "return") {
@@ -864,9 +956,7 @@ object UserDAO{
             val updatePassengerSeat = "UPDATE booking_passengers SET seat_id = ? WHERE booking_id = ? AND passenger_id = ?"
             val lockNewSeat = "UPDATE seats SET is_occupied = 1 WHERE flight_id = ? AND seat_number = ?"
 
-            println("DEBUG lock: newFlightIds=$newFlightIds")
             passengerSeatSelections.forEach { (passengerId, seatsJoined) ->
-                println("DEBUG lock: passengerId=$passengerId seatsJoined=$seatsJoined")
                 // Update seat_id with full comma-separated string
                 conn.prepareStatement(updatePassengerSeat).use { stmt ->
                     stmt.setString(1, seatsJoined)
@@ -878,13 +968,11 @@ object UserDAO{
                 val seatList = seatsJoined.split(",").map { it.trim() }
                 seatList.forEachIndexed { index, seatNumber ->
                     val flightId = newFlightIds.getOrNull(index) ?: return@forEachIndexed
-                    println("DEBUG lock: flightId=$flightId seatNumber=$seatNumber index=$index")
                     val rows = conn.prepareStatement(lockNewSeat).use { stmt ->
                         stmt.setInt(1, flightId)
                         stmt.setString(2, seatNumber)
                         stmt.executeUpdate()
                     }
-                    println("DEBUG lock: rows affected=$rows")
                 }
             }
 
@@ -1028,6 +1116,40 @@ object UserDAO{
          notifications
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    fun updateUserProfile(userId: Int, firstName: String, middleName: String, lastName: String, email: String): Boolean {
+        val sql = "UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, email = ? WHERE user_id = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, firstName)
+                    stmt.setString(2, middleName.ifEmpty { null })
+                    stmt.setString(3, lastName)
+                    stmt.setString(4, email)
+                    stmt.setInt(5, userId)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) { false }
+    }
+
+    fun updateContactInfo(bookingId: Int, userId: Int, newEmail: String, newPhone: String): Boolean {
+        val sql = "UPDATE bookings SET contact_email = ?, contact_phone = ? WHERE booking_id = ? AND user_id = ?"
+        return try {
+            Database.getConnection().use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, newEmail)
+                    stmt.setString(2, newPhone)
+                    stmt.setInt(3, bookingId)
+                    stmt.setInt(4, userId)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
         
