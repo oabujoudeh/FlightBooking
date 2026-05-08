@@ -32,6 +32,7 @@
                     </td>
                     <td style="padding: 15px;">
                         <form action="/admin/handle-request" method="post" style="display: inline;">
+                            <input type="hidden" name="requestId" value="{{ req.requestId }}">
                             <input type="hidden" name="userId" value="{{ req.userId }}">
                             
                             <button type="submit" name="action" value="approve" 

@@ -26,13 +26,52 @@ import io.ktor.server.sessions.set
 import java.time.LocalDate
 import java.time.LocalTime
 
+private const val PRIVATE_NO_STORE_CACHE_CONTROL: String = "no-store, no-cache, must-revalidate, max-age=0"
+private const val EXPIRED_CACHE_TIME: String = "0"
+
+internal fun buildSessionTemplateData(
+    session: UserSession?,
+    notifications: List<Map<String, Any>> = emptyList(),
+): Map<String, Any> {
+    if (session == null) {
+        return mapOf(
+            "loggedIn" to false,
+            "username" to "",
+            "message" to "",
+            "isAdmin" to false,
+            "notifications" to notifications,
+        )
+    }
+    return mapOf(
+        "loggedIn" to session.loggedIn,
+        "username" to session.username,
+        "message" to session.message,
+        "isAdmin" to session.isAdmin,
+        "notifications" to notifications,
+    )
+}
+
+private fun getUserNotifications(session: UserSession?): List<Map<String, Any>> {
+    if (session == null || !session.loggedIn) return emptyList()
+    val userId: Int = UserDAO.getUserID(session.username)
+    if (userId == -1) return emptyList()
+    return UserDAO.getUserNotifications(userId)
+}
 
 /**
 * Gets session data and replaces any null values with empty strings.
 */
-private fun ApplicationCall.nonNullSessionData(): Map<String, Any> =
-    getSessionData(this).mapValues { it.value ?: "" }
+private fun ApplicationCall.nonNullSessionData(): Map<String, Any> {
+    val session: UserSession? = sessions.get<UserSession>()
+    val notifications: List<Map<String, Any>> = getUserNotifications(session)
+    return buildSessionTemplateData(session, notifications)
+}
 
+private fun ApplicationCall.disableAuthenticatedPageCaching(): Unit {
+    response.headers.append(HttpHeaders.CacheControl, PRIVATE_NO_STORE_CACHE_CONTROL)
+    response.headers.append(HttpHeaders.Pragma, "no-cache")
+    response.headers.append(HttpHeaders.Expires, EXPIRED_CACHE_TIME)
+}
 
 /**
  * Builds the deckData map for a given flight, used for seat map rendering.
@@ -170,8 +209,12 @@ fun Application.configureRouting() {
                 return@post
             }
     
-            val success = AdminDAO.updateFlightStatus(flightId, newStatus)
+            val notificationDetails: FlightStatusNotification? = AdminDAO.getFlightStatusNotification(flightId, newStatus)
+            val success: Boolean = AdminDAO.updateFlightStatus(flightId, newStatus)
             if (success) {
+                if (notificationDetails != null) {
+                    FlightNotificationService.sendFlightStatusUpdate(notificationDetails)
+                }
         
                 val flightDate = params["flightDate"] ?: ""
                 val flightNumber = params["flightNumber"] ?: ""
@@ -225,6 +268,7 @@ fun Application.configureRouting() {
         }
 
         get("/") {
+            call.disableAuthenticatedPageCaching()
             val session = call.sessions.get<UserSession>()
             val userId = session?.let { UserDAO.getUserID(it.username) } ?: -1
     
@@ -328,6 +372,7 @@ fun Application.configureRouting() {
 }
 
         get("/login") {
+            call.disableAuthenticatedPageCaching()
             // get Referer, if empty then go to home page
             val referer = call.request.headers["Referer"] ?: "/"
 
@@ -335,12 +380,13 @@ fun Application.configureRouting() {
         }
 
         post("/login") {
+            call.disableAuthenticatedPageCaching()
             val params = call.receiveParameters()
             val email = params["username"] ?: ""
             val password = params["password"] ?: ""
 
-            // if not get redirect_url, goto /profile
-            var redirectUrl = params["redirect_url"] ?: "/profile"
+            // if not get redirect_url, goto /
+            var redirectUrl = params["redirect_url"] ?: "/"
 
             if (redirectUrl.contains("forgot-password") || redirectUrl.contains("reset-password") || redirectUrl.contains("register")) {
                 redirectUrl = "/profile"
@@ -404,11 +450,13 @@ fun Application.configureRouting() {
         }
 
         get("/logout") {
+            call.disableAuthenticatedPageCaching()
             call.sessions.clear<UserSession>()
             call.respondRedirect("/")
         }
 
         get("/profile") {
+            call.disableAuthenticatedPageCaching()
             val session = call.sessions.get<UserSession>()
 
             if (session != null && session.loggedIn) {
@@ -451,7 +499,11 @@ fun Application.configureRouting() {
             }
 
             val userID = UserDAO.getUserID(session.username)
-            UserDAO.cancelBooking(bookingId, userID)
+            val notificationDetails: BookingCancellationNotification? = UserDAO.getBookingCancellationNotification(bookingId, userID)
+            val success: Boolean = UserDAO.cancelBooking(bookingId, userID)
+            if (success && notificationDetails != null) {
+                FlightNotificationService.sendBookingCancellation(notificationDetails)
+            }
 
             call.respondRedirect("/profile")
         }
@@ -1326,13 +1378,14 @@ fun Application.configureRouting() {
         // 2. processing approval
         post("/admin/handle-request") {
             val params = call.receiveParameters()
+            val requestId = params["requestId"]?.toLongOrNull() ?: return@post call.respondRedirect("/admin/pending-requests")
             val userId = params["userId"]?.toIntOrNull() ?: return@post call.respondRedirect("/admin/pending-requests")
             val action = params["action"]
 
             if (action == "approve") {
-                AdminDAO.approveChangeRequest(userId)
+                AdminDAO.approveChangeRequest(requestId, userId)
             } else if (action == "reject") {
-                AdminDAO.rejectChangeRequest(userId)
+                AdminDAO.rejectChangeRequest(requestId, userId)
             }
             
             call.respondRedirect("/admin/pending-requests")

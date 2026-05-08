@@ -2,6 +2,7 @@ package com.flightbooking
 
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /* testing all the admin dashboard queries
@@ -196,5 +197,17 @@ class AdminDAOTest {
                 assertTrue(current >= next, "busiest should be first")
             }
         }
+    }
+
+    @Test
+    fun testGetFlightStatusNotificationForInvalidFlightReturnsNull(): Unit {
+        val result: FlightStatusNotification? = AdminDAO.getFlightStatusNotification(-1, "Delayed")
+        assertNull(result, "invalid flight should not create an email notification")
+    }
+
+    @Test
+    fun testGetFlightStatusNotificationForNonNotifiableStatusReturnsNull(): Unit {
+        val result: FlightStatusNotification? = AdminDAO.getFlightStatusNotification(1, "Arrived")
+        assertNull(result, "only delayed and cancelled updates should create email notifications")
     }
 }
