@@ -259,16 +259,6 @@
 </form>
 </main>
 
-<style>
-    .hidden-section { display: none !important; }
-    /* highlight */
-    label.select-btn:has(input:checked) {
-        background: var(--navy) !important;
-        color: var(--gold) !important;
-        box-shadow: 0 0 0 2px var(--gold);
-    }
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 

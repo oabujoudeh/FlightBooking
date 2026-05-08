@@ -11,14 +11,26 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
 
+/**
+ * Service for generating admin dashboard charts as PNG byte arrays.
+ *
+ * Uses the XChart library to build and encode each chart. All functions
+ * return the rendered image as a [ByteArray] suitable for serving directly
+ * as an HTTP response or embedding in a page.
+ */
 object ChartService {
 
     /**
-    * Makes a chart showing bookings and revenue over time.
-    *
-    * @param data the booking data to plot
-    * @return the chart as PNG bytes
-    */
+     * Generates a dual-series XY line chart showing booking counts and revenue over time.
+     *
+     * The X axis represents dates parsed from the `"date"` key in each data entry.
+     * Two series are plotted: `"Bookings"` (count per date) and `"Revenue"` (total
+     * revenue per date). The chart is rendered at 800×400 pixels.
+     *
+     * @param data list of maps, each containing:
+     *        `"date"` (a `"yyyy-MM-dd"` string), `"count"` (an `Int`), and `"revenue"` (a `Double`)
+     * @return the rendered chart as a PNG [ByteArray]
+     */
     fun generateBookingsOverTimeChart(data: List<Map<String, Any>>): ByteArray {
         val dates =
             data.map {
@@ -53,11 +65,17 @@ object ChartService {
     }
 
     /**
-    * Makes a pie chart for booking statuses.
-    *
-    * @param data the status data to show
-    * @return the chart as PNG bytes
-    */
+     * Generates a pie chart breaking down bookings by status.
+     *
+     * Each slice represents one status value. Known statuses (`"confirmed"`,
+     * `"cancelled"`, `"pending"`) are rendered with fixed colours; any other
+     * status falls back to gray. The chart is rendered at 600×400 pixels with
+     * the legend positioned outside the plot area on the right.
+     *
+     * @param data list of maps, each containing `"status"` (a `String`) and
+     *        `"count"` (an `Int`)
+     * @return the rendered chart as a PNG [ByteArray]
+     */
     fun generateBookingStatusChart(data: List<Map<String, Any>>): ByteArray {
         val chart =
             PieChartBuilder()
@@ -91,11 +109,16 @@ object ChartService {
     }
 
     /**
-    * Makes a chart for the busiest routes.
-    *
-    * @param data the route booking data
-    * @return the chart as PNG bytes
-    */
+     * Generates a bar chart showing the busiest routes by booking count.
+     *
+     * Each bar represents one route, labelled as `"DepartureCity → ArrivalCity"`.
+     * Bars are ordered by the order of entries in [data] (typically descending by
+     * booking count as returned by the DAO). The chart is rendered at 800×400 pixels.
+     *
+     * @param data list of maps, each containing `"departureCity"` (a `String`),
+     *        `"arrivalCity"` (a `String`), and `"bookingCount"` (an `Int`)
+     * @return the rendered chart as a PNG [ByteArray]
+     */
     fun generateBusiestRoutesChart(data: List<Map<String, Any>>): ByteArray {
         val labels = data.map { "${it["departureCity"]} → ${it["arrivalCity"]}" }
         val counts = data.map { (it["bookingCount"] as Int).toDouble() }

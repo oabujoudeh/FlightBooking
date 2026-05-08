@@ -26,9 +26,23 @@ import io.ktor.server.sessions.set
 import java.time.LocalDate
 import java.time.LocalTime
 
+/** Cache-Control header value that prevents browsers from caching authenticated pages. */
 private const val PRIVATE_NO_STORE_CACHE_CONTROL: String = "no-store, no-cache, must-revalidate, max-age=0"
+
+/** Expires header value that marks a cached response as immediately stale. */
 private const val EXPIRED_CACHE_TIME: String = "0"
 
+/**
+ * Builds the standard session data map passed to every Pebble template.
+ *
+ * Returns safe defaults for all keys when [session] is null, so templates
+ * can reference session values without null checks.
+ *
+ * @param session the current [UserSession], or null for unauthenticated requests
+ * @param notifications list of resolved change-request notifications for the user
+ * @return a map with keys `"loggedIn"`, `"username"`, `"message"`, `"isAdmin"`,
+ *         and `"notifications"`
+ */
 internal fun buildSessionTemplateData(
     session: UserSession?,
     notifications: List<Map<String, Any>> = emptyList(),
@@ -51,6 +65,15 @@ internal fun buildSessionTemplateData(
     )
 }
 
+/**
+ * Fetches resolved change-request notifications for the current user.
+ *
+ * Returns an empty list when there is no session, the user is not logged in,
+ * or the user ID cannot be resolved.
+ *
+ * @param session the current [UserSession], or null
+ * @return a list of notification maps, or an empty list if unavailable
+ */
 private fun getUserNotifications(session: UserSession?): List<Map<String, Any>> {
     if (session == null || !session.loggedIn) return emptyList()
     val userId: Int = UserDAO.getUserID(session.username)
@@ -59,14 +82,30 @@ private fun getUserNotifications(session: UserSession?): List<Map<String, Any>> 
 }
 
 /**
-* Gets session data and replaces any null values with empty strings.
-*/
+ * Returns the full template data map for the current request, combining session
+ * values with the user's resolved notifications.
+ *
+ * Delegates to [buildSessionTemplateData]. All keys are present with safe
+ * defaults even when no session exists.
+ *
+ * @receiver the current [ApplicationCall]
+ * @return a map suitable for passing directly to [respondTemplate]
+ */
 private fun ApplicationCall.nonNullSessionData(): Map<String, Any> {
     val session: UserSession? = sessions.get<UserSession>()
     val notifications: List<Map<String, Any>> = getUserNotifications(session)
     return buildSessionTemplateData(session, notifications)
 }
 
+/**
+ * Appends response headers that prevent browsers and proxies from caching
+ * the current page.
+ *
+ * Should be called on any route that serves personalised or session-dependent
+ * content (e.g. profile, dashboard, login).
+ *
+ * @receiver the current [ApplicationCall]
+ */
 private fun ApplicationCall.disableAuthenticatedPageCaching(): Unit {
     response.headers.append(HttpHeaders.CacheControl, PRIVATE_NO_STORE_CACHE_CONTROL)
     response.headers.append(HttpHeaders.Pragma, "no-cache")
@@ -74,7 +113,17 @@ private fun ApplicationCall.disableAuthenticatedPageCaching(): Unit {
 }
 
 /**
- * Builds the deckData map for a given flight, used for seat map rendering.
+ * Builds the nested deck-and-cabin data structure used by the seat-map template.
+ *
+ * Fetches (or generates) seat records for the flight, then walks the aircraft
+ * layout config to produce a list of deck maps. Each deck contains its cabins,
+ * and each cabin contains its rows; each row lists individual seat cells with
+ * occupancy status, column label, and class. For multi-deck aircraft the seat
+ * numbers are prefixed with `"M"` or `"U"` to match [SeatDAO] conventions.
+ *
+ * @param flightId the ID of the flight whose seats to render
+ * @param aircraftType the aircraft type string used to look up the layout config
+ * @return a list of deck maps ready for Pebble template rendering
  */
 private fun buildDeckData(flightId: Int, aircraftType: String): List<Map<String, Any>> {
     val config = AircraftConfigs.getConfig(aircraftType)
@@ -117,7 +166,14 @@ private fun buildDeckData(flightId: Int, aircraftType: String): List<Map<String,
 
 
 /**
- * Returns the price for a given flight and cabin class.
+ * Returns the per-person price for a given cabin class on a flight.
+ *
+ * Matches [cabin] case-insensitively. Falls back to economy for any
+ * unrecognised value. Returns `0.0` when the matched cabin price is null.
+ *
+ * @param flight the flight whose prices to read
+ * @param cabin the cabin class string (e.g. `"economy"`, `"business"`, `"first"`)
+ * @return the price for the cabin, or `0.0` if unavailable
  */
 private fun getPriceByCabin(flight: Flight, cabin: String): Double {
     return when (cabin.lowercase()) {
@@ -129,11 +185,16 @@ private fun getPriceByCabin(flight: Flight, cabin: String): Double {
 
 
 /**
- * Filters out flights that have already departed if the date is today.
- */
-/**
  * Filters out flights that have already departed, using the client's local time.
- * clientTimeStr: "HH:mm" sent from the browser, or null to skip filtering.
+ *
+ * Only applies filtering when [date] is today and [clientTimeStr] is non-null;
+ * otherwise returns [flights] unchanged. If [clientTimeStr] cannot be parsed,
+ * all flights are returned to avoid incorrectly hiding valid results.
+ *
+ * @param flights the list of flights to filter
+ * @param date the searched departure date
+ * @param clientTimeStr the browser's current local time as `"HH:mm"`, or null to skip filtering
+ * @return the filtered list of flights, or the original list if filtering is not applicable
  */
 private fun filterDepartedFlights(
     flights: List<FlightDisplayDTO>,
@@ -153,10 +214,14 @@ private fun filterDepartedFlights(
 }
 
 /**
-* Sets up the main routes for the app.
-*
-* This includes pages for login, register, flights, bookings, profile, admin charts, and payment.
-*/
+ * Registers all HTTP routes for the application.
+ *
+ * Covers user-facing pages (registration, login, password reset, flight search,
+ * booking, seat selection, payment, profile, reschedule, complaints) and
+ * admin pages (dashboard, flight tracking, chart endpoints, change-request
+ * approval, and complaint management). Static resources are served from
+ * the `"static"` classpath directory under `/static`.
+ */
 fun Application.configureRouting() {
     routing {
         staticResources("/static", "static")
@@ -1450,7 +1515,7 @@ fun Application.configureRouting() {
         // 1. Admin approval page
         get("/admin/pending-requests") {
             val requests = AdminDAO.getPendingChangeRequests()
-            call.respondTemplate("admin_requests.peb", mapOf("requests" to requests))
+            call.respondTemplate("adminRequests.peb", mapOf("requests" to requests))
         }
 
         // 2. processing approval
@@ -1549,7 +1614,7 @@ fun Application.configureRouting() {
             }
             val complaints = ComplaintDAO.getAllComplaints()
             call.respondTemplate(
-                "admin_complaints.peb",
+                "adminComplaints.peb",
                 call.nonNullSessionData() + mapOf("complaints" to complaints)
             )
         }

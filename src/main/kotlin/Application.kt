@@ -5,9 +5,12 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 
 /**
- * Starts the Ktor server.
+ * Application entry point. Starts the Ktor server using the Netty engine.
  *
- * @param args command line arguments
+ * Engine configuration (port, host, etc.) is read from `application.conf`
+ * on the classpath.
+ *
+ * @param args command-line arguments forwarded to [io.ktor.server.netty.EngineMain]
  */
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain
@@ -15,9 +18,13 @@ fun main(args: Array<String>) {
 }
 
 /**
- * Sets up the main Ktor application features.
+ * Configures the main Ktor application module.
  *
- * It enables JSON support and loads templates, routes, and sessions.
+ * Installs and wires up all top-level application features in order:
+ * - [ContentNegotiation] with JSON serialization via kotlinx.serialization
+ * - Pebble template engine (see [configureTemplates])
+ * - HTTP routes (see [configureRouting])
+ * - Session handling (see [configureSessions])
  */
 fun Application.module() {
     install(ContentNegotiation) {

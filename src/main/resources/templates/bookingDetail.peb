@@ -1,6 +1,6 @@
 {% extends "base.peb" %}
 
-{% block title %}Booking #{{ booking.bookingId }} - EAJO Air{% endblock %}
+{% block title %}Booking EAJO{{ booking.bookingId }} - EAJO Air{% endblock %}
 
 {% block content %}
 

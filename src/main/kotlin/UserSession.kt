@@ -10,8 +10,19 @@ import io.ktor.server.sessions.sessions
 import kotlinx.serialization.Serializable
 
 /**
-* Stores the current user's session data.
-*/
+ * Holds all session state for the currently authenticated user.
+ *
+ * Stored as a signed cookie named `"user_session"` with a 1-hour lifetime.
+ * Default values represent an unauthenticated, empty session.
+ *
+ * @property username the logged-in user's email address, or empty if not authenticated
+ * @property loggedIn whether the user has an active authenticated session
+ * @property message a one-time flash message to display on the next page load
+ * @property isAdmin whether the authenticated user has admin privileges
+ * @property pendingBooking a booking in progress that has not yet been confirmed, if any
+ * @property rescheduleBookingId the ID of the booking currently being rescheduled, if any
+ * @property pendingReschedule reschedule details awaiting confirmation, if any
+ */
 @Serializable
 data class UserSession(
     val username: String = "",
@@ -24,10 +35,11 @@ data class UserSession(
 )
 
 /**
-* Sets up session support for the app.
-*
-* It stores user session data in a cookie.
-*/
+ * Installs cookie-based session support for the application.
+ *
+ * Registers a [UserSession] cookie named `"user_session"` scoped to the
+ * root path (`"/"`) with a maximum age of 3600 seconds (1 hour).
+ */
 fun Application.configureSessions() {
     install(Sessions) {
         cookie<UserSession>("user_session") {
@@ -38,11 +50,15 @@ fun Application.configureSessions() {
 }
 
 /**
-* Gets the main session values for the current user.
-*
-* @param call the current application call
-* @return a map with login and session details
-*/
+ * Extracts the core session values from the current request as a template-friendly map.
+ *
+ * Returns safe defaults for all keys when no session exists, so templates
+ * can reference session values without null checks.
+ *
+ * @param call the current [ApplicationCall] from which the session is read
+ * @return a map with keys `"loggedIn"` (`Boolean`), `"username"` (`String`),
+ *         `"message"` (`String`), and `"isAdmin"` (`Boolean`)
+ */
 fun getSessionData(call: ApplicationCall): Map<String, Any> {
     val session = call.sessions.get<UserSession>()
     return mapOf(

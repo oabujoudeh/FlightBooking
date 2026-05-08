@@ -1,5 +1,11 @@
 package com.flightbooking
 
+/**
+ * Data Access Object for user complaint operations.
+ *
+ * Handles submission, retrieval, and admin reply for complaints.
+ * Admin-facing queries join the users table to include the submitter's email.
+ */
 object ComplaintDAO {
 
     /**
@@ -25,10 +31,11 @@ object ComplaintDAO {
     }
 
     /**
-     * Returns all complaints for a specific user, most recent first.
+     * Returns all complaints submitted by a specific user, most recent first.
      *
-     * @param userId the ID of the user
-     * @return a list of complaint maps with id, content, status, reply, and created_at
+     * @param userId the ID of the user whose complaints to retrieve
+     * @return a list of complaint maps with keys `complaintId`, `content`, `status`,
+     *         `reply`, and `createdAt`; empty on error or if none found
      */
     fun getComplaintsForUser(userId: Int): List<Map<String, Any?>> {
         val sql = """
@@ -63,9 +70,12 @@ object ComplaintDAO {
 
     /**
      * Returns all complaints across all users, most recent first.
-     * Used by the admin complaints page.
      *
-     * @return a list of complaint maps including user email
+     * Intended for the admin complaints page. Each entry includes the submitting
+     * user's email, retrieved via a join on the users table.
+     *
+     * @return a list of complaint maps with keys `complaintId`, `content`, `status`,
+     *         `reply`, `createdAt`, and `userEmail`; empty on error or if none found
      */
     fun getAllComplaints(): List<Map<String, Any?>> {
         val sql = """
@@ -99,7 +109,7 @@ object ComplaintDAO {
     }
 
     /**
-     * Saves an admin reply to a complaint and marks it as resolved.
+     * Saves an admin reply to a complaint and marks it as `'resolved'`.
      *
      * @param complaintId the ID of the complaint to reply to
      * @param reply the admin's reply text

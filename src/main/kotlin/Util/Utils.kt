@@ -7,7 +7,9 @@ object Utils {
         return if (mins == 0) "${hours}h" else "${hours}h ${mins}m"
     }
 
-    // Return Map<String, Any?> to allow nullable prices
+    /**
+     * Return [Map]<[String], [Any]?> to allow nullable prices
+     */
     fun flightToMap(f: Flight): Map<String, Any?> = mapOf(
         "flightNumber" to f.flightNumber,
         "aircraftType" to f.aircraftType,
@@ -26,7 +28,9 @@ object Utils {
         "arrivalDayOffset" to f.arrivalDayOffset
     )
 
-    // Use if-checks to safely add prices for connecting flights
+    /**
+     * Use if-checks to safely add prices for connecting flights
+     */
     fun connectingFlightToMap(cf: ConnectingFlight): Map<String, Any?> = mapOf(
         "aircraftType" to "${cf.leg1.aircraftType} / ${cf.leg2.aircraftType}",
         "leg1DepartureTime" to cf.leg1.departureTime.toString(),
@@ -39,7 +43,7 @@ object Utils {
         "layoverMinutes" to cf.layoverMinutes,
         "totalDuration" to formatDuration(cf.totalDurationMinutes),
         
-        // Sum prices only if both legs have the cabin available
+        /** Sum prices only if both legs have the cabin available */
         "priceEconomy" to if (cf.leg1.priceEconomy != null && cf.leg2.priceEconomy != null) 
                           cf.leg1.priceEconomy + cf.leg2.priceEconomy else null,
                           

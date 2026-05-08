@@ -4,9 +4,20 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
-
+/**
+ * Data Access Object for all user-related database operations.
+ *
+ * Handles user authentication, registration, booking management,
+ * password reset, and profile updates.
+ */
 object UserDAO{
 
+    /**
+     * Retrieves basic profile details for a user by their ID.
+     *
+     * @param userId the ID of the user to look up
+     * @return a [User] object with name and email fields, or null if not found
+     */
     fun getUserDetails(userId: Int): User? {
         val sql = "SELECT first_name, middle_name, last_name, email FROM users WHERE user_id = ?"
         return Database.getConnection().use { conn ->
@@ -27,11 +38,11 @@ object UserDAO{
     }
 
     /**
-    * Checks if an email is already in the users table.
-    *
-    * @param email the email to check
-    * @return true if the email exists, otherwise false
-    */
+     * Checks if an email is already in the users table.
+     *
+     * @param email the email to check
+     * @return true if the email exists, otherwise false
+     */
     fun emailExists(email: String): Boolean {
         val sql = "SELECT count(*) FROM users WHERE email = ?"
         return try {
@@ -54,19 +65,19 @@ object UserDAO{
 
 
     /**
-    * Registers a new user in the database.
-    *
-    * It first checks if the password is valid and if the email is already used.
-    * If both checks pass, the password is hashed and the user is added.
-    *
-    * @param user the user object
-    * @param inputFirstName the user's first name
-    * @param inputMiddleName the user's middle name
-    * @param inputLastName the user's last name
-    * @param inputEmail the user's email
-    * @param inputPassword the user's password
-    * @return true if the user was added, otherwise false
-    */
+     * Registers a new user in the database.
+     *
+     * Validates the password and checks that the email is not already in use
+     * before hashing the password and inserting the new user record.
+     *
+     * @param user the user object (currently unused; kept for API compatibility)
+     * @param inputFirstName the user's first name
+     * @param inputMiddleName the user's middle name
+     * @param inputLastName the user's last name
+     * @param inputEmail the user's email
+     * @param inputPassword the user's plain-text password to be hashed before storage
+     * @return true if the user was successfully registered, otherwise false
+     */
     fun register(user: User, inputFirstName: String, inputMiddleName: String, inputLastName: String, inputEmail: String, inputPassword: String): Boolean {
         if (!Security.isPasswordValid(inputPassword)) return false
         if (emailExists(inputEmail)) return false
@@ -95,23 +106,25 @@ object UserDAO{
 
 
     /**
-    * Simple result for a login attempt.
-    *
-    * It stores whether the login worked and whether the user is an admin.
-    */
+     * Holds the result of a login attempt.
+     *
+     * @property success whether the login credentials were valid
+     * @property isAdmin whether the authenticated user has admin privileges
+     */
     data class LoginResult(val success: Boolean, val isAdmin: Boolean = false)
 
 
     /**
-    * Checks if a user can log in.
-    *
-    * It looks up the email, gets the saved password hash, and compares it
-    * with the password the user entered.
-    *
-    * @param inputEmail the email entered by the user
-    * @param inputPassword the password entered by the user
-    * @return a `LoginResult` showing if the login worked
-    */
+     * Attempts to authenticate a user with the given credentials.
+     *
+     * Checks the admins table first (matching by email or username), then falls
+     * back to the regular users table. The supplied password is verified against
+     * the stored bcrypt hash.
+     *
+     * @param inputEmail the email or username entered by the user
+     * @param inputPassword the plain-text password entered by the user
+     * @return a [LoginResult] indicating whether authentication succeeded and whether the user is an admin
+     */
     fun loginUser(inputEmail: String, inputPassword: String): LoginResult {
         // Check admins table first — match by email or username
         val adminSql = "SELECT password_hash FROM admins WHERE email = ? OR username = ?"
@@ -163,19 +176,20 @@ object UserDAO{
 
 
     /**
-    * Starts the password reset process for a user.
-    *
-    * It checks if the email exists, makes a one-time code, and sends it by email.
-    *
-    * @param inputEmail the email for the password reset
-    * @return true if the reset email was sent, otherwise false
-    */
+     * Initiates the password reset flow for a user.
+     *
+     * Verifies that the email exists, generates a one-time code (OTC), and
+     * sends it to the user's email address. The code expires after 5 minutes.
+     *
+     * @param inputEmail the email address requesting the password reset
+     * @return true if the reset email was sent successfully, otherwise false
+     */
     fun resetPassword(inputEmail: String):Boolean{
         if(!emailExists(inputEmail)){
             return false
         }
         return try {
-            // email found, generate OTC and send email
+            // Email found — generate OTC and send reset email
             val generatedCode = OTC.generateAndSave(inputEmail)
 
             EmailService.sendEmail(
@@ -191,28 +205,28 @@ object UserDAO{
 
 
     /**
-    * Finishes resetting a user's password.
-    *
-    * It checks the one-time code, checks the new password, and then updates
-    * the saved password in the database.
-    *
-    * @param inputEmail the user's email
-    * @param inputOTC the one-time code
-    * @param newPassword the new password
-    * @return true if the password was updated, otherwise false
-    */
+     * Completes the password reset process after OTC verification.
+     *
+     * Validates the one-time code, checks that the new password meets the
+     * security requirements, hashes it, and updates the record in the database.
+     *
+     * @param inputEmail the user's email address
+     * @param inputOTC the one-time code supplied by the user
+     * @param newPassword the new plain-text password to set
+     * @return true if the password was updated successfully, otherwise false
+     */
     fun confirmResetPassword(inputEmail: String, inputOTC: String, newPassword: String):Boolean{
-        // check if OTC is valid and expired
+        // Verify that the OTC is valid and has not expired
         if (!OTC.verify(inputEmail, inputOTC)) {
             return false
         }
 
-        // if OTC is valid, check new password validation
+        // If OTC is valid, validate the new password before hashing
         if (!Security.isPasswordValid(newPassword)) {
             return false
         }
 
-        // if valid, hash the new password and update to database
+        // Hash the new password and persist it
         val hashedNewPassword = Security.hashPassword(newPassword)
         val sql = "UPDATE users SET password_hash = ? WHERE email = ?"
         return try {
@@ -232,11 +246,11 @@ object UserDAO{
     }
 
     /**
-    * Gets the user ID for an email.
-    *
-    * @param username the user's email
-    * @return the user ID, or -1 if it is not found
-    */
+     * Looks up the numeric user ID associated with a given email address.
+     *
+     * @param username the user's email address
+     * @return the user's integer ID, or -1 if no matching record is found
+     */
     fun getUserID(username: String): Int {
         val sql = "SELECT user_id FROM users WHERE email = ?"
         return try {
@@ -254,14 +268,16 @@ object UserDAO{
     }
 
     /**
-    * Turns one database row into a map of flight info.
-    *
-    * It reads the flight details, works out the arrival time, and puts the
-    * values into a map.
-    *
-    * @param result the current row from the query result
-    * @return a map with flight details like times, cities, airports, terminals, and duration
-    */
+     * Maps a single result-set row to a flight information map.
+     *
+     * Reads flight and route columns from the current row, computes the arrival
+     * time by adding the route duration to the departure time (accounting for
+     * timezone differences), and returns all values as a keyed map.
+     *
+     * @param result the active [java.sql.ResultSet] positioned on the row to read
+     * @return a map containing flight details: times, cities, airport codes,
+     *         terminals, duration, and day offset between departure and arrival
+     */
     private fun getFlightInfoFromRow(result: java.sql.ResultSet): Map<String, Any> {
         val durationMinutes = result.getInt("base_duration_minutes")
     
@@ -303,16 +319,19 @@ object UserDAO{
 
 
     /**
-    * Gets all non-cancelled bookings for a user.
-    *
-    * It also groups together any flights that belong to the same booking.
-    *
-    * @param userID the ID of the user
-    * @return a list of booking maps, where each booking includes its flight details
-    */
+     * Returns all non-cancelled bookings for a user, sorted by departure date.
+     *
+     * Each booking entry includes top-level metadata (ID, date, price, status,
+     * trip type) and a nested list of flight detail maps produced by
+     * [getFlightInfoFromRow]. Multi-leg bookings are grouped under a single
+     * booking entry.
+     *
+     * @param userID the ID of the user whose bookings should be retrieved
+     * @return a list of booking maps ordered by first-flight departure; empty if none found
+     */
     fun getBookings(userID: Int): List<Map<String, Any>> {
-        // get all bookings for the user, joining to get the flight and route info
-        // a booking can have multiple flights so we group by booking_id at the end
+        // Fetch all bookings for the user, joining flight and route info.
+        // A booking can have multiple flights, so results are grouped by booking_id.
        val sql = """
             SELECT
                 b.booking_id, b.booking_date, b.total_price, b.status, b.trip_type,
@@ -346,14 +365,14 @@ object UserDAO{
                 conn.prepareStatement(sql).use { stmt ->
                     stmt.setInt(1, userID)
                     stmt.executeQuery().use { result ->
-                        // use a map so we can group flights under the same booking
+                        // Use a map keyed by booking_id to group multiple flights under one booking
                         val bookings = mutableListOf<MutableMap<String, Any>>()
                         val seenBookingIds = mutableMapOf<Int, MutableMap<String, Any>>()
 
                         while (result.next()) {
                             val bookingId = result.getInt("booking_id")
 
-                            // if we haven't seen this booking before, create a new entry for it
+                            // If this is the first row for this booking, create a new entry
                             if (!seenBookingIds.containsKey(bookingId)) {
                                 val newBooking = mutableMapOf<String, Any>()
                                 newBooking["bookingId"] = bookingId
@@ -366,7 +385,7 @@ object UserDAO{
                                 seenBookingIds[bookingId] = newBooking
                             }
 
-                            // add this flight to the booking's flight list
+                            // Append this flight to the booking's flight list
                             val booking = seenBookingIds[bookingId]!!
 
                             @Suppress("UNCHECKED_CAST")
@@ -392,16 +411,19 @@ object UserDAO{
 
 
     /**
-    * Gets one booking for a user.
-    *
-    * It returns the booking details, its flights, and its passengers.
-    *
-    * @param bookingId the ID of the booking
-    * @param userID the ID of the user
-    * @return a booking map, or null if it is not found
-    */
+     * Retrieves a single booking with its flights and passengers.
+     *
+     * Each flight is annotated with its cabin class (queried via a nested helper)
+     * and its direction (`"outbound"` or `"return"`). The booking must belong to
+     * the specified user; returns null if no matching record is found.
+     *
+     * @param bookingId the ID of the booking to retrieve
+     * @param userID the ID of the user who owns the booking
+     * @return a map containing booking metadata, a list of annotated flight maps,
+     *         and a list of passenger maps; or null if not found
+     */
     fun getBookingById(bookingId: Int, userID: Int): Map<String, Any>? {
-        // get a single booking with its flights and passengers
+        // Fetch booking with all associated flights and route details
         val bookingSql = """
             SELECT
                 b.booking_id, b.booking_date, b.total_price, b.status,
@@ -434,6 +456,17 @@ object UserDAO{
 
         val passengerSql = "SELECT full_name, id_number, type, seat_id FROM booking_passengers WHERE booking_id = ?"
 
+        /**
+         * Determines the cabin class for a specific flight leg within a booking.
+         *
+         * Looks up the first passenger's seat number for the given sequence, then
+         * resolves that seat to a class (e.g. `"economy"`, `"business"`).
+         *
+         * @param conn an open database connection to reuse
+         * @param bookingId the booking to inspect
+         * @param sequence the 1-based flight leg sequence number
+         * @return the lowercase cabin class string, defaulting to `"economy"` if not found
+         */
         fun queryCabin(conn: java.sql.Connection, bookingId: Int, sequence: Int): String {
             val seatSql = """
                 SELECT bp.seat_id, bf.flight_id
@@ -473,7 +506,7 @@ object UserDAO{
 
         return try {
             Database.getConnection().use { conn ->
-                // get booking and flights
+                // Fetch booking metadata and flights
                 val booking = mutableMapOf<String, Any>()
                 conn.prepareStatement(bookingSql).use { stmt ->
                     stmt.setInt(1, bookingId)
@@ -498,10 +531,10 @@ object UserDAO{
 
                         if (!found) return@use null
 
-                        // Annotate each flight with cabin and direction
+                        // Annotate each flight with its cabin class and direction
                         val tripType = booking["tripType"] as String
                         val totalFlights = flights.size
-                        // outbound legs: for return trips, first half; for oneway, all
+                        // Outbound legs: first half for return trips, all legs for one-way
                         val outboundCount = when {
                             tripType == "return" && totalFlights >= 2 -> totalFlights / 2
                             else -> totalFlights
@@ -519,7 +552,7 @@ object UserDAO{
                     }
                 }
 
-                // get passengers
+                // Fetch passengers for the booking
                 conn.prepareStatement(passengerSql).use { stmt ->
                     stmt.setInt(1, bookingId)
                     stmt.executeQuery().use { result ->
@@ -546,12 +579,15 @@ object UserDAO{
     }
 
     /**
-    * Cancels a booking for a user.
-    *
-    * @param bookingId the ID of the booking
-    * @param userID the ID of the user
-    * @return true if the booking was cancelled, otherwise false
-    */
+     * Cancels a booking by setting its status to `'cancelled'`.
+     *
+     * The booking must belong to the specified user; the update will affect no
+     * rows (and return false) if the IDs do not match.
+     *
+     * @param bookingId the ID of the booking to cancel
+     * @param userID the ID of the user who owns the booking
+     * @return true if the booking was successfully cancelled, otherwise false
+     */
     fun cancelBooking(bookingId: Int, userID: Int): Boolean {
         val sql = "UPDATE bookings SET status = 'cancelled' WHERE booking_id = ? AND user_id = ?"
         return try {
@@ -565,67 +601,24 @@ object UserDAO{
         } catch (e: Exception) {
             false
         }
-    }  
-
-    fun getBookingCancellationNotification(bookingId: Int, userID: Int): BookingCancellationNotification? {
-        val sql = """
-            SELECT b.booking_id,
-                b.contact_email,
-                f.flight_date,
-                r.flight_number,
-                dep.city AS departure_city,
-                arr.city AS arrival_city
-            FROM bookings b
-            JOIN booking_flights bf ON b.booking_id = bf.booking_id
-            JOIN flights f ON bf.flight_id = f.flight_id
-            JOIN routes r ON f.route_id = r.route_id
-            JOIN airports dep ON r.departure_airport = dep.airport_id
-            JOIN airports arr ON r.arrival_airport = arr.airport_id
-            WHERE b.booking_id = ? AND b.user_id = ? AND b.status != 'cancelled'
-            ORDER BY bf.flight_sequence
-        """
-        return try {
-            Database.getConnection().use { conn ->
-                conn.prepareStatement(sql).use { stmt ->
-                    stmt.setInt(1, bookingId)
-                    stmt.setInt(2, userID)
-                    stmt.executeQuery().use { result ->
-                        val flightSummaries: MutableList<String> = mutableListOf()
-                        var recipientEmail: String = ""
-                        while (result.next()) {
-                            recipientEmail = result.getString("contact_email") ?: recipientEmail
-                            flightSummaries.add(
-                                "${result.getString("flight_number")} ${result.getString("departure_city")} to ${result.getString("arrival_city")} on ${result.getString("flight_date")}",
-                            )
-                        }
-                        if (recipientEmail.isBlank() || flightSummaries.isEmpty()) return@use null
-                        BookingCancellationNotification(
-                            bookingId = bookingId,
-                            recipientEmail = recipientEmail,
-                            flightSummary = flightSummaries.joinToString("\n"),
-                        )
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            null
-        }
     }
 
 
     /**
-    * Updates the passengers for a booking.
-    *
-    * It checks the booking belongs to the user, removes the old passengers,
-    * and adds the new ones.
-    *
-    * @param bookingId the ID of the booking
-    * @param userID the ID of the user
-    * @param passengers the updated passenger list
-    * @return true if the update worked, otherwise false
-    */
+     * Replaces all passengers on a booking with a new list.
+     *
+     * Verifies that the booking belongs to the specified user, then deletes the
+     * existing passenger records and inserts the updated list within a single
+     * transaction.
+     *
+     * @param bookingId the ID of the booking to update
+     * @param userID the ID of the user who owns the booking
+     * @param passengers the new passenger list; each map must contain `fullName`,
+     *        `idNumber`, `type`, and `seat` keys
+     * @return true if the passengers were updated successfully, otherwise false
+     */
     fun updateBookingPassengers(bookingId: Int, userID: Int, passengers: List<Map<String, String>>): Boolean {
-        // make sure booking belongs to this user
+        // Confirm that this booking belongs to the requesting user
         val checkSql = "SELECT count(*) FROM bookings WHERE booking_id = ? AND user_id = ?"
         return try {
             Database.getConnection().use { conn ->
@@ -637,7 +630,7 @@ object UserDAO{
                     }
                 }
 
-                // delete old passengers and re-insert with updated info
+                // Delete old passengers and re-insert with updated info
                 conn.autoCommit = false
 
                 conn.prepareStatement("DELETE FROM booking_passengers WHERE booking_id = ?").use { stmt ->
@@ -668,18 +661,23 @@ object UserDAO{
 
 
     /**
-    * Creates a new booking in the database.
-    *
-    * It saves the booking, adds the flights and passengers, and marks the
-    * chosen seats as occupied.
-    *
-    * @param userID the ID of the user making the booking
-    * @param email the contact email for the booking
-    * @param flightIds the flight IDs in the booking
-    * @param totalPrice the total booking price
-    * @param passengers the passenger details
-    * @return true if the booking was created, otherwise false
-    */
+     * Creates a new confirmed booking with its flights, passengers, and seat locks.
+     *
+     * Runs within a single transaction: inserts the booking record, links each
+     * flight leg, inserts all passengers, and marks the selected seats as occupied.
+     * Rolls back automatically if any step throws an exception.
+     *
+     * @param userID the ID of the user making the booking
+     * @param username the user's email/username (currently unused; kept for compatibility)
+     * @param flightIds ordered list of flight IDs comprising this booking
+     * @param totalPrice the total fare charged for the booking
+     * @param passengers list of passenger detail maps; each must contain `fullName`,
+     *        `idNumber`, `type`, and `seat` (comma-separated seat numbers per leg)
+     * @param contactEmail the contact email to store on the booking
+     * @param contactPhone the contact phone number to store on the booking
+     * @param tripType the trip type string, e.g. `"oneway"` or `"return"`
+     * @return the generated booking ID on success, or null if the transaction failed
+     */
     fun createBooking(
         userID: Int,
         username: String,
@@ -694,7 +692,7 @@ object UserDAO{
             Database.getConnection().use { conn ->
                 conn.autoCommit = false
 
-                // insert booking
+                // Insert the top-level booking record
                 val bookingSql =
                     """
                     INSERT INTO bookings(
@@ -723,7 +721,7 @@ object UserDAO{
                 }
                 val bookingId = keys.getInt(1)
 
-                // insert booking flights
+                // Link each flight leg to the booking in sequence order
                 val flightSql = "INSERT INTO booking_flights(booking_id, flight_id, flight_sequence) VALUES(?, ?, ?)"
                 val flightStmt = conn.prepareStatement(flightSql)
                 for ((index, flightId) in flightIds.withIndex()) {
@@ -734,7 +732,7 @@ object UserDAO{
                 }
                 flightStmt.executeBatch()
 
-                // insert passengers
+                // Insert each passenger record
                 val passengerSql = "INSERT INTO booking_passengers(booking_id, full_name, id_number, type, seat_id) VALUES(?, ?, ?, ?, ?)"
                 val passengerStmt = conn.prepareStatement(passengerSql)
                 for (p in passengers) {
@@ -747,16 +745,16 @@ object UserDAO{
                 }
                 passengerStmt.executeBatch()
 
-                // mark seats as occupied
+                // Mark each selected seat as occupied per flight leg
                 val seatSql = "UPDATE seats SET is_occupied = 1 WHERE flight_id = ? AND seat_number = ?"
                 val seatStmt = conn.prepareStatement(seatSql)
 
                 for (p in passengers) {
-                    // 1. Separate "12A,14C" to ["12A", "14C"]
+                    // Split comma-separated seat string e.g. "12A,14C" into individual seats
                     val seatString = p["seat"] ?: ""
                     val individualSeats = seatString.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 
-                    // 2. Iterate flight ID, use to get seat number
+                    // Match each seat to its corresponding flight leg by index
                     for ((index, flightId) in flightIds.withIndex()) {
                         if (index < individualSeats.size) {
                             val seatNumber = individualSeats[index]
@@ -778,6 +776,15 @@ object UserDAO{
         }
     }
 
+    /**
+     * Returns the total loyalty points accumulated by a user.
+     *
+     * Points are calculated as the sum of `total_price` across all confirmed
+     * bookings, truncated to an integer.
+     *
+     * @param userID the ID of the user to query
+     * @return the user's total loyalty points, or 0 if none or on error
+     */
     fun getLoyaltyPoints(userID: Int): Int {
         val sql = 
             """
@@ -809,6 +816,17 @@ object UserDAO{
         }
         }  
 
+    /**
+     * Retrieves a summary of a booking for use on the reschedule screen.
+     *
+     * Returns origin, destination, passenger count, current price, trip type,
+     * and outbound/return cabin classes. For return trips the origin and
+     * destination are derived from the outbound legs only.
+     *
+     * @param bookingId the ID of the booking to summarise
+     * @return a map with keys `origin`, `destination`, `oldPrice`, `passengerCount`,
+     *         `tripType`, `outboundCabin`, and `returnCabin`; or null on failure
+     */
     fun getBookingForReschedule(bookingId: Int): Map<String, Any>? {
         // Fetch all legs in sequence order
         val sql = """
@@ -823,10 +841,23 @@ object UserDAO{
             WHERE b.booking_id = ?
             ORDER BY bf.flight_sequence ASC
         """
-        // Get cabin for a specific flight sequence using first passenger's seat
+
+        /**
+         * Resolves the cabin class for a specific flight sequence within a booking.
+         *
+         * Looks up the seat number for the first passenger on the given leg, then
+         * queries the seats table for its class. Falls back to `"economy"` when
+         * the seat or class cannot be resolved.
+         *
+         * seat_id is stored as comma-separated (e.g. `"6A,1A"`); the index matches
+         * `flight_sequence`, which is 1-based (sequence=1 → index 0).
+         *
+         * @param conn an open database connection to reuse
+         * @param bookingId the booking to inspect
+         * @param sequence the 1-based leg sequence number
+         * @return the lowercase cabin class string, defaulting to `"economy"`
+         */
         fun queryCabin(conn: java.sql.Connection, bookingId: Int, sequence: Int): String {
-            // seat_id is stored as comma-separated e.g. "6A,1A" — index matches flight_sequence
-            // sequence is 1-based, so sequence=1 → index 0, sequence=2 → index 1
             val seatSql = """
                 SELECT bp.seat_id, bf.flight_id
                 FROM booking_passengers bp
@@ -901,7 +932,7 @@ object UserDAO{
                         val origin      = outboundLegs.first().dep
                         val destination = outboundLegs.last().arr
 
-                        // Now totalLegs and tripType are known — safe to call queryCabin
+                        // totalLegs and tripType are now known — safe to call queryCabin
                         val outboundCabin = queryCabin(conn, bookingId, 1)
 
                         val returnSeq = totalLegs / 2 + 1
@@ -928,11 +959,23 @@ object UserDAO{
     }
 
     /**
-     * Executes a reschedule: replaces old flights, updates total price,
-     * releases old seats, assigns new seat numbers, and locks new seats.
+     * Executes a full reschedule transaction for an existing booking.
      *
-     * passengerSeatSelections: Map<passengerId, newSeatNumber> (e.g. 3 to "14A")
-     * newFlightIds: all flight IDs for the new booking (outbound + return legs in order)
+     * Performs the following steps atomically:
+     * 1. Releases (unlocks) all seats from the original flight legs.
+     * 2. Updates the booking's total price and resets its status to `'confirmed'`.
+     * 3. Replaces all entries in `booking_flights` with the new flight IDs.
+     * 4. Updates each passenger's `seat_id` to the newly selected seats and
+     *    marks those seats as occupied.
+     *
+     * Rolls back the entire transaction if any step fails.
+     *
+     * @param bookingId the ID of the booking to reschedule
+     * @param newFlightIds ordered list of new flight IDs (outbound legs followed by return legs)
+     * @param newTotalPrice the updated total fare after rescheduling
+     * @param passengerSeatSelections map of passenger ID to comma-separated seat numbers
+     *        for all new legs (e.g. `3 to "14A,7C"`)
+     * @return true if the reschedule was committed successfully, otherwise false
      */
     fun executeReschedule(
         bookingId: Int,
@@ -944,8 +987,8 @@ object UserDAO{
         return try {
             conn.setAutoCommit(false)
 
-            // 1. Release old seats: seat_id is stored as "6A,1A" (comma-separated per leg)
-            //    Need to split and match each seat number against its corresponding flight
+            // 1. Release old seats: seat_id is stored as "6A,1A" (comma-separated per leg).
+            //    Split and match each seat number against its corresponding flight.
             val getOldSeats = """
                 SELECT bp.seat_id, bf.flight_id, bf.flight_sequence
                 FROM booking_passengers bp
@@ -996,7 +1039,7 @@ object UserDAO{
                 stmt.executeBatch()
             }
 
-            // 4. Update each passenger's seat_id (comma-separated for all legs) and lock all new seats
+            // 4. Update each passenger's seat_id (comma-separated for all legs) and lock all new seats.
             // passengerSeatSelections: Map<passengerId, "3A,7A,16A,8A">
             val updatePassengerSeat = "UPDATE booking_passengers SET seat_id = ? WHERE booking_id = ? AND passenger_id = ?"
             val lockNewSeat = "UPDATE seats SET is_occupied = 1 WHERE flight_id = ? AND seat_number = ?"
@@ -1034,6 +1077,12 @@ object UserDAO{
         }
     }
 
+    /**
+     * Returns all passenger IDs associated with a booking, ordered ascending.
+     *
+     * @param bookingId the ID of the booking to query
+     * @return a list of integer passenger IDs; empty if none found
+     */
     fun getPassengerIdsByBooking(bookingId: Int): List<Int> {
         val ids = mutableListOf<Int>()
         val sql = "SELECT passenger_id FROM booking_passengers WHERE booking_id = ? ORDER BY passenger_id"
@@ -1049,8 +1098,12 @@ object UserDAO{
     }
 
     /**
-     * Returns all flight IDs associated with a booking.
-     * Used to filter out original flights when showing reschedule options.
+     * Returns all flight IDs linked to a booking, in sequence order.
+     *
+     * Used to exclude a booking's original flights when presenting reschedule options.
+     *
+     * @param bookingId the ID of the booking to query
+     * @return an ordered list of flight IDs; empty on error or if not found
      */
     fun getFlightIdsForBooking(bookingId: Int): List<Int> {
         val sql = "SELECT flight_id FROM booking_flights WHERE booking_id = ? ORDER BY flight_sequence"
@@ -1072,8 +1125,13 @@ object UserDAO{
     }
 
     /**
-     * Returns passenger details for a booking including passenger_id.
-     * Used to pre-fill names on the reschedule seat selection page.
+     * Returns passenger details for a booking, including their internal passenger ID.
+     *
+     * Used to pre-fill passenger names and seats on the reschedule seat-selection screen.
+     *
+     * @param bookingId the ID of the booking to query
+     * @return a list of maps with keys `passengerId`, `fullName`, `idNumber`, `type`,
+     *         and `seat`; empty on error or if not found
      */
     fun getPassengersForBooking(bookingId: Int): List<Map<String, Any>> {
         val sql = """
@@ -1107,6 +1165,15 @@ object UserDAO{
         }
     }
 
+    /**
+     * Updates the email address stored directly on a user record.
+     *
+     * Note: for changes that require admin approval, use [insertChangeRequest] instead.
+     *
+     * @param userId the ID of the user to update
+     * @param newEmail the new email address to set
+     * @return true if the record was updated, otherwise false
+     */
     fun updateUserEmail(userId: Int, newEmail: String): Boolean {
         val sql = "UPDATE users SET email = ? WHERE user_id = ?"
         return try {
@@ -1120,6 +1187,18 @@ object UserDAO{
         } catch (e: Exception) { false }
     }
 
+    /**
+     * Inserts a pending change request for admin review.
+     *
+     * Used for profile changes (e.g. name or email updates) that require
+     * approval before they take effect. The request is created with a
+     * status of `'pending'`.
+     *
+     * @param userId the ID of the user submitting the change
+     * @param changeTo the new value being requested
+     * @param type the type of change (e.g. `"email"`, `"name"`)
+     * @return true if the request was inserted successfully, otherwise false
+     */
     fun insertChangeRequest(userId: Int, changeTo: String, type: String): Boolean {
         val sql = "INSERT INTO change_requests (user_id, change_to, change_type, status) VALUES (?, ?, ?, 'pending')"
         return try {
@@ -1137,6 +1216,16 @@ object UserDAO{
         }
     }
 
+    /**
+     * Returns all resolved (non-pending) change request notifications for a user.
+     *
+     * Each entry contains the requested value, the change type, and the final
+     * status (e.g. `"approved"` or `"rejected"`).
+     *
+     * @param userId the ID of the user whose notifications to retrieve
+     * @return a list of notification maps with keys `content`, `type`, and `status`;
+     *         empty on error or if none found
+     */
     fun getUserNotifications(userId: Int): List<Map<String, Any>> {
         val sql = """
             SELECT change_to, change_type, status 
@@ -1164,6 +1253,19 @@ object UserDAO{
         }
     }
 
+    /**
+     * Updates the full profile of a user in a single operation.
+     *
+     * Sets the first name, middle name, last name, and email simultaneously.
+     * Pass an empty string for [middleName] to store a null value.
+     *
+     * @param userId the ID of the user to update
+     * @param firstName the user's updated first name
+     * @param middleName the user's updated middle name, or an empty string to clear it
+     * @param lastName the user's updated last name
+     * @param email the user's updated email address
+     * @return true if the record was updated successfully, otherwise false
+     */
     fun updateUserProfile(userId: Int, firstName: String, middleName: String, lastName: String, email: String): Boolean {
         val sql = "UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, email = ? WHERE user_id = ?"
         return try {
@@ -1180,6 +1282,18 @@ object UserDAO{
         } catch (e: Exception) { false }
     }
 
+    /**
+     * Updates the contact email and phone number stored on a booking.
+     *
+     * The booking must belong to the specified user; the update affects no rows
+     * (and returns false) if the IDs do not match.
+     *
+     * @param bookingId the ID of the booking to update
+     * @param userId the ID of the user who owns the booking
+     * @param newEmail the updated contact email address
+     * @param newPhone the updated contact phone number
+     * @return true if the contact info was updated successfully, otherwise false
+     */
     fun updateContactInfo(bookingId: Int, userId: Int, newEmail: String, newPhone: String): Boolean {
         val sql = "UPDATE bookings SET contact_email = ?, contact_phone = ? WHERE booking_id = ? AND user_id = ?"
         return try {
