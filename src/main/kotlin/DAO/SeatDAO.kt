@@ -7,7 +7,6 @@ package com.flightbooking
  * their assigned aircraft configuration.
  */
 object SeatDAO {
-
     /**
      * Returns all seats for a flight, generating them first if they do not yet exist.
      *
@@ -19,13 +18,15 @@ object SeatDAO {
      * @param aircraftType the aircraft type string used to look up the seat layout config
      * @return a list of [Seat] objects for the flight
      */
-    fun getOrGenerateSeats(flightId: Int, aircraftType: String): List<Seat> {
+    fun getOrGenerateSeats(
+        flightId: Int,
+        aircraftType: String,
+    ): List<Seat> {
         if (!seatsExist(flightId)) {
             generateSeats(flightId, aircraftType)
         }
         return getSeats(flightId)
     }
-
 
     /**
      * Checks whether seat records already exist for a given flight.
@@ -71,7 +72,7 @@ object SeatDAO {
                             flightId = rs.getInt("flight_id"),
                             seatNumber = rs.getString("seat_number"),
                             seatClass = rs.getString("class"),
-                            isOccupied = rs.getInt("is_occupied") == 1
+                            isOccupied = rs.getInt("is_occupied") == 1,
                         ),
                     )
                 }
@@ -79,7 +80,6 @@ object SeatDAO {
         }
         return seats
     }
-
 
     /**
      * Generates and persists seat records for a flight from the aircraft layout config.
@@ -92,7 +92,10 @@ object SeatDAO {
      * @param flightId the ID of the flight to generate seats for
      * @param aircraftType the aircraft type string used to look up the layout config
      */
-    private fun generateSeats(flightId: Int, aircraftType: String) {
+    private fun generateSeats(
+        flightId: Int,
+        aircraftType: String,
+    ) {
         val config = AircraftConfigs.getConfig(aircraftType)
         val sql = "INSERT INTO seats (flight_id, seat_number, class, is_occupied) VALUES (?, ?, ?, ?)"
         val deckPrefix = mapOf("Main Deck" to "M", "Upper Deck" to "U")

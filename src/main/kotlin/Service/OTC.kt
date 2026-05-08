@@ -23,13 +23,13 @@ object OTC {
     fun generateAndSave(email: String): String {
         /** Generate a random code of 6 digits */
         val code = String.format("%06d", Random().nextInt(1000000))
+
         /** Valid for 5 mins */
         val expiryTime = LocalDateTime.now().plusMinutes(5)
         /** Save to storage */
         otcStorage[email] = OtcEntry(code, expiryTime)
         return code
     }
-
 
     /**
      * Checks if a one-time code is correct for an email.
@@ -40,7 +40,10 @@ object OTC {
      * @param inputCode the code entered by the user
      * @return true if the code is correct, otherwise false
      */
-    fun verify(email: String, inputCode:String):Boolean{
+    fun verify(
+        email: String,
+        inputCode: String,
+    ): Boolean {
         val entry = otcStorage[email] ?: return false
 
         /** Check if the time is expired; if expired, remove the entry and return false */

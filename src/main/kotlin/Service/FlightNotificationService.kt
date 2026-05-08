@@ -1,7 +1,6 @@
 package com.flightbooking
 
 object FlightNotificationService {
-
     /**
      * Builds a cancellation confirmation email for a booking.
      *
@@ -10,7 +9,8 @@ object FlightNotificationService {
      */
     fun buildBookingCancellationEmail(notification: BookingCancellationNotification): FlightNotificationEmail {
         val subject: String = "Your EAJO Air booking has been cancelled"
-        val body: String = """
+        val body: String =
+            """
             Hello,
 
             Your EAJO Air Booking #${notification.bookingId} has been cancelled successfully.
@@ -19,7 +19,7 @@ object FlightNotificationService {
             ${notification.flightSummary}
 
             Thank you for choosing EAJO Air.
-        """.trimIndent()
+            """.trimIndent()
         return FlightNotificationEmail(
             to = notification.recipientEmail,
             subject = subject,
@@ -38,7 +38,8 @@ object FlightNotificationService {
      */
     fun buildFlightStatusUpdateEmails(notification: FlightStatusNotification): List<FlightNotificationEmail> {
         val subject: String = "EAJO Air flight ${notification.flightNumber} is now ${notification.newStatus}"
-        val body: String = """
+        val body: String =
+            """
             Hello,
 
             Your flight ${notification.flightNumber} from ${notification.originCity} to ${notification.destinationCity} on ${notification.flightDate} has been updated.
@@ -47,7 +48,7 @@ object FlightNotificationService {
             New status: ${notification.newStatus}
 
             Please check your booking for the latest travel information.
-        """.trimIndent()
+            """.trimIndent()
         return notification.recipientEmails
             .map { email -> email.trim() }
             .filter { email -> email.isNotEmpty() }
@@ -66,7 +67,7 @@ object FlightNotificationService {
      *
      * @param notification the cancellation notification containing booking and recipient details
      */
-    fun sendBookingCancellation(notification: BookingCancellationNotification): Unit {
+    fun sendBookingCancellation(notification: BookingCancellationNotification) {
         val email: FlightNotificationEmail = buildBookingCancellationEmail(notification)
         EmailService.sendEmail(
             to = email.to,
@@ -80,7 +81,7 @@ object FlightNotificationService {
      *
      * @param notification the status notification containing flight and recipient details
      */
-    fun sendFlightStatusUpdate(notification: FlightStatusNotification): Unit {
+    fun sendFlightStatusUpdate(notification: FlightStatusNotification) {
         val emails: List<FlightNotificationEmail> = buildFlightStatusUpdateEmails(notification)
         emails.forEach { email ->
             EmailService.sendEmail(

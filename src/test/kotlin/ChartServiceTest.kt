@@ -15,7 +15,6 @@ import kotlin.test.assertTrue
  *   back to gray without crashing.
  */
 class ChartServiceTest {
-
     // ── PNG magic-byte helper ──────────────────────────────────────────────────
 
     /** Returns true when [bytes] begins with the 4-byte PNG signature. */
@@ -44,11 +43,12 @@ class ChartServiceTest {
      */
     @Test
     fun testBookingsOverTimeChartMultiplePointsReturnsPng() {
-        val data = listOf(
-            mapOf("date" to "2025-06-01", "count" to 3,  "revenue" to 150.0),
-            mapOf("date" to "2025-06-02", "count" to 7,  "revenue" to 350.0),
-            mapOf("date" to "2025-06-03", "count" to 12, "revenue" to 600.0),
-        )
+        val data =
+            listOf(
+                mapOf("date" to "2025-06-01", "count" to 3, "revenue" to 150.0),
+                mapOf("date" to "2025-06-02", "count" to 7, "revenue" to 350.0),
+                mapOf("date" to "2025-06-03", "count" to 12, "revenue" to 600.0),
+            )
         val result = ChartService.generateBookingsOverTimeChart(data)
         assertTrue(isPng(result), "Multi-point chart must be a valid PNG")
     }
@@ -58,12 +58,15 @@ class ChartServiceTest {
      */
     @Test
     fun testBookingsOverTimeChartZeroValuesDoNotThrow() {
-        val threw = try {
-            ChartService.generateBookingsOverTimeChart(
-                listOf(mapOf("date" to "2025-01-01", "count" to 0, "revenue" to 0.0))
-            )
-            false
-        } catch (e: Exception) { true }
+        val threw =
+            try {
+                ChartService.generateBookingsOverTimeChart(
+                    listOf(mapOf("date" to "2025-01-01", "count" to 0, "revenue" to 0.0)),
+                )
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Zero-value data must not throw")
     }
 
@@ -74,11 +77,12 @@ class ChartServiceTest {
      */
     @Test
     fun testBookingStatusChartReturnsPng() {
-        val data = listOf(
-            mapOf("status" to "confirmed", "count" to 80),
-            mapOf("status" to "cancelled", "count" to 15),
-            mapOf("status" to "pending",   "count" to 5),
-        )
+        val data =
+            listOf(
+                mapOf("status" to "confirmed", "count" to 80),
+                mapOf("status" to "cancelled", "count" to 15),
+                mapOf("status" to "pending", "count" to 5),
+            )
         val result = ChartService.generateBookingStatusChart(data)
         assertTrue(isPng(result), "Status chart must be a valid PNG")
     }
@@ -88,12 +92,15 @@ class ChartServiceTest {
      */
     @Test
     fun testBookingStatusChartUnknownStatusDoesNotThrow() {
-        val threw = try {
-            ChartService.generateBookingStatusChart(
-                listOf(mapOf("status" to "refunded", "count" to 3))
-            )
-            false
-        } catch (e: Exception) { true }
+        val threw =
+            try {
+                ChartService.generateBookingStatusChart(
+                    listOf(mapOf("status" to "refunded", "count" to 3)),
+                )
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Unknown status must use the gray fallback colour without throwing")
     }
 
@@ -102,9 +109,10 @@ class ChartServiceTest {
      */
     @Test
     fun testBookingStatusChartSingleSliceReturnsPng() {
-        val result = ChartService.generateBookingStatusChart(
-            listOf(mapOf("status" to "confirmed", "count" to 100))
-        )
+        val result =
+            ChartService.generateBookingStatusChart(
+                listOf(mapOf("status" to "confirmed", "count" to 100)),
+            )
         assertTrue(isPng(result), "Single-slice pie chart must be a valid PNG")
     }
 
@@ -115,9 +123,10 @@ class ChartServiceTest {
      */
     @Test
     fun testBusiestRoutesChartSingleRouteReturnsPng() {
-        val data = listOf(
-            mapOf("departureCity" to "Leeds", "arrivalCity" to "London", "bookingCount" to 42)
-        )
+        val data =
+            listOf(
+                mapOf("departureCity" to "Leeds", "arrivalCity" to "London", "bookingCount" to 42),
+            )
         val result = ChartService.generateBusiestRoutesChart(data)
         assertTrue(isPng(result), "Single-route chart must be a valid PNG")
     }
@@ -127,11 +136,12 @@ class ChartServiceTest {
      */
     @Test
     fun testBusiestRoutesChartMultipleRoutesReturnsPng() {
-        val data = listOf(
-            mapOf("departureCity" to "Leeds",   "arrivalCity" to "London",    "bookingCount" to 80),
-            mapOf("departureCity" to "London",  "arrivalCity" to "Amsterdam", "bookingCount" to 60),
-            mapOf("departureCity" to "Glasgow", "arrivalCity" to "Dublin",    "bookingCount" to 30),
-        )
+        val data =
+            listOf(
+                mapOf("departureCity" to "Leeds", "arrivalCity" to "London", "bookingCount" to 80),
+                mapOf("departureCity" to "London", "arrivalCity" to "Amsterdam", "bookingCount" to 60),
+                mapOf("departureCity" to "Glasgow", "arrivalCity" to "Dublin", "bookingCount" to 30),
+            )
         val result = ChartService.generateBusiestRoutesChart(data)
         assertTrue(isPng(result), "Multi-route chart must be a valid PNG")
     }
@@ -141,12 +151,15 @@ class ChartServiceTest {
      */
     @Test
     fun testBusiestRoutesChartZeroCountDoesNotThrow() {
-        val threw = try {
-            ChartService.generateBusiestRoutesChart(
-                listOf(mapOf("departureCity" to "Leeds", "arrivalCity" to "Paris", "bookingCount" to 0))
-            )
-            false
-        } catch (e: Exception) { true }
+        val threw =
+            try {
+                ChartService.generateBusiestRoutesChart(
+                    listOf(mapOf("departureCity" to "Leeds", "arrivalCity" to "Paris", "bookingCount" to 0)),
+                )
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Zero booking count must not throw")
     }
 
@@ -156,12 +169,15 @@ class ChartServiceTest {
      */
     @Test
     fun testBusiestRoutesChartCityNamesWithSpacesDoNotThrow() {
-        val threw = try {
-            ChartService.generateBusiestRoutesChart(
-                listOf(mapOf("departureCity" to "New York", "arrivalCity" to "Los Angeles", "bookingCount" to 10))
-            )
-            false
-        } catch (e: Exception) { true }
+        val threw =
+            try {
+                ChartService.generateBusiestRoutesChart(
+                    listOf(mapOf("departureCity" to "New York", "arrivalCity" to "Los Angeles", "bookingCount" to 10)),
+                )
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "City names containing spaces must not throw")
     }
 }

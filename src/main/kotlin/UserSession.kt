@@ -31,7 +31,7 @@ data class UserSession(
     val isAdmin: Boolean = false,
     val pendingBooking: PendingBooking? = null,
     val rescheduleBookingId: Int? = null,
-    val pendingReschedule: PendingReschedule? = null
+    val pendingReschedule: PendingReschedule? = null,
 )
 
 /**

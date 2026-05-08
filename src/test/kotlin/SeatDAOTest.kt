@@ -24,7 +24,6 @@ import kotlin.test.assertTrue
  * - Flight 1     — Airbus A320, no seats in the DB; used to exercise generation.
  */
 class SeatDAOTest {
-
     // ── Airbus A320: seat count and class split ────────────────────────────────
 
     /**
@@ -156,7 +155,7 @@ class SeatDAOTest {
         for (seat in seats) {
             assertTrue(
                 seat.seatNumber.startsWith("M") || seat.seatNumber.startsWith("U"),
-                "Every A380 seat must start with M or U, got '${seat.seatNumber}'"
+                "Every A380 seat must start with M or U, got '${seat.seatNumber}'",
             )
         }
     }
@@ -173,7 +172,7 @@ class SeatDAOTest {
         for (seat in seats) {
             assertFalse(
                 seat.seatNumber.startsWith("M") || seat.seatNumber.startsWith("U"),
-                "Single-deck A320 seats must not have a deck prefix, got '${seat.seatNumber}'"
+                "Single-deck A320 seats must not have a deck prefix, got '${seat.seatNumber}'",
             )
         }
     }
@@ -189,7 +188,7 @@ class SeatDAOTest {
         for (seat in seats) {
             assertTrue(
                 pattern.matches(seat.seatNumber),
-                "A320 seat number '${seat.seatNumber}' must match pattern \\d+[A-Z]"
+                "A320 seat number '${seat.seatNumber}' must match pattern \\d+[A-Z]",
             )
         }
     }
@@ -235,7 +234,7 @@ class SeatDAOTest {
         for (seat in seats) {
             assertTrue(
                 seat.seatClass in valid,
-                "seatClass must be one of $valid, got '${seat.seatClass}'"
+                "seatClass must be one of $valid, got '${seat.seatClass}'",
             )
         }
     }
@@ -292,5 +291,4 @@ class SeatDAOTest {
         val seats = SeatDAO.getOrGenerateSeats(1, "Airbus A320")
         assertEquals(170, seats.size, "On-demand generation must produce 170 seats for an A320")
     }
-
 }

@@ -12,13 +12,12 @@ import kotlin.test.assertEquals
  * formatting, and email body content.
  */
 class FlightNotificationServiceTest {
-
     /**
      * Verifies that a booking cancellation email is created using the booking
      * contact email address and contains the expected booking and flight details.
      */
     @Test
-    fun buildBookingCancellationEmailUsesBookingContactEmail(): Unit {
+    fun buildBookingCancellationEmailUsesBookingContactEmail() {
         val inputNotification: BookingCancellationNotification =
             BookingCancellationNotification(
                 bookingId = 42,
@@ -34,12 +33,12 @@ class FlightNotificationServiceTest {
     }
 
     /**
-    * Verifies that duplicate recipient email addresses are removed when generating
-    * flight status update emails, while preserving unique recipients and correct
-    * email content.
-    */
+     * Verifies that duplicate recipient email addresses are removed when generating
+     * flight status update emails, while preserving unique recipients and correct
+     * email content.
+     */
     @Test
-    fun buildFlightStatusUpdateEmailsDeduplicatesContactAndAccountEmails(): Unit {
+    fun buildFlightStatusUpdateEmailsDeduplicatesContactAndAccountEmails() {
         val inputNotification: FlightStatusNotification =
             FlightStatusNotification(
                 flightId = 9,

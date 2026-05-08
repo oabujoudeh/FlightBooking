@@ -15,5 +15,5 @@ data class PendingReschedule(
     val bookingId: Int,
     val newFlightIds: List<Int>,
     val newTotalPrice: Double,
-    val passengerSeatSelections: Map<Int, String>
+    val passengerSeatSelections: Map<Int, String>,
 )

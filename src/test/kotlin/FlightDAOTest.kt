@@ -20,7 +20,6 @@ import kotlin.test.assertTrue
  * - Flight ID 62 is Cancelled (London → Leeds).
  */
 class FlightDAOTest {
-
     private val seedDate = LocalDate.of(2025, 10, 26)
 
     // ── searchFlights: basic results ───────────────────────────────────────────
@@ -61,7 +60,7 @@ class FlightDAOTest {
             for (i in 0 until flights.size - 1) {
                 assertTrue(
                     flights[i].departureTime <= flights[i + 1].departureTime,
-                    "Flights must be sorted ascending by departure time"
+                    "Flights must be sorted ascending by departure time",
                 )
             }
         }
@@ -128,12 +127,13 @@ class FlightDAOTest {
     @Test
     fun testSearchFlightsDropTableInjectionDoesNotDestroyTable() {
         FlightDAO.searchFlights("Leeds", "'; DROP TABLE flights; --", seedDate)
-        val stillWorks = try {
-            FlightDAO.searchFlights("Leeds", "Amsterdam", seedDate)
-            true
-        } catch (e: Exception) {
-            false
-        }
+        val stillWorks =
+            try {
+                FlightDAO.searchFlights("Leeds", "Amsterdam", seedDate)
+                true
+            } catch (e: Exception) {
+                false
+            }
         assertTrue(stillWorks, "flights table must survive a DROP TABLE injection attempt")
     }
 
@@ -145,12 +145,13 @@ class FlightDAOTest {
      */
     @Test
     fun testSearchConnectingFlightsDoesNotThrow() {
-        val threw = try {
-            FlightDAO.searchConnectingFlights("Leeds", "Edinburgh", seedDate)
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                FlightDAO.searchConnectingFlights("Leeds", "Edinburgh", seedDate)
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "searchConnectingFlights must not throw for any valid input")
     }
 
@@ -291,7 +292,7 @@ class FlightDAOTest {
         val direct = results.first { !it.isConnecting }
         assertTrue(
             direct.totalDurationDisplay.matches(Regex("\\d+h \\d+m")),
-            "Duration display must match 'Xh Ym' format, got '${direct.totalDurationDisplay}'"
+            "Duration display must match 'Xh Ym' format, got '${direct.totalDurationDisplay}'",
         )
     }
 
@@ -306,7 +307,7 @@ class FlightDAOTest {
             for (i in 0 until results.size - 1) {
                 assertTrue(
                     results[i].departureTime <= results[i + 1].departureTime,
-                    "getAvailableFlights must return results sorted by departure time"
+                    "getAvailableFlights must return results sorted by departure time",
                 )
             }
         }

@@ -19,7 +19,6 @@ import kotlin.test.assertTrue
  * Amsterdam/AMS, Edinburgh/EDI, Dublin/DUB.
  */
 class AirportDAOTest {
-
     // ── searchAirport: result structure ────────────────────────────────────────
 
     /**
@@ -47,7 +46,7 @@ class AirportDAOTest {
             val type = entry["type"]
             assertTrue(
                 type == "city" || type == "airport",
-                "type must be 'city' or 'airport', got '$type'"
+                "type must be 'city' or 'airport', got '$type'",
             )
         }
     }
@@ -65,7 +64,7 @@ class AirportDAOTest {
         if (firstAirportIndex != -1 && lastCityIndex != -1) {
             assertTrue(
                 lastCityIndex < firstAirportIndex,
-                "All city results must precede airport results"
+                "All city results must precede airport results",
             )
         }
     }
@@ -160,7 +159,7 @@ class AirportDAOTest {
             assertEquals(
                 3,
                 value.length,
-                "Airport 'value' must be a 3-character IATA code, got '$value'"
+                "Airport 'value' must be a 3-character IATA code, got '$value'",
             )
             assertTrue(value.all { it.isLetter() }, "IATA code must be letters only, got '$value'")
         }
@@ -201,12 +200,13 @@ class AirportDAOTest {
      */
     @Test
     fun testSearchAirportEmptyQueryDoesNotThrow() {
-        val threw = try {
-            AirportDAO.searchAirport("")
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                AirportDAO.searchAirport("")
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Empty query string must not throw an exception")
     }
 
@@ -215,12 +215,13 @@ class AirportDAOTest {
      */
     @Test
     fun testSearchAirportWhitespaceQueryDoesNotThrow() {
-        val threw = try {
-            AirportDAO.searchAirport("   ")
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                AirportDAO.searchAirport("   ")
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Whitespace-only query must not throw")
     }
 
@@ -239,12 +240,13 @@ class AirportDAOTest {
     @Test
     fun testSearchAirportVeryLongQueryDoesNotCrash() {
         val longQuery = "a".repeat(5000)
-        val threw = try {
-            AirportDAO.searchAirport(longQuery)
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                AirportDAO.searchAirport(longQuery)
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Oversized query must not crash the application")
     }
 
@@ -254,12 +256,13 @@ class AirportDAOTest {
      */
     @Test
     fun testSearchAirportWildcardCharactersDoNotThrow() {
-        val threw = try {
-            AirportDAO.searchAirport("_%_")
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                AirportDAO.searchAirport("_%_")
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Wildcard characters in query must not throw")
     }
 
@@ -268,12 +271,13 @@ class AirportDAOTest {
      */
     @Test
     fun testSearchAirportSpecialCharactersDoNotCrash() {
-        val threw = try {
-            AirportDAO.searchAirport("Ö'\";&|{}[]")
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                AirportDAO.searchAirport("Ö'\";&|{}[]")
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Special characters and Unicode must not crash the search")
     }
 
@@ -317,12 +321,13 @@ class AirportDAOTest {
     fun testSearchAirportDropTableInjectionDoesNotDestroyTable() {
         val injection = "'; DROP TABLE airports; --"
         AirportDAO.searchAirport(injection)
-        val stillWorks = try {
-            AirportDAO.searchAirport("Leeds")
-            true
-        } catch (e: Exception) {
-            false
-        }
+        val stillWorks =
+            try {
+                AirportDAO.searchAirport("Leeds")
+                true
+            } catch (e: Exception) {
+                false
+            }
         assertTrue(stillWorks, "airports table must still be accessible after DROP TABLE injection attempt")
     }
 
@@ -335,12 +340,13 @@ class AirportDAOTest {
     @Test
     fun testSearchAirportCommentInjectionDoesNotThrow() {
         val injection = "Leeds'--"
-        val threw = try {
-            AirportDAO.searchAirport(injection)
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                AirportDAO.searchAirport(injection)
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Comment-based injection must not throw")
     }
 
@@ -512,12 +518,13 @@ class AirportDAOTest {
     fun testGetLabelDropTableInjectionDoesNotDestroyTable() {
         val injection = "'; DROP TABLE airports; --"
         AirportDAO.getLabel(injection)
-        val stillWorks = try {
-            AirportDAO.getLabel("Leeds")
-            true
-        } catch (e: Exception) {
-            false
-        }
+        val stillWorks =
+            try {
+                AirportDAO.getLabel("Leeds")
+                true
+            } catch (e: Exception) {
+                false
+            }
         assertTrue(stillWorks, "airports table must survive a DROP TABLE injection attempt via getLabel")
     }
 
@@ -529,12 +536,13 @@ class AirportDAOTest {
     @Test
     fun testGetLabelVeryLongInputDoesNotCrash() {
         val longValue = "X".repeat(5000)
-        val threw = try {
-            AirportDAO.getLabel(longValue)
-            false
-        } catch (e: Exception) {
-            true
-        }
+        val threw =
+            try {
+                AirportDAO.getLabel(longValue)
+                false
+            } catch (e: Exception) {
+                true
+            }
         assertFalse(threw, "Oversized input must not crash getLabel")
     }
 }

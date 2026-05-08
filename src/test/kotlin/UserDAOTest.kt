@@ -6,7 +6,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class UserDAOTest {
-
     // -------------------------------------------------------------------------
     // Email existence checks
     // -------------------------------------------------------------------------
@@ -70,7 +69,6 @@ class UserDAOTest {
     fun testEmailExistsEmptyStringReturnsFalse() {
         assertFalse(UserDAO.emailExists(""), "empty string should not match any email")
     }
-
 
     // -------------------------------------------------------------------------
     // Login
@@ -140,7 +138,6 @@ class UserDAOTest {
         assertFalse(result.success, "comment-based SQL injection should not succeed")
     }
 
-
     // -------------------------------------------------------------------------
     // Get user ID
     // -------------------------------------------------------------------------
@@ -175,7 +172,6 @@ class UserDAOTest {
         assertTrue(id == -1, "SQL injection should not return a valid user ID")
     }
 
-
     // -------------------------------------------------------------------------
     // Get user details
     // -------------------------------------------------------------------------
@@ -206,7 +202,6 @@ class UserDAOTest {
         assertNull(details, "user ID 0 should return null as no rows should have that ID")
     }
 
-
     // -------------------------------------------------------------------------
     // Bookings
     // -------------------------------------------------------------------------
@@ -232,7 +227,6 @@ class UserDAOTest {
         assertTrue(bookings is List, "getBookings should always return a list")
     }
 
-
     // -------------------------------------------------------------------------
     // Cancel booking
     // -------------------------------------------------------------------------
@@ -257,11 +251,10 @@ class UserDAOTest {
     }
 
     @Test
-    fun testGetBookingCancellationNotificationForInvalidBookingReturnsNull(): Unit {
+    fun testGetBookingCancellationNotificationForInvalidBookingReturnsNull() {
         val result: BookingCancellationNotification? = UserDAO.getBookingCancellationNotification(-1, -1)
         assertNull(result, "invalid booking should not create an email notification")
     }
-
 
     // -------------------------------------------------------------------------
     // Loyalty points
@@ -285,7 +278,6 @@ class UserDAOTest {
         val points = UserDAO.getLoyaltyPoints(userId)
         assertTrue(points >= 0, "loyalty points should never be negative")
     }
-
 
     // -------------------------------------------------------------------------
     // Password reset
@@ -340,7 +332,6 @@ class UserDAOTest {
         assertFalse(result, "weak new password should be rejected during reset")
     }
 
-
     // -------------------------------------------------------------------------
     // Registration
     // -------------------------------------------------------------------------
@@ -390,13 +381,14 @@ class UserDAOTest {
     @Test
     fun testRegisterSqlInjectionInEmailReturnsFalse() {
         val maliciousEmail = "'); DROP TABLE users;--"
-        val user = User(
-            firstName = "Hacker",
-            lastName = "Test",
-            email = maliciousEmail,
-            middleName = "",
-            passwordHash = "",
-        )
+        val user =
+            User(
+                firstName = "Hacker",
+                lastName = "Test",
+                email = maliciousEmail,
+                middleName = "",
+                passwordHash = "",
+            )
         val result = UserDAO.register(user, "Hacker", "", "Test", maliciousEmail, "StrongPass1")
         // We can't assert false unconditionally (the email might not exist yet),
         // but we can assert the call does not throw and the users table still
@@ -415,18 +407,18 @@ class UserDAOTest {
     @Test
     fun testRegisterWithExcessivelyLongEmailDoesNotCrash() {
         val longEmail = "a".repeat(5000) + "@test.com"
-        val user = User(
-            firstName = "Test",
-            lastName = "User",
-            email = longEmail,
-            middleName = "",
-            passwordHash = "",
-        )
+        val user =
+            User(
+                firstName = "Test",
+                lastName = "User",
+                email = longEmail,
+                middleName = "",
+                passwordHash = "",
+            )
         val result = UserDAO.register(user, "Test", "", "User", longEmail, "StrongPass1")
         // Result may be true or false depending on DB constraints, but it must not throw
         assertTrue(result || !result, "oversized email input should not cause a crash")
     }
-
 
     // -------------------------------------------------------------------------
     // Update user profile and email
@@ -463,7 +455,6 @@ class UserDAOTest {
         assertFalse(result, "SQL injection in new email should not update any row")
     }
 
-
     // -------------------------------------------------------------------------
     // Change requests and notifications
     // -------------------------------------------------------------------------
@@ -485,7 +476,6 @@ class UserDAOTest {
         val notifications = UserDAO.getUserNotifications(-1)
         assertTrue(notifications.isEmpty(), "invalid user should have no notifications")
     }
-
 
     // -------------------------------------------------------------------------
     // Contact info
@@ -510,7 +500,6 @@ class UserDAOTest {
         assertFalse(result, "user should not be able to edit another users contact info")
     }
 
-
     // -------------------------------------------------------------------------
     // Reschedule helpers
     // -------------------------------------------------------------------------
@@ -525,7 +514,6 @@ class UserDAOTest {
         val result = UserDAO.getBookingForReschedule(-1)
         assertNull(result, "invalid booking ID should return null for reschedule summary")
     }
-
 
     // -------------------------------------------------------------------------
     // Passenger helpers
@@ -547,7 +535,6 @@ class UserDAOTest {
         val result = UserDAO.getPassengerIdsByBooking(-1)
         assertTrue(result.isEmpty(), "invalid booking should return no passenger IDs")
     }
-
 
     // -------------------------------------------------------------------------
     // Flight ID helpers

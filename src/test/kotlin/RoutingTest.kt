@@ -18,13 +18,12 @@ import kotlin.test.assertTrue
    mostly checking pages load and that auth protection is in place */
 
 class RoutingTest {
-
     /**
-    * Basic page load tests.
-    *
-    * These checks make sure the main public pages open properly and that the
-    * home page shows the app branding.
-    */
+     * Basic page load tests.
+     *
+     * These checks make sure the main public pages open properly and that the
+     * home page shows the app branding.
+     */
     @Test
     fun testHomePageLoads() =
         testApplication {
@@ -71,11 +70,11 @@ class RoutingTest {
         }
 
     /**
-    * Login test for invalid details.
-    *
-    * This checks that a bad login stays on the login page and shows an error
-    * message instead of letting the user in.
-    */
+     * Login test for invalid details.
+     *
+     * This checks that a bad login stays on the login page and shows an error
+     * message instead of letting the user in.
+     */
 
     @Test
     fun testBadLoginShowsError() =
@@ -94,12 +93,11 @@ class RoutingTest {
             assertContains(response.bodyAsText(), "Invalid email or password")
         }
 
-
     /**
-    * Logout route test.
-    *
-    * This checks that logging out redirects the user back to the home page.
-    */
+     * Logout route test.
+     *
+     * This checks that logging out redirects the user back to the home page.
+     */
     @Test
     fun testLogoutSendsYouHome() =
         testApplication {
@@ -113,11 +111,11 @@ class RoutingTest {
         }
 
     /**
-    * Tests for protected routes.
-    *
-    * These checks make sure users who are not logged in get redirected to the
-    * login page instead of being allowed onto protected pages.
-    */
+     * Tests for protected routes.
+     *
+     * These checks make sure users who are not logged in get redirected to the
+     * login page instead of being allowed onto protected pages.
+     */
     @Test
     fun testCantAccessProfileWithoutLogin() =
         testApplication {
@@ -185,7 +183,6 @@ class RoutingTest {
             assertEquals("/login", response.headers["Location"])
         }
 
-
     @Test
     fun testCantUpdateBookingWithoutLogin() =
         testApplication {
@@ -202,13 +199,12 @@ class RoutingTest {
             assertEquals("/login", response.headers["Location"])
         }
 
-
     /**
-    * Tests for the airport search endpoint.
-    *
-    * These checks make sure the search does not return results for very short
-    * input and that it can find matching airports or cities.
-    */
+     * Tests for the airport search endpoint.
+     *
+     * These checks make sure the search does not return results for very short
+     * input and that it can find matching airports or cities.
+     */
     @Test
     fun testAirportSearchNeedsTwoChars() =
         testApplication {
@@ -230,13 +226,12 @@ class RoutingTest {
             assertContains(response.bodyAsText(), "London", message = "searching london should find london airports")
         }
 
-
     /**
-    * Flight search validation test.
-    *
-    * This checks that if no search details are given, the user gets sent back
-    * instead of the search trying to run.
-    */
+     * Flight search validation test.
+     *
+     * This checks that if no search details are given, the user gets sent back
+     * instead of the search trying to run.
+     */
     @Test
     fun testFlightSearchWithNothingRedirects() =
         testApplication {
@@ -253,14 +248,12 @@ class RoutingTest {
             assertEquals(HttpStatusCode.Found, response.status, "no params should just go back to home")
         }
 
-
-
     /**
-    * Tests for admin-only chart routes.
-    *
-    * These checks make sure normal users cannot open the admin chart pages
-    * and get redirected back to the home page.
-    */
+     * Tests for admin-only chart routes.
+     *
+     * These checks make sure normal users cannot open the admin chart pages
+     * and get redirected back to the home page.
+     */
     @Test
     fun testNonAdminCantSeeBookingsChart() =
         testApplication {
@@ -297,13 +290,12 @@ class RoutingTest {
             assertEquals("/", response.headers["Location"])
         }
 
-
     /**
-    * Tests for the complaint routes.
-    *
-    * These checks make sure the complaint page requires login, that the
-    * admin complaints page requires admin, and that public pages load fine.
-    */
+     * Tests for the complaint routes.
+     *
+     * These checks make sure the complaint page requires login, that the
+     * admin complaints page requires admin, and that public pages load fine.
+     */
     @Test
     fun testComplaintPageRequiresLogin() =
         testApplication {
@@ -322,10 +314,11 @@ class RoutingTest {
             application { module() }
             val client = createClient { followRedirects = false }
 
-            val response = client.post("/complaint") {
-                contentType(ContentType.Application.FormUrlEncoded)
-                setBody("content=test complaint")
-            }
+            val response =
+                client.post("/complaint") {
+                    contentType(ContentType.Application.FormUrlEncoded)
+                    setBody("content=test complaint")
+                }
 
             assertEquals(HttpStatusCode.Found, response.status, "posting a complaint without login should redirect")
             assertEquals("/login", response.headers["Location"])
@@ -349,21 +342,21 @@ class RoutingTest {
             application { module() }
             val client = createClient { followRedirects = false }
 
-            val response = client.post("/admin/complaints/reply") {
-                contentType(ContentType.Application.FormUrlEncoded)
-                setBody("complaintId=1&reply=test reply")
-            }
+            val response =
+                client.post("/admin/complaints/reply") {
+                    contentType(ContentType.Application.FormUrlEncoded)
+                    setBody("complaintId=1&reply=test reply")
+                }
 
             assertEquals(HttpStatusCode.Found, response.status, "non-admin shouldnt be able to reply to complaints")
             assertEquals("/", response.headers["Location"])
         }
 
-
     /**
-    * Tests for payment pages.
-    *
-    * These checks make sure the payment and payment success pages load correctly.
-    */
+     * Tests for payment pages.
+     *
+     * These checks make sure the payment and payment success pages load correctly.
+     */
     @Test
     fun testPaymentPageLoads() =
         testApplication {

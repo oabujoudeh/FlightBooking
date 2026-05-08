@@ -7,7 +7,6 @@ package com.flightbooking
  * where users need to find departure and arrival locations.
  */
 object AirportDAO {
-
     /**
      * Searches for airports and cities matching a query string.
      *

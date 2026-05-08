@@ -19,7 +19,6 @@ import java.util.Date
  * as an HTTP response or embedding in a page.
  */
 object ChartService {
-
     /**
      * Generates a dual-series XY line chart showing booking counts and revenue over time.
      *

@@ -14,7 +14,6 @@ import java.time.ZonedDateTime
  * of raw database rows into typed flight objects and display DTOs.
  */
 object FlightDAO {
-
     /**
      * Returns all available flights for a given route and date, sorted by departure time.
      *
@@ -27,13 +26,16 @@ object FlightDAO {
      * @param date the travel date to search
      * @return a time-sorted list of direct and connecting [FlightDisplayDTO] objects
      */
-    fun getAvailableFlights(dep: String, arr: String, date: LocalDate): List<FlightDisplayDTO> {
+    fun getAvailableFlights(
+        dep: String,
+        arr: String,
+        date: LocalDate,
+    ): List<FlightDisplayDTO> {
         val direct = searchFlights(dep, arr, date).map { it.toDisplayDTO() }
         val connecting = searchConnectingFlights(dep, arr, date).map { it.toDisplayDTO() }
 
         return (direct + connecting).sortedBy { it.departureTime }
     }
-
 
     /**
      * Maps a single result-set row to a [Flight] object.
@@ -99,7 +101,11 @@ object FlightDAO {
      * @param date the date to search for flights
      * @return a list of matching [Flight] objects in departure-time order
      */
-    fun searchFlights(departure: String, arrival: String, date: LocalDate): List<Flight> {
+    fun searchFlights(
+        departure: String,
+        arrival: String,
+        date: LocalDate,
+    ): List<Flight> {
         val sql = """
             SELECT f.flight_id, f.flight_date, r.flight_number, r.aircraft_type,
                    r.departure_terminal, r.arrival_terminal, r.planned_departure, 
@@ -131,7 +137,6 @@ object FlightDAO {
         }
     }
 
-
     /**
      * Searches for one-stop connecting flights between two locations on a given date.
      *
@@ -150,8 +155,13 @@ object FlightDAO {
      * @param maxLayover maximum acceptable layover in minutes (default 480)
      * @return a list of valid [ConnectingFlight] objects sorted by first-leg departure time
      */
-    fun searchConnectingFlights(departure: String, arrival: String, date: LocalDate, 
-                                minLayover: Int = 45, maxLayover: Int = 480): List<ConnectingFlight> {
+    fun searchConnectingFlights(
+        departure: String,
+        arrival: String,
+        date: LocalDate,
+        minLayover: Int = 45,
+        maxLayover: Int = 480,
+    ): List<ConnectingFlight> {
         val outboundSql = """
             SELECT f.*, r.*, dep.city as departure_city, arr.city as arrival_city,
                    dep.name as departure_airport_name, arr.name as arrival_airport_name,
@@ -190,31 +200,41 @@ object FlightDAO {
             val inbound = mutableListOf<Pair<Flight, String>>()
             for (searchDate in listOf(date, date.plusDays(1))) {
                 conn.prepareStatement(inboundSql).use { stmt ->
-                    stmt.setString(1, arrival); stmt.setString(2, arrival); stmt.setString(3, searchDate.toString())
+                    stmt.setString(1, arrival)
+                    stmt.setString(2, arrival)
+                    stmt.setString(3, searchDate.toString())
                     val rs = stmt.executeQuery()
                     while (rs.next()) inbound.add(mapResultToFlight(rs) to rs.getString("departure_airport_id"))
                 }
             }
 
             val connections = mutableListOf<ConnectingFlight>()
-                for ((leg1, midId1) in outbound) {
-                    for ((leg2, midId2) in inbound) {
-                        if (midId1 != midId2) continue
+            for ((leg1, midId1) in outbound) {
+                for ((leg2, midId2) in inbound) {
+                    if (midId1 != midId2) continue
 
-                        // Account for overnight flights: leg1 may arrive the next day
-                        val leg1ArrivalDate = leg1.departureDate.plusDays(leg1.arrivalDayOffset.toLong())
-                        val leg1ArrivalZdt = java.time.ZonedDateTime.of(leg1ArrivalDate, leg1.arrivalTime, java.time.ZoneId.of("UTC"))
-                        val leg2DepartureZdt = java.time.ZonedDateTime.of(leg2.departureDate, leg2.departureTime, java.time.ZoneId.of("UTC"))
+                    // Account for overnight flights: leg1 may arrive the next day
+                    val leg1ArrivalDate = leg1.departureDate.plusDays(leg1.arrivalDayOffset.toLong())
+                    val leg1ArrivalZdt = java.time.ZonedDateTime.of(leg1ArrivalDate, leg1.arrivalTime, java.time.ZoneId.of("UTC"))
+                    val leg2DepartureZdt =
+                        java.time.ZonedDateTime.of(
+                            leg2.departureDate,
+                            leg2.departureTime,
+                            java.time.ZoneId.of("UTC"),
+                        )
 
-                        val layover = java.time.Duration.between(leg1ArrivalZdt, leg2DepartureZdt).toMinutes()
-                        if (layover in minLayover..maxLayover) {
-                            
-                            // Use economy as the base totalPrice for the ConnectingFlight object;
-                            // null-safe: treat a missing economy price as 0.0
-                            val basePrice = (leg1.priceEconomy ?: 0.0) + (leg2.priceEconomy ?: 0.0)
-                            
-                            connections.add(ConnectingFlight(
-                                leg1 = leg1, 
+                    val layover =
+                        java.time.Duration
+                            .between(leg1ArrivalZdt, leg2DepartureZdt)
+                            .toMinutes()
+                    if (layover in minLayover..maxLayover) {
+                        // Use economy as the base totalPrice for the ConnectingFlight object;
+                        // null-safe: treat a missing economy price as 0.0
+                        val basePrice = (leg1.priceEconomy ?: 0.0) + (leg2.priceEconomy ?: 0.0)
+
+                        connections.add(
+                            ConnectingFlight(
+                                leg1 = leg1,
                                 leg2 = leg2,
                                 totalDurationMinutes = leg1.durationMinutes + layover.toInt() + leg2.durationMinutes,
                                 layoverMinutes = layover.toInt(),
@@ -273,22 +293,23 @@ object FlightDAO {
      * @receiver the [Flight] to convert
      * @return a [FlightDisplayDTO] representing this direct flight
      */
-    private fun Flight.toDisplayDTO() = FlightDisplayDTO(
-        flightId = this.flightId.toString(),
-        isConnecting = false,
-        aircraftType = this.aircraftType,
-        departureAirport = this.departureAirportName,
-        arrivalAirport = this.arrivalAirportName,
-        departureTime = this.departureTime,
-        arrivalTime = this.arrivalTime,
-        arrivalDayOffset = this.arrivalDayOffset,
-        totalDurationDisplay = "${this.durationMinutes / 60}h ${this.durationMinutes % 60}m",
-        priceEconomy = this.priceEconomy,
-        priceBusiness = this.priceBusiness,
-        priceFirst = this.priceFirst,
-        departureTerminal = this.departureTerminal,
-        arrivalTerminal = this.arrivalTerminal
-    )
+    private fun Flight.toDisplayDTO() =
+        FlightDisplayDTO(
+            flightId = this.flightId.toString(),
+            isConnecting = false,
+            aircraftType = this.aircraftType,
+            departureAirport = this.departureAirportName,
+            arrivalAirport = this.arrivalAirportName,
+            departureTime = this.departureTime,
+            arrivalTime = this.arrivalTime,
+            arrivalDayOffset = this.arrivalDayOffset,
+            totalDurationDisplay = "${this.durationMinutes / 60}h ${this.durationMinutes % 60}m",
+            priceEconomy = this.priceEconomy,
+            priceBusiness = this.priceBusiness,
+            priceFirst = this.priceFirst,
+            departureTerminal = this.departureTerminal,
+            arrivalTerminal = this.arrivalTerminal,
+        )
 
     /**
      * Converts a [ConnectingFlight] to a [FlightDisplayDTO] suitable for UI rendering.
@@ -302,30 +323,40 @@ object FlightDAO {
      * @receiver the [ConnectingFlight] to convert
      * @return a [FlightDisplayDTO] representing this connecting flight
      */
-    private fun ConnectingFlight.toDisplayDTO() = FlightDisplayDTO(
-        flightId = "${this.leg1.flightId}_${this.leg2.flightId}",
-        isConnecting = true,
-        aircraftType ="${this.leg1.aircraftType}_${this.leg2.aircraftType}",
-        departureAirport = this.leg1.departureAirportName,
-        arrivalAirport = this.leg2.arrivalAirportName,
-        departureTime = this.leg1.departureTime,
-        arrivalTime = this.leg2.arrivalTime,
-        arrivalDayOffset = (this.leg2.departureDate.toEpochDay() - this.leg1.departureDate.toEpochDay()).toInt() + this.leg2.arrivalDayOffset,
-        totalDurationDisplay = "${this.totalDurationMinutes / 60}h ${this.totalDurationMinutes % 60}m",
-        
-        // Only calculate the sum if BOTH legs offer the cabin; otherwise null
-        priceEconomy = if (leg1.priceEconomy != null && leg2.priceEconomy != null) 
-                    leg1.priceEconomy + leg2.priceEconomy else null,
-                    
-        priceBusiness = if (leg1.priceBusiness != null && leg2.priceBusiness != null) 
-                        leg1.priceBusiness + leg2.priceBusiness else null,
-                        
-        priceFirst = if (leg1.priceFirst != null && leg2.priceFirst != null) 
-                    leg1.priceFirst + leg2.priceFirst else null,
-                    
-        stopCity = this.leg1.arrivalAirportName,
-        layoverMinutes = this.layoverMinutes,
-        departureTerminal = this.leg1.departureTerminal,
-        arrivalTerminal = this.leg2.arrivalTerminal
-    )
+    private fun ConnectingFlight.toDisplayDTO() =
+        FlightDisplayDTO(
+            flightId = "${this.leg1.flightId}_${this.leg2.flightId}",
+            isConnecting = true,
+            aircraftType = "${this.leg1.aircraftType}_${this.leg2.aircraftType}",
+            departureAirport = this.leg1.departureAirportName,
+            arrivalAirport = this.leg2.arrivalAirportName,
+            departureTime = this.leg1.departureTime,
+            arrivalTime = this.leg2.arrivalTime,
+            arrivalDayOffset =
+                (this.leg2.departureDate.toEpochDay() - this.leg1.departureDate.toEpochDay()).toInt() + this.leg2.arrivalDayOffset,
+            totalDurationDisplay = "${this.totalDurationMinutes / 60}h ${this.totalDurationMinutes % 60}m",
+            // Only calculate the sum if BOTH legs offer the cabin; otherwise null
+            priceEconomy =
+                if (leg1.priceEconomy != null && leg2.priceEconomy != null) {
+                    leg1.priceEconomy + leg2.priceEconomy
+                } else {
+                    null
+                },
+            priceBusiness =
+                if (leg1.priceBusiness != null && leg2.priceBusiness != null) {
+                    leg1.priceBusiness + leg2.priceBusiness
+                } else {
+                    null
+                },
+            priceFirst =
+                if (leg1.priceFirst != null && leg2.priceFirst != null) {
+                    leg1.priceFirst + leg2.priceFirst
+                } else {
+                    null
+                },
+            stopCity = this.leg1.arrivalAirportName,
+            layoverMinutes = this.layoverMinutes,
+            departureTerminal = this.leg1.departureTerminal,
+            arrivalTerminal = this.leg2.arrivalTerminal,
+        )
 }

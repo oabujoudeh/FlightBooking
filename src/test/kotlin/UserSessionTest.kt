@@ -26,7 +26,6 @@ import kotlin.test.assertTrue
  * server that installs [configureSessions] and exposes session state via a helper route.
  */
 class UserSessionTest {
-
     // ── Default values ─────────────────────────────────────────────────────────
 
     /**
@@ -204,8 +203,6 @@ class UserSessionTest {
         assertNotEquals(UserSession(loggedIn = true), UserSession())
     }
 
- 
-
     // ── PendingReschedule integration ──────────────────────────────────────────
 
     /**
@@ -214,16 +211,18 @@ class UserSessionTest {
      */
     @Test
     fun testPendingRescheduleIsStoredInSession() {
-        val reschedule = PendingReschedule(
-            bookingId = 42,
-            newFlightIds = listOf(301, 302),
-            newTotalPrice = 199.0,
-            passengerSeatSelections = mapOf(1 to "3A", 2 to "3B")
-        )
-        val session = UserSession(
-            rescheduleBookingId = 42,
-            pendingReschedule = reschedule
-        )
+        val reschedule =
+            PendingReschedule(
+                bookingId = 42,
+                newFlightIds = listOf(301, 302),
+                newTotalPrice = 199.0,
+                passengerSeatSelections = mapOf(1 to "3A", 2 to "3B"),
+            )
+        val session =
+            UserSession(
+                rescheduleBookingId = 42,
+                pendingReschedule = reschedule,
+            )
         assertNotNull(session.pendingReschedule)
         assertEquals(42, session.pendingReschedule!!.bookingId)
         assertEquals(42, session.rescheduleBookingId)
@@ -236,10 +235,11 @@ class UserSessionTest {
      */
     @Test
     fun testClearingRescheduleFieldsSetsThemToNull() {
-        val session = UserSession(
-            rescheduleBookingId = 7,
-            pendingReschedule = PendingReschedule(7, listOf(1), 100.0, emptyMap())
-        )
+        val session =
+            UserSession(
+                rescheduleBookingId = 7,
+                pendingReschedule = PendingReschedule(7, listOf(1), 100.0, emptyMap()),
+            )
         val cleared = session.copy(rescheduleBookingId = null, pendingReschedule = null)
         assertNull(cleared.rescheduleBookingId)
         assertNull(cleared.pendingReschedule)
@@ -256,61 +256,62 @@ class UserSessionTest {
      * Expected defaults: `loggedIn=false`, `username=""`, `message=""`, `isAdmin=false`.
      */
     @Test
-    fun testGetSessionDataDefaultsWhenNoSession() = testApplication {
-        application {
-            configureSessions()
-            routing {
-                get("/session-check") {
-                    val data = getSessionData(call)
-                    call.response.headers.append("X-LoggedIn", data["loggedIn"].toString())
-                    call.response.headers.append("X-Username", data["username"].toString())
-                    call.response.headers.append("X-Message", data["message"].toString())
-                    call.response.headers.append("X-IsAdmin", data["isAdmin"].toString())
-                    call.respond(HttpStatusCode.OK)
+    fun testGetSessionDataDefaultsWhenNoSession() =
+        testApplication {
+            application {
+                configureSessions()
+                routing {
+                    get("/session-check") {
+                        val data = getSessionData(call)
+                        call.response.headers.append("X-LoggedIn", data["loggedIn"].toString())
+                        call.response.headers.append("X-Username", data["username"].toString())
+                        call.response.headers.append("X-Message", data["message"].toString())
+                        call.response.headers.append("X-IsAdmin", data["isAdmin"].toString())
+                        call.respond(HttpStatusCode.OK)
+                    }
                 }
             }
+
+            val response = client.get("/session-check")
+            assertEquals("false", response.headers["X-LoggedIn"])
+            assertEquals("", response.headers["X-Username"])
+            assertEquals("", response.headers["X-Message"])
+            assertEquals("false", response.headers["X-IsAdmin"])
         }
 
-        val response = client.get("/session-check")
-        assertEquals("false", response.headers["X-LoggedIn"])
-        assertEquals("", response.headers["X-Username"])
-        assertEquals("", response.headers["X-Message"])
-        assertEquals("false", response.headers["X-IsAdmin"])
-    }
-
-
     // ── getSessionData: with an active session ─────────────────────────────────
-
 
     /**
      * Verifies that [getSessionData] correctly surfaces [UserSession.isAdmin]
      * as `"true"` for an admin session.
      */
     @Test
-    fun testGetSessionDataReflectsAdminFlag() = testApplication {
-        application {
-            configureSessions()
-            routing {
-                get("/set-admin") {
-                    call.sessions.set(
-                        UserSession(username = "admin@example.com", loggedIn = true, isAdmin = true)
-                    )
-                    call.respond(HttpStatusCode.OK)
-                }
-                get("/read-admin") {
-                    val data = getSessionData(call)
-                    call.response.headers.append("X-IsAdmin", data["isAdmin"].toString())
-                    call.respond(HttpStatusCode.OK)
+    fun testGetSessionDataReflectsAdminFlag() =
+        testApplication {
+            application {
+                configureSessions()
+                routing {
+                    get("/set-admin") {
+                        call.sessions.set(
+                            UserSession(username = "admin@example.com", loggedIn = true, isAdmin = true),
+                        )
+                        call.respond(HttpStatusCode.OK)
+                    }
+                    get("/read-admin") {
+                        val data = getSessionData(call)
+                        call.response.headers.append("X-IsAdmin", data["isAdmin"].toString())
+                        call.respond(HttpStatusCode.OK)
+                    }
                 }
             }
-        }
 
-        val cookieClient = createClient { followRedirects = false }
-        val setResp = cookieClient.get("/set-admin")
-        val cookie = setResp.headers["Set-Cookie"] ?: ""
-        val readResp = cookieClient.get("/read-admin") {
-            headers.append("Cookie", cookie.substringBefore(";"))
+            val cookieClient = createClient { followRedirects = false }
+            val setResp = cookieClient.get("/set-admin")
+            val cookie = setResp.headers["Set-Cookie"] ?: ""
+            val readResp =
+                cookieClient.get("/read-admin") {
+                    headers.append("Cookie", cookie.substringBefore(";"))
+                }
+            assertEquals("true", readResp.headers["X-IsAdmin"])
         }
-        assertEquals("true", readResp.headers["X-IsAdmin"])
-    }
 }

@@ -16,7 +16,6 @@ import kotlin.test.assertTrue
  * parameterised queries resist SQL-injection payloads.
  */
 class AdminDAOTest {
-
     // ── getTotalUsers ──────────────────────────────────────────────────────────
 
     /**
@@ -269,12 +268,13 @@ class AdminDAOTest {
      */
     @Test
     fun testGetBusiestRoutesWithAllFilters() {
-        val result = AdminDAO.getBusiestRoutes(
-            limit = 5,
-            startDate = "2024-01-01",
-            endDate = "2025-12-31",
-            filterSeason = "Summer 2025"
-        )
+        val result =
+            AdminDAO.getBusiestRoutes(
+                limit = 5,
+                startDate = "2024-01-01",
+                endDate = "2025-12-31",
+                filterSeason = "Summer 2025",
+            )
         assertNotNull(result)
     }
 
@@ -344,11 +344,12 @@ class AdminDAOTest {
      */
     @Test
     fun testTrackReservationsWithAllFilters() {
-        val result = AdminDAO.trackReservations(
-            filterDate = "2025-01-01",
-            filterUsername = "John",
-            filterStatus = "confirmed"
-        )
+        val result =
+            AdminDAO.trackReservations(
+                filterDate = "2025-01-01",
+                filterUsername = "John",
+                filterStatus = "confirmed",
+            )
         assertNotNull(result)
     }
 
@@ -477,12 +478,13 @@ class AdminDAOTest {
     fun testUpdateFlightStatusAcceptsAllAllowedStatuses() {
         val allowed = listOf("Scheduled", "Delayed", "Cancelled", "Departed", "Arrived")
         for (status in allowed) {
-            val threw = try {
-                AdminDAO.updateFlightStatus(-9999, status)
-                false
-            } catch (e: Exception) {
-                true
-            }
+            val threw =
+                try {
+                    AdminDAO.updateFlightStatus(-9999, status)
+                    false
+                } catch (e: Exception) {
+                    true
+                }
             assertFalse(threw, "Valid status '$status' must not throw")
         }
     }
@@ -567,11 +569,12 @@ class AdminDAOTest {
      */
     @Test
     fun testGetBookingsPerFlightWithFilters() {
-        val result = AdminDAO.getBookingsPerFlight(
-            limit = 5,
-            filterDate = "2025-06-01",
-            filterSeason = "Summer 2025"
-        )
+        val result =
+            AdminDAO.getBookingsPerFlight(
+                limit = 5,
+                filterDate = "2025-06-01",
+                filterSeason = "Summer 2025",
+            )
         assertNotNull(result)
     }
 
