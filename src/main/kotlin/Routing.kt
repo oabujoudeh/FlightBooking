@@ -1331,10 +1331,111 @@ fun Application.configureRouting() {
             } else if (action == "reject") {
                 AdminDAO.rejectChangeRequest(userId)
             }
-            
+
             call.respondRedirect("/admin/pending-requests")
         }
 
+        get("/complaint") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
+                return@get
+            }
+            val userId = UserDAO.getUserID(session.username)
+            val complaints = ComplaintDAO.getComplaintsForUser(userId)
+            call.respondTemplate(
+                "complaint.peb",
+                call.nonNullSessionData() + mapOf(
+                    "error" to "",
+                    "success" to "",
+                    "complaints" to complaints
+                )
+            )
+        }
+
+        post("/complaint") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.loggedIn) {
+                call.respondRedirect("/login")
+                return@post
+            }
+
+            val params = call.receiveParameters()
+            val content = params["content"] ?: ""
+
+            val userId = UserDAO.getUserID(session.username)
+            val complaints = ComplaintDAO.getComplaintsForUser(userId)
+
+            if (content.isEmpty()) {
+                call.respondTemplate(
+                    "complaint.peb",
+                    call.nonNullSessionData() + mapOf(
+                        "error" to "Please enter your complaint before submitting.",
+                        "success" to "",
+                        "complaints" to complaints
+                    )
+                )
+                return@post
+            }
+
+            val saved = ComplaintDAO.submitComplaint(userId, content)
+
+            if (saved) {
+                EmailService.sendEmail(
+                    to = "tnvn3422@leeds.ac.uk",
+                    subject = "New Complaint from ${session.username}",
+                    body = "User: ${session.username}\n\n$content"
+                )
+                val updatedComplaints = ComplaintDAO.getComplaintsForUser(userId)
+                call.respondTemplate(
+                    "complaint.peb",
+                    call.nonNullSessionData() + mapOf(
+                        "error" to "",
+                        "success" to "Your complaint has been submitted. We will be in touch shortly.",
+                        "complaints" to updatedComplaints
+                    )
+                )
+            } else {
+                call.respondTemplate(
+                    "complaint.peb",
+                    call.nonNullSessionData() + mapOf(
+                        "error" to "Something went wrong. Please try again.",
+                        "success" to "",
+                        "complaints" to complaints
+                    )
+                )
+            }
+        }
+
+        get("/admin/complaints") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@get
+            }
+            val complaints = ComplaintDAO.getAllComplaints()
+            call.respondTemplate(
+                "admin_complaints.peb",
+                call.nonNullSessionData() + mapOf("complaints" to complaints)
+            )
+        }
+
+        post("/admin/complaints/reply") {
+            val session = call.sessions.get<UserSession>()
+            if (session == null || !session.isAdmin) {
+                call.respondRedirect("/")
+                return@post
+            }
+            val params = call.receiveParameters()
+            val complaintId = params["complaintId"]?.toIntOrNull()
+            val reply = params["reply"] ?: ""
+
+            if (complaintId != null && reply.isNotEmpty()) {
+                ComplaintDAO.replyToComplaint(complaintId, reply)
+            }
+
+            call.respondRedirect("/admin/complaints")
+        }
 
     }
 }

@@ -506,6 +506,9 @@
             <a href="/admin/pending-requests" class="btn-toggle" style="text-decoration: none; background: var(--brand-accent); color: white; border: none;">
                 <i style="font-style: normal; margin-right: 5px;">📋</i> Pending Requests
             </a>
+            <a href="/admin/complaints" class="btn-toggle" style="text-decoration: none; background: #b91c1c; color: white; border: none;">
+                <i style="font-style: normal; margin-right: 5px;">✉️</i> Complaints
+            </a>
             <span class="badge-total">{{ totalUsers }} Registered Users</span>
         </div>
     </div>

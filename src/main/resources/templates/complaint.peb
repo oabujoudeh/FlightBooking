@@ -1,0 +1,233 @@
+{% extends "base.peb" %}
+
+{% block title %}Submit a Complaint - EAJO Air{% endblock %}
+
+{% block content %}
+<style>
+    .complaint-page {
+        max-width: 760px;
+        margin: 48px auto;
+        padding: 0 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .complaint-page h1 {
+        font-size: 26px;
+        font-weight: 700;
+        color: #0d2045;
+        margin-bottom: 6px;
+    }
+
+    .complaint-page .subtitle {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 32px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 28px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        border: 1px solid #e8edf5;
+        margin-bottom: 28px;
+    }
+
+    .card h2 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0d2045;
+        margin: 0 0 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e8edf5;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        color: #1e293b;
+        resize: vertical;
+        min-height: 120px;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+    }
+
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #d4af37;
+        box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #d4af37, #c19b2e);
+        color: #0b1f3a;
+        border: none;
+        padding: 11px 28px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .btn-submit:hover {
+        opacity: 0.88;
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+        background: #f0fdf4;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+    }
+
+    .complaint-history-item {
+        padding: 16px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .complaint-history-item:last-child {
+        border-bottom: none;
+    }
+
+    .complaint-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .complaint-date {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    .complaint-status {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .complaint-status.pending {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .complaint-status.resolved {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .complaint-content {
+        font-size: 14px;
+        color: #1e293b;
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
+
+    .complaint-reply {
+        background: #f0f4ff;
+        border-left: 3px solid #0b1f3a;
+        padding: 10px 14px;
+        border-radius: 0 6px 6px 0;
+        font-size: 13px;
+        color: #374151;
+    }
+
+    .complaint-reply strong {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #0b1f3a;
+        margin-bottom: 4px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+</style>
+
+<div class="complaint-page">
+    <h1>Submit a Complaint</h1>
+    <p class="subtitle">We take all complaints seriously. We aim to respond within 2 business days.</p>
+
+    {% if error != "" %}
+        <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    {% if success != "" %}
+        <div class="alert alert-success" role="alert">{{ success }}</div>
+    {% endif %}
+
+    <div class="card">
+        <h2>New Complaint</h2>
+        <form action="/complaint" method="post">
+            <div class="form-group">
+                <label for="content">Describe your complaint</label>
+                <textarea id="content" name="content" placeholder="Please describe your issue in as much detail as possible..." required aria-required="true"></textarea>
+            </div>
+            <button type="submit" class="btn-submit">Submit Complaint</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Your Previous Complaints</h2>
+        {% if complaints is empty %}
+            <div class="empty-state">You have not submitted any complaints yet.</div>
+        {% else %}
+            {% for complaint in complaints %}
+                <div class="complaint-history-item">
+                    <div class="complaint-meta">
+                        <span class="complaint-date">{{ complaint.createdAt }}</span>
+                        <span class="complaint-status {{ complaint.status }}">{{ complaint.status }}</span>
+                    </div>
+                    <p class="complaint-content">{{ complaint.content }}</p>
+                    {% if complaint.reply != null and complaint.reply != "" %}
+                        <div class="complaint-reply">
+                            <strong>EAJO Air Response</strong>
+                            {{ complaint.reply }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <a href="/" style="font-size: 14px; color: #64748b; text-decoration: none;">← Back to home</a>
+</div>
+{% endblock %}

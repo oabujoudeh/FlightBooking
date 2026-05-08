@@ -43,6 +43,7 @@
     <a href="/" class="logo" aria-label="EAJO Air home page">✈ EAJO Air</a>
     {% if loggedIn %}
         <a href="/profile" class="auth-btn">Profile</a>
+        <a href="/complaint" class="auth-btn">Complaint</a>
     {% else %}
         <a href="/login" class="auth-btn">Login</a>
     {% endif %}
